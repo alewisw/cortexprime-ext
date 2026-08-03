@@ -1,8 +1,12 @@
+import { FloatingPanel } from './applications/FloatingPanel.js'
 import { UserDicePool } from './applications/UserDicePool.js'
 import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
+import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
 
 export default () => {
+  registerSceneDistinctionActor()
+
   Hooks.once('diceSoNiceReady', dice3d => {
     dice3d.addSystem({ id: 'cp-pp', name: 'Cortex Prime Plot Point' }, false)
     const ppLabel = 'systems/cortexprime/assets/plot-point/plot-point.png'
@@ -67,6 +71,9 @@ export default () => {
   Hooks.on('ready', async () => {
     game.cortexprime.UserDicePool = new UserDicePool()
     await game.cortexprime.UserDicePool.initPool()
+
+    game.cortexprime.FloatingPanel = new FloatingPanel()
+    await game.cortexprime.FloatingPanel.render(true)
   })
 
   Hooks.on('renderChatMessageHTML', async (message, html, data) => {

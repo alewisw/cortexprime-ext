@@ -67,6 +67,14 @@ export const registerSettings = () => {
     default: false
   })
 
+  game.settings.register('cortexprime', 'activeDistinctionActorId', {
+    name: localizer('ActiveDistinctionActorId'),
+    default: '',
+    scope: 'world',
+    type: String,
+    config: false,
+  })
+
   game.settings.registerMenu('cortexprime', 'ThemeSettings', {
     hint: localizer('ThemeSettingsH'),
     icon: 'fa-solid fa-user-cog',

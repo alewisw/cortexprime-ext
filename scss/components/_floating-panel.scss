@@ -1,0 +1,21 @@
+#cortexprime-floating-panel {
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  display: flex;
+  gap: toRem(4px);
+  left: 50%;
+  padding: toRem(4px);
+  position: fixed;
+  top: toRem(8px);
+  transform: translateX(-50%);
+  z-index: 21;
+
+  .floating-panel-button {
+    color: #ffffff;
+
+    &.active {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+  }
+}

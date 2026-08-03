@@ -1,0 +1,7 @@
+<div id="cortexprime-floating-panel" class="cortexprime floating-panel">
+  {{#each buttons}}
+    <button type="button" class="btn btn-icon floating-panel-button {{#if active}}active{{/if}}" data-action="{{id}}" title="{{tooltip}}" {{#unless enabled}}disabled{{/unless}}>
+      <i class="{{icon}}"></i>
+    </button>
+  {{/each}}
+</div>
