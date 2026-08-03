@@ -4,10 +4,10 @@ export class FloatingPanel extends Application {
   static buttons = []
   static widgets = []
 
-  static registerButton ({ id, icon, tooltip, isActive, isEnabled, onClick }) {
+  static registerButton ({ id, icon, tooltip, isActive, isEnabled, isVisible, onClick }) {
     FloatingPanel.buttons = [
       ...FloatingPanel.buttons.filter(button => button.id !== id),
-      { id, icon, tooltip, isActive, isEnabled, onClick }
+      { id, icon, tooltip, isActive, isEnabled, isVisible, onClick }
     ]
   }
 
@@ -37,13 +37,15 @@ export class FloatingPanel extends Application {
 
     return {
       widgets,
-      buttons: FloatingPanel.buttons.map(button => ({
-        id: button.id,
-        icon: button.icon,
-        tooltip: typeof button.tooltip === 'function' ? button.tooltip() : button.tooltip,
-        active: button.isActive ? !!button.isActive() : false,
-        enabled: button.isEnabled ? !!button.isEnabled() : true
-      }))
+      buttons: FloatingPanel.buttons
+        .filter(button => button.isVisible ? button.isVisible() : true)
+        .map(button => ({
+          id: button.id,
+          icon: button.icon,
+          tooltip: typeof button.tooltip === 'function' ? button.tooltip() : button.tooltip,
+          active: button.isActive ? !!button.isActive() : false,
+          enabled: button.isEnabled ? !!button.isEnabled() : true
+        }))
     }
   }
 

@@ -3,10 +3,12 @@ import { UserDicePool } from './applications/UserDicePool.js'
 import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
+import { registerSceneJournal } from './scripts/sceneJournal.js'
 import { registerSpotlight } from './scripts/spotlight.js'
 
 export default () => {
   registerSceneDistinctionActor()
+  registerSceneJournal()
   registerSpotlight()
 
   Hooks.once('diceSoNiceReady', dice3d => {
