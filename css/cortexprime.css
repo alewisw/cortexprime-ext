@@ -1197,6 +1197,94 @@
 #cortexprime-floating-panel .floating-panel-button.active {
   background-color: rgba(255, 255, 255, 0.25);
 }
+#cortexprime-floating-panel .floating-panel-widget {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+#cortexprime-floating-panel .spotlight-card {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  background: -webkit-gradient(linear, left top, left bottom, from(#2b2116), to(#171310));
+  background: -o-linear-gradient(top, #2b2116, #171310);
+  background: linear-gradient(180deg, #2b2116, #171310);
+  border: 2px solid #c9a227;
+  border-radius: 8px;
+  -webkit-box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+  box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0.625rem 0.25rem 0.25rem;
+}
+#cortexprime-floating-panel .spotlight-portrait-frame {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  background-color: #000000;
+  border: 1px solid #999999;
+  border-radius: 4px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  height: 3.375rem;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  overflow: hidden;
+  width: 2.25rem;
+}
+#cortexprime-floating-panel .spotlight-portrait {
+  height: 100%;
+  -o-object-fit: cover;
+  object-fit: cover;
+  width: 100%;
+}
+#cortexprime-floating-panel .spotlight-placeholder {
+  color: #c9a227;
+  font-size: 1rem;
+}
+#cortexprime-floating-panel .spotlight-text {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1;
+}
+#cortexprime-floating-panel .spotlight-label {
+  color: #c9a227;
+  font-size: 0.625rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+#cortexprime-floating-panel .spotlight-name {
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: bold;
+}
+#cortexprime-floating-panel .spotlight-select {
+  background-color: #000000;
+  border: 1px solid #c9a227;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: bold;
+  padding: 0.0625rem 0.25rem;
+}
+#cortexprime-floating-panel .spotlight-select option {
+  background-color: #171310;
+  color: #ffffff;
+}
 
 .cortexprime .sheet-cpt {
   color: var(--cp-body-font-color, #000000);

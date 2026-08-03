@@ -1,0 +1,34 @@
+{{#if enabled}}
+  {{#if isGM}}
+    <div class="spotlight-card">
+      <div class="spotlight-portrait-frame">
+        {{#if actor}}
+          <img class="spotlight-portrait" src="{{actor.img}}" alt="{{actor.name}}">
+        {{else}}
+          <i class="fa-solid fa-star spotlight-placeholder"></i>
+        {{/if}}
+      </div>
+      <div class="spotlight-text">
+        <span class="spotlight-label">{{localize 'Spotlight'}}</span>
+        <select class="spotlight-select">
+          <option value="">{{localize 'None'}}</option>
+          {{#each options}}
+            <option value="{{id}}" {{#if (eq id ../actor.id)}}selected{{/if}}>{{name}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  {{else}}
+    {{#if actor}}
+      <div class="spotlight-card">
+        <div class="spotlight-portrait-frame">
+          <img class="spotlight-portrait" src="{{actor.img}}" alt="{{actor.name}}">
+        </div>
+        <div class="spotlight-text">
+          <span class="spotlight-label">{{localize 'Spotlight'}}</span>
+          <span class="spotlight-name">{{actor.name}}</span>
+        </div>
+      </div>
+    {{/if}}
+  {{/if}}
+{{/if}}

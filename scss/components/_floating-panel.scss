@@ -18,4 +18,79 @@
       background-color: rgba(255, 255, 255, 0.25);
     }
   }
+
+  .floating-panel-widget {
+    align-items: center;
+    display: flex;
+  }
+
+  .spotlight-card {
+    align-items: center;
+    background: linear-gradient(180deg, #2b2116, #171310);
+    border: 2px solid #c9a227;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(201, 162, 39, 0.5);
+    display: flex;
+    gap: toRem(8px);
+    padding: toRem(4px) toRem(10px) toRem(4px) toRem(4px);
+  }
+
+  .spotlight-portrait-frame {
+    align-items: center;
+    background-color: #000000;
+    border: 1px solid #999999;
+    border-radius: 4px;
+    display: flex;
+    height: toRem(54px);
+    justify-content: center;
+    overflow: hidden;
+    width: toRem(36px);
+  }
+
+  .spotlight-portrait {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .spotlight-placeholder {
+    color: #c9a227;
+    font-size: toRem(16px);
+  }
+
+  .spotlight-text {
+    display: flex;
+    flex-direction: column;
+    gap: toRem(2px);
+    line-height: 1;
+  }
+
+  .spotlight-label {
+    color: #c9a227;
+    font-size: toRem(10px);
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .spotlight-name {
+    color: #ffffff;
+    font-size: toRem(15px);
+    font-weight: bold;
+  }
+
+  .spotlight-select {
+    background-color: #000000;
+    border: 1px solid #c9a227;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: toRem(13px);
+    font-weight: bold;
+    padding: toRem(1px) toRem(4px);
+
+    option {
+      background-color: #171310;
+      color: #ffffff;
+    }
+  }
 }

@@ -2,11 +2,19 @@
 // FloatingPanel.registerButton() rather than editing this file.
 export class FloatingPanel extends Application {
   static buttons = []
+  static widgets = []
 
   static registerButton ({ id, icon, tooltip, isActive, isEnabled, onClick }) {
     FloatingPanel.buttons = [
       ...FloatingPanel.buttons.filter(button => button.id !== id),
       { id, icon, tooltip, isActive, isEnabled, onClick }
+    ]
+  }
+
+  static registerWidget ({ id, template, getContext, activateListeners }) {
+    FloatingPanel.widgets = [
+      ...FloatingPanel.widgets.filter(widget => widget.id !== id),
+      { id, template, getContext, activateListeners }
     ]
   }
 
@@ -20,7 +28,15 @@ export class FloatingPanel extends Application {
   }
 
   async getData () {
+    const renderedWidgets = await Promise.all(FloatingPanel.widgets.map(async widget => ({
+      id: widget.id,
+      html: (await foundry.applications.handlebars.renderTemplate(widget.template, await widget.getContext())).trim()
+    })))
+
+    const widgets = renderedWidgets.filter(widget => widget.html)
+
     return {
+      widgets,
       buttons: FloatingPanel.buttons.map(button => ({
         id: button.id,
         icon: button.icon,
@@ -41,6 +57,12 @@ export class FloatingPanel extends Application {
 
       if (button && button.onClick) {
         await button.onClick()
+      }
+    })
+
+    FloatingPanel.widgets.forEach(widget => {
+      if (widget.activateListeners) {
+        widget.activateListeners(html.find(`[data-widget="${widget.id}"]`))
       }
     })
   }

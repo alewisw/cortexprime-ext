@@ -3,9 +3,11 @@ import { UserDicePool } from './applications/UserDicePool.js'
 import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
+import { registerSpotlight } from './scripts/spotlight.js'
 
 export default () => {
   registerSceneDistinctionActor()
+  registerSpotlight()
 
   Hooks.once('diceSoNiceReady', dice3d => {
     dice3d.addSystem({ id: 'cp-pp', name: 'Cortex Prime Plot Point' }, false)

@@ -75,6 +75,23 @@ export const registerSettings = () => {
     config: false,
   })
 
+  game.settings.register('cortexprime', 'spotlightActorId', {
+    name: localizer('SpotlightActorId'),
+    default: '',
+    scope: 'world',
+    type: String,
+    config: false,
+  })
+
+  game.settings.register('cortexprime', 'spotlightEnabled', {
+    name: localizer('SpotlightEnabled'),
+    hint: localizer('SpotlightEnabledHint'),
+    default: true,
+    scope: 'world',
+    type: Boolean,
+    config: true,
+  })
+
   game.settings.registerMenu('cortexprime', 'ThemeSettings', {
     hint: localizer('ThemeSettingsH'),
     icon: 'fa-solid fa-user-cog',
