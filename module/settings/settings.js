@@ -50,6 +50,22 @@ export const registerSettings = () => {
     config: false,
   })
 
+  game.settings.register('cortexprime', 'lastGmRoll', {
+    name: localizer('LastGmRoll'),
+    default: {},
+    scope: 'world',
+    type: Object,
+    config: false,
+  })
+
+  game.settings.register('cortexprime', 'activeChallenge', {
+    name: localizer('ActiveChallenge'),
+    default: {},
+    scope: 'world',
+    type: Object,
+    config: false,
+  })
+
   game.settings.registerMenu("cortexprime", "ImportExportSettings", {
     name: localizer('ImportExportSettings'),
     hint: localizer('ImportExportSettingsHint'),

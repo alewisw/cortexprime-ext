@@ -1158,10 +1158,12 @@
   -moz-text-align-last: center;
   -webkit-appearance: none;
   -moz-appearance: none;
-  z-index: 1;
 }
 .die-select ::-ms-expand {
   display: none;
+}
+.die-select {
+  z-index: 1;
 }
 .die-select:focus {
   -webkit-box-shadow: none;

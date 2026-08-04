@@ -1,6 +1,18 @@
 import { localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
+import {
+  clearActiveChallenge,
+  getActiveChallenge,
+  getMyResponderId,
+  getRollToBeatTargets,
+  getTargetTotal,
+  hasInitiatorRolled,
+  isMyResponderReady,
+  setChallengeInitiator,
+  setChallengeResponders,
+  setChallengeType
+} from '../scripts/rollToBeat.js'
 
 const blankPool = {
   customAdd: {
@@ -8,6 +20,67 @@ const blankPool = {
     value: { 0: '8' }
   },
   pool: {}
+}
+
+// Computes "who's currently up" for both the status line and the GM's Contest radio
+// selections. In a Contest, once the current "Roll Now" person has actually rolled, display
+// flips to show the other party as Roll Now — it's their turn to try to beat it — even though
+// the underlying initiatorId/responderIds only actually swap if that roll goes on to lose (see
+// processChallengeAdvancement). In a Test, once the initiator has rolled, every remaining
+// responder moves up into "Roll Now" at once instead — a Test can have any number of
+// responders, so a single displayed "swap" doesn't apply there.
+const getChallengeDisplay = (activeChallenge, rollToBeatTargets) => {
+  const initiatorId = activeChallenge.initiatorId
+  const responderId = activeChallenge.responderIds[0] ?? null
+  const initiatorHasRolled = hasInitiatorRolled(activeChallenge)
+  const nameOf = id => rollToBeatTargets.find(target => target.id === id)?.name
+
+  if (activeChallenge.type === 'test') {
+    const responderNames = activeChallenge.responderIds.map(nameOf).filter(Boolean)
+
+    return {
+      displayedInitiatorId: initiatorId,
+      displayedResponderId: responderId,
+      rollNowNames: initiatorHasRolled ? responderNames : [nameOf(initiatorId)].filter(Boolean),
+      rollNextNames: initiatorHasRolled ? [] : responderNames
+    }
+  }
+
+  const displayedInitiatorId = initiatorHasRolled ? responderId : initiatorId
+  const displayedResponderId = initiatorHasRolled ? initiatorId : responderId
+
+  return {
+    displayedInitiatorId,
+    displayedResponderId,
+    rollNowNames: [nameOf(displayedInitiatorId)].filter(Boolean),
+    rollNextNames: [nameOf(displayedResponderId)].filter(Boolean)
+  }
+}
+
+// Bundles everything the template needs to render the GM's challenge controls and the status
+// line, built on top of getChallengeDisplay's "who's up now" resolution.
+const getChallengeDisplayData = (activeChallenge, rollToBeatTargets) => {
+  const display = getChallengeDisplay(activeChallenge, rollToBeatTargets)
+
+  return {
+    challengeInitiatorOptions: rollToBeatTargets.map(target => ({
+      ...target,
+      selected: target.id === display.displayedInitiatorId
+    })),
+    challengeResponderOptions: rollToBeatTargets
+      .filter(target => target.id !== display.displayedInitiatorId)
+      .map(target => ({
+        ...target,
+        checked: activeChallenge.type === 'test'
+          ? activeChallenge.responderIds.includes(target.id)
+          : target.id === display.displayedResponderId
+      })),
+    challengeResponderNoneChecked: activeChallenge.type === 'test'
+      ? activeChallenge.responderIds.length === 0
+      : !display.displayedResponderId,
+    rollNowNames: display.rollNowNames,
+    rollNextNames: display.rollNextNames
+  }
 }
 
 export class UserDicePool extends FormApplication {
@@ -43,7 +116,22 @@ export class UserDicePool extends FormApplication {
     const dice = game.user.getFlag('cortexprime', 'dicePool')
     const themes = game.settings.get('cortexprime', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
-    return { ...dice, isGM: game.user.isGM, theme }
+    const activeChallenge = getActiveChallenge()
+    const rollToBeatTargets = getRollToBeatTargets()
+    const canRollToBeat = !!getMyResponderId()
+    const rollToBeatReady = isMyResponderReady()
+
+    return {
+      ...dice,
+      isGM: game.user.isGM,
+      theme,
+      canRollToBeat,
+      // A designated responder shouldn't be able to dodge the "wait for the initiator" rule
+      // by rolling with any of the other three roll types instead.
+      awaitingInitiatorRoll: canRollToBeat && !rollToBeatReady,
+      activeChallenge,
+      ...getChallengeDisplayData(activeChallenge, rollToBeatTargets)
+    }
   }
 
   async _updateObject (event, formData) {
@@ -65,6 +153,11 @@ export class UserDicePool extends FormApplication {
     html.find('.roll-dice-pool').click(this._rollDicePool.bind(this))
     html.find('.clear-source').click(this._clearSource.bind(this))
     html.find('.set-difficulty').click(this._setDifficulty.bind(this))
+    html.find('.set-challenge-type').click(this._setChallengeType.bind(this))
+    html.find('.challenge-initiator').change(this._onChallengeInitiatorChange.bind(this))
+    html.find('.challenge-responder-checkbox').change(this._onChallengeResponderCheckboxChange.bind(this))
+    html.find('.challenge-responder-radio').change(this._onChallengeResponderSelectChange.bind(this))
+    html.find('.clear-challenge').click(this._clearChallenge.bind(this))
   }
 
   async initPool () {
@@ -253,8 +346,60 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
+  async _setChallengeType (event) {
+    event.preventDefault()
+
+    const { type } = event.currentTarget.dataset
+
+    await setChallengeType(type)
+
+    await this.render(true)
+  }
+
+  async _onChallengeInitiatorChange (event) {
+    event.preventDefault()
+
+    await setChallengeInitiator(event.currentTarget.value)
+
+    await this.render(true)
+  }
+
+  async _onChallengeResponderCheckboxChange (event) {
+    event.preventDefault()
+
+    const responderIds = this.element.find('.challenge-responder-checkbox:checked').get().map(el => el.value)
+
+    await setChallengeResponders(responderIds)
+
+    await this.render(true)
+  }
+
+  async _onChallengeResponderSelectChange (event) {
+    event.preventDefault()
+
+    const { value } = event.currentTarget
+
+    await setChallengeResponders(value ? [value] : [])
+
+    await this.render(true)
+  }
+
+  async _clearChallenge (event) {
+    event.preventDefault()
+
+    await clearActiveChallenge()
+
+    await this.render(true)
+  }
+
   async _rollDicePool (event) {
     event.preventDefault()
+
+    // Second layer of protection beyond the buttons' disabled state — a designated responder
+    // can't roll at all (by any of the four roll types) until the initiator has actually
+    // rolled, even from a stale render.
+    if (!!getMyResponderId() && !isMyResponderReady()) return
+
     const $target = $(event.currentTarget)
 
     const currentDicePool = game.user.getFlag('cortexprime', 'dicePool')
@@ -265,9 +410,15 @@ export class UserDicePool extends FormApplication {
       ? 'total'
       : $target.hasClass('roll-for-effect')
         ? 'effect'
-        : 'select'
+        : $target.hasClass('roll-to-beat')
+          ? 'toBeat'
+          : 'select'
 
-    await rollDice.call(this, dicePool, rollType)
+    const targetTotal = rollType === 'toBeat'
+      ? getTargetTotal(getActiveChallenge().initiatorId)
+      : undefined
+
+    await rollDice.call(this, dicePool, rollType, targetTotal)
   }
 
   async toggle () {

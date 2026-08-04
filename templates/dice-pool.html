@@ -42,6 +42,71 @@
                   <button class="btn btn-secondary-cpt set-difficulty" data-faces="12" type="button">{{localize 'VeryHard'}}</button>
                 </div>
               </div>
+              <div class="mt-1">
+                <span class="input-label-cpt">{{localize 'Challenge'}}</span>
+                <div class="flex-row flex-ac flex-wrap mt-1">
+                  <div class="flex-col pr-1 pb-1">
+                    <button class="btn {{ternary (eq activeChallenge.type 'test') 'btn-primary-cpt' 'btn-secondary-cpt'}} set-challenge-type" data-type="test" type="button">{{localize 'Test'}}</button>
+                  </div>
+                  <div class="flex-col pr-1 pb-1">
+                    <button class="btn {{ternary (eq activeChallenge.type 'contest') 'btn-primary-cpt' 'btn-secondary-cpt'}} set-challenge-type" data-type="contest" type="button">{{localize 'Contest'}}</button>
+                  </div>
+                  {{#if activeChallenge.type}}
+                  <div class="flex-col pb-1">
+                    <button class="btn btn-secondary-cpt clear-challenge" type="button">{{localize 'ClearChallenge'}}</button>
+                  </div>
+                  {{/if}}
+                </div>
+                {{#if activeChallenge.type}}
+                <div class="flex-row flex-as flex-wrap">
+                  <div class="flex-col col-6 pr-1 pb-1">
+                    <span class="input-label-cpt">{{localize 'RollNow'}}</span>
+                    <div style="display: flex; flex-direction: column;">
+                      {{#each challengeInitiatorOptions}}
+                        <label class="flex-row flex-ac">
+                          <input class="challenge-initiator" type="radio" name="challenge-initiator" value="{{id}}" {{#if selected}}checked{{/if}}>
+                          <span class="pl-1">{{name}}</span>
+                        </label>
+                      {{/each}}
+                    </div>
+                  </div>
+                  <div class="flex-col col-6 pb-1">
+                    {{#if (eq activeChallenge.type 'test')}}
+                      <span class="input-label-cpt">{{localize 'RollNext'}}</span>
+                      <div style="display: flex; flex-direction: column;">
+                        {{#each challengeResponderOptions}}
+                          <label class="flex-row flex-ac">
+                            <input class="challenge-responder-checkbox" type="checkbox" value="{{id}}" {{#if checked}}checked{{/if}}>
+                            <span class="pl-1">{{name}}</span>
+                          </label>
+                        {{/each}}
+                      </div>
+                    {{else}}
+                      <span class="input-label-cpt">{{localize 'RollNext'}}</span>
+                      <div style="display: flex; flex-direction: column;">
+                        <label class="flex-row flex-ac">
+                          <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="" {{#if challengeResponderNoneChecked}}checked{{/if}}>
+                          <span class="pl-1">{{localize 'None'}}</span>
+                        </label>
+                        {{#each challengeResponderOptions}}
+                          <label class="flex-row flex-ac">
+                            <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="{{id}}" {{#if checked}}checked{{/if}}>
+                            <span class="pl-1">{{name}}</span>
+                          </label>
+                        {{/each}}
+                      </div>
+                    {{/if}}
+                  </div>
+                </div>
+                {{/if}}
+              </div>
+              {{/if}}
+              {{#if activeChallenge.type}}
+              <div class="mt-1">
+                <p class="sub-trait-label-cpt">
+                  {{localize (ternary (eq activeChallenge.type 'test') 'Test' 'Contest')}} &mdash; {{localize 'RollNow'}}: {{#each rollNowNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#if rollNextNames}} &middot; {{localize 'RollNext'}}: {{#each rollNextNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+                </p>
+              </div>
               {{/if}}
             </div>
             <div class="flex-col pr-1">
@@ -111,19 +176,24 @@
         <div class="separator-cpt"></div>
         <div class="relative-section">
           <div class="section-background"></div>
-          <div class="flex-col col-12 flex flex-je py-2">
-            <div class="flex-col">
+          <div class="flex-col col-12 flex flex-je flex-as py-2">
+            <div class="flex-col pl-0">
               <button class="clear-dice-pool btn btn-secondary-cpt" type="button">{{localize 'Clear'}}</button>
             </div>
             <div class="flex-col pl-0">
-              <button class="roll-dice-pool btn btn-primary-cpt" type="button">{{localize 'RollAndSelect'}}</button>
+              <button class="roll-dice-pool btn btn-primary-cpt" type="button" {{#if awaitingInitiatorRoll}}disabled{{/if}}>{{localize 'RollAndSelect'}}</button>
             </div>
             <div class="flex-col pl-0">
-              <button class="roll-dice-pool roll-for-effect btn btn-primary-cpt" type="button">{{localize 'RollForEffect'}}</button>
+              <button class="roll-dice-pool roll-for-effect btn btn-primary-cpt" type="button" {{#if awaitingInitiatorRoll}}disabled{{/if}}>{{localize 'RollForEffect'}}</button>
             </div>
             <div class="flex-col pl-0">
-              <button class="roll-dice-pool roll-for-total btn btn-primary-cpt" type="button">{{localize 'RollForTotal'}}</button>
+              <button class="roll-dice-pool roll-for-total btn btn-primary-cpt" type="button" {{#if awaitingInitiatorRoll}}disabled{{/if}}>{{localize 'RollForTotal'}}</button>
             </div>
+            {{#if canRollToBeat}}
+            <div class="flex-col pl-0">
+              <button class="roll-dice-pool roll-to-beat btn btn-primary-cpt" type="button" {{#if awaitingInitiatorRoll}}disabled{{/if}}>{{localize 'RollToBeat'}}</button>
+            </div>
+            {{/if}}
           </div>
         </div>
         {{/if}}

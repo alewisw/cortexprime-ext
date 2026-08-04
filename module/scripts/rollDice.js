@@ -1,5 +1,6 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer } from './foundryHelpers.js'
+import { getActiveChallenge, getDiceByTargetTotal, getMyResponderId, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
 
@@ -252,7 +253,7 @@ const dicePicker = async rollResults => {
   })
 }
 
-export default async function (pool, rollType) {
+export default async function (pool, rollType, targetTotal) {
   const rollResults = await getRollResults(pool)
   const themes = game.settings.get('cortexprime', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
@@ -264,7 +265,20 @@ export default async function (pool, rollType) {
     ? getDiceByTotal(rollResults.results)
     : rollType === 'effect'
       ? getDiceByEffect(rollResults.results)
-      : await dicePicker(rollResults)
+      : rollType === 'toBeat'
+        ? getDiceByTargetTotal(rollResults.results, targetTotal)
+        : await dicePicker(rollResults)
+
+  // Any roll made while the roller is a designated responder counts as an attempt to beat
+  // that target, exactly like "Roll To Beat" — regardless of which of the four roll types was
+  // actually used to build the Total/Effect. Only "Roll To Beat" itself picks its dice with
+  // the target in mind; the other three just get their normal result compared against it too.
+  const respondingToId = rollType !== 'toBeat' && getMyResponderId() ? getActiveChallenge().initiatorId : null
+  const isBeatAttempt = rollType === 'toBeat' || respondingToId !== null
+  const effectiveTargetTotal = rollType === 'toBeat' ? selectedDice.targetTotal : getTargetTotal(respondingToId)
+  const won = rollType === 'toBeat' ? selectedDice.won : (isBeatAttempt ? selectedDice.total > effectiveTargetTotal : undefined)
+
+  await recordRollResult({ total: selectedDice.total, effectDice: selectedDice.effectDice, won })
 
   const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/roll-result.html', {
     dicePool: pool,
@@ -273,7 +287,10 @@ export default async function (pool, rollType) {
     speaker: game.user,
     sourceDefaultCollapsed,
     theme,
-    total: selectedDice.total
+    total: selectedDice.total,
+    isBeatAttempt,
+    targetTotal: effectiveTargetTotal,
+    won
   })
 
   await ChatMessage.create({ content })

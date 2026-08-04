@@ -6,7 +6,9 @@
     "build": "gulp",
     "compile": "gulp css",
     "watch": "gulp",
-    "gulp": "gulp"
+    "gulp": "gulp",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "browserslist": [
     "last 3 versions"
@@ -20,5 +22,8 @@
     "gulp-sass": "^5.0.0",
     "gulp-sourcemaps": "^3.0.0",
     "sass": "^1.45.1"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
   }
 }
