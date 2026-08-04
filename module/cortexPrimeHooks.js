@@ -2,11 +2,13 @@ import { FloatingPanel } from './applications/FloatingPanel.js'
 import { UserDicePool } from './applications/UserDicePool.js'
 import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
+import { registerDoomPool } from './scripts/doomPool.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
 import { registerSceneJournal } from './scripts/sceneJournal.js'
 import { registerSpotlight } from './scripts/spotlight.js'
 
 export default () => {
+  registerDoomPool()
   registerSceneDistinctionActor()
   registerSceneJournal()
   registerSpotlight()

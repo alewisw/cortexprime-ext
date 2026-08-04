@@ -1,0 +1,12 @@
+<form>
+  <div class="form-group">
+    <label>{{localize 'DoomPoolActor'}}</label>
+    <select name="doomPoolActorId">
+      <option value="">{{localize 'None'}}</option>
+      {{#each actors}}
+        <option value="{{id}}"{{ternary (eq id ../doomPoolActorId) ' selected' ''}}>{{name}}</option>
+      {{/each}}
+    </select>
+    <p class="hint">{{localize 'DoomPoolActorHint'}}</p>
+  </div>
+</form>

@@ -1,4 +1,5 @@
 import ActorSettings from './ActorSettings.js'
+import DoomPoolSettings from './DoomPoolSettings.js'
 import ImportExportSettings from './ImportExportSettings.js'
 import defaultActorTypes from '../actor/defaultActorTypes.js'
 import defaultThemes from '../theme/defaultThemes.js'
@@ -29,6 +30,23 @@ export const registerSettings = () => {
     default: { 0: { active: true, name: 'ActorTypes', localize: true, target: 'actorTypes' } },
     scope: 'world',
     type: Object,
+    config: false,
+  })
+
+  game.settings.registerMenu('cortexprime', 'DoomPoolSettings', {
+    hint: localizer('DoomPoolSettingsH'),
+    icon: 'fa-solid fa-skull',
+    label: localizer('DoomPoolSettings'),
+    name: localizer('DoomPoolSettings'),
+    restricted: true,
+    type: DoomPoolSettings
+  })
+
+  game.settings.register('cortexprime', 'doomPoolActorId', {
+    name: localizer('DoomPoolActor'),
+    default: '',
+    scope: 'world',
+    type: String,
     config: false,
   })
 
