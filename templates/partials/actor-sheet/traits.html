@@ -10,7 +10,7 @@
             </span>
           {{/if}}
           <span
-            class="flex-col flex-g-1{{ternary (and (and (not ../traitSetShutdown) (not trait.shutdown)) (and ../settings.hasDice trait.dice.value.[0])) ' add-to-pool' ''}}{{ternary trait.shutdown ' shutdown' ''}}"
+            class="flex-col flex-g-1{{ternary (and ../canAddToPool (and (and (not ../traitSetShutdown) (not trait.shutdown)) (and ../settings.hasDice trait.dice.value.[0]))) ' add-to-pool' ''}}{{ternary trait.shutdown ' shutdown' ''}}"
             data-label="{{ternary (and ../settings.hasLabel trait.label) (ternary (and trait.label trait.name) (concat trait.label ' (' trait.name ')')) trait.name}}"
             data-path="{{concat ../path '.' ../target '.' traitIndex '.dice'}}" {{{ternary
             ../settings.diceConsumable 'data-consumable="true"' '' }}}>
@@ -79,7 +79,7 @@
                 <div class="my-1 flex-row flex-ac flex-wrap sub-trait-label-cpt">
                   {{#if subTrait.label}}
                     <div class="flex-col flex-g-1">
-                      <span class="{{ternary (and ../../settings.subTraitsHaveDice (and (and (not ../../traitSetShutdown) (not trait.shutdown)) subTrait.dice.value.[0])) ' add-to-pool' ''}}"
+                      <span class="{{ternary (and ../../canAddToPool (and ../../settings.subTraitsHaveDice (and (and (not ../../traitSetShutdown) (not trait.shutdown)) subTrait.dice.value.[0]))) ' add-to-pool' ''}}"
                         data-label="{{concat subTrait.label ' (' (ternary (and trait.label trait.name) trait.label trait.name) ')'}}"
                         data-path="{{concat ../../path '.' ../../target '.' traitIndex '.subTraits.' subTraitIndex '.dice'}}" {{{ternary ../../settings.subTraitsDiceConsumable 'data-consumable="true"' '' }}}>
                         {{subTrait.label}}

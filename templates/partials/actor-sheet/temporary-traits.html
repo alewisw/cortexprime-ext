@@ -59,7 +59,7 @@
                     </div>
                   {{else}}
                     <div class="flex-col flex-g-1">
-                      <span class="trait-title-cpt{{ternary asset.dice.value.[0] ' add-to-pool' ''}}"
+                      <span class="trait-title-cpt{{ternary (and ../canAddToPool asset.dice.value.[0]) ' add-to-pool' ''}}"
                         data-label="{{asset.label}}" data-path="{{concat ../path '.assets.' assetIndex '.dice'}}">
                         {{asset.label}}
                       </span>
@@ -157,7 +157,7 @@
                     </div>
                   {{else}}
                     <div class="flex-col flex-g-1">
-                      <span class="trait-title-cpt{{ternary complication.dice.value.[0] ' add-to-pool' ''}}"
+                      <span class="trait-title-cpt{{ternary (and ../canAddToPool complication.dice.value.[0]) ' add-to-pool' ''}}"
                         data-label="{{complication.label}}" data-path="{{concat ../path '.complications.' complicationIndex '.dice'}}">
                         {{complication.label}}
                       </span>

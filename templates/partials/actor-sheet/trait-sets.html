@@ -25,6 +25,7 @@
         </div>
         {{#if traitSet.traits}}
           {{> "systems/cortexprime/templates/partials/actor-sheet/traits.html"
+            canAddToPool=../canAddToPool
             data=../data
             owner=../owner
             path=(concat ../path '.' traitSetIndex)
@@ -36,6 +37,7 @@
         {{/if}}
         {{#if traitSet.customTraits}}
           {{> "systems/cortexprime/templates/partials/actor-sheet/traits.html"
+            canAddToPool=../canAddToPool
             custom=true
             data=../data
             owner=../owner

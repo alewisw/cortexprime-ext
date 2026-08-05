@@ -34,7 +34,7 @@
           {{/if}}
           <label class="flex-col">
             <div
-              class="trait-title-cpt mt-1{{ternary (and (eq simpleTrait.settings.valueType 'dice') simpleTrait.dice.value.[0]) ' add-to-pool' ''}}"
+              class="trait-title-cpt mt-1{{ternary (and ../canAddToPool (and (eq simpleTrait.settings.valueType 'dice') simpleTrait.dice.value.[0])) ' add-to-pool' ''}}"
               {{{ternary (and (eq simpleTrait.settings.valueType 'dice') simpleTrait.settings.consumableDice) 'data-consumable="true"' ''}}}
               data-label="{{simpleTrait.label}}"
               data-path="{{concat ../path '.' simpleTraitIndex '.dice'}}"

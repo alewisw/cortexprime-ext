@@ -34,6 +34,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     return {
       ...data,
       actorTypeOptions: objectMapValues(game.settings.get('cortexprime', 'actorTypes'), val => val.name),
+      canAddToPool: this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER),
       theme,
     }
   }
@@ -193,6 +194,8 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   }
 
   async _addToPool (event) {
+    if (!this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return
+
     const { consumable, path, label } = event.currentTarget.dataset
     let value = foundry.utils.getProperty(this.actor, `${path}.value`)
 
