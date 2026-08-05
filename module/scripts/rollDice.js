@@ -119,50 +119,81 @@ const getDiceByTotal = results => {
   return { dice: finalResults, total, effectDice }
 }
 
-const updateDice = async (html, dice) => {
-  const $dice = html.find('.dice-box .result-die')
+// Sum of the 2 highest-value dice among nonHitchResults, excluding one candidate die —
+// used both for the case-4 default effect-die selection and for recomputing on each click.
+const getBestTwoExcluding = (nonHitchResults, excludedDie) => nonHitchResults
+  .filter(die => die !== excludedDie)
+  .sort((a, b) => b.result - a.result)
+  .slice(0, 2)
 
-  $dice.each(function (index) {
-    const $die = $(this)
-    const targetDie = dice.dice[index]
-    const $dieCpt = $die.find('.die-cpt')
-    $die.removeClass('chosen result effect selected selectable')
-    $dieCpt.removeClass('chosen-cpt unchosen-cpt effect-cpt selected-cpt')
+const getPickerCase = results => {
+  if (results.length === 0) {
+    return { title: 'Botch', selectable: false, dice: results, total: 0, effectDice: [] }
+  }
 
-    if (targetDie.total) {
-      $die.addClass('chosen')
-      $dieCpt.addClass('chosen-cpt')
-    } else if (targetDie.effect) {
-      $die.addClass('effect')
-      $dieCpt.addClass('effect-cpt')
-    } else {
-      $die.addClass('result selectable')
-      $dieCpt.addClass('unchosen-cpt')
-    }
+  if (results.length <= 2) {
+    const total = results.reduce((sum, die) => sum + die.result, 0)
+    const dice = results.map(die => ({ ...die, total: true }))
+
+    return { title: 'FixedSelection', selectable: false, dice, total, effectDice: [] }
+  }
+
+  const sortedByFaces = [...results].sort((a, b) => a.faces !== b.faces ? b.faces - a.faces : b.result - a.result)
+  const defaultEffectDie = sortedByFaces[0]
+  const totalDice = getBestTwoExcluding(results, defaultEffectDie)
+  const total = totalDice.reduce((sum, die) => sum + die.result, 0)
+  const totalDiceSet = new Set(totalDice)
+
+  const dice = results.map(die => {
+    if (die === defaultEffectDie) return { ...die, effect: true }
+    if (totalDiceSet.has(die)) return { ...die, total: true }
+    return die
   })
 
-  const $effectDiceContainer = html.find('.effect-dice')
-  const $totalValue = html.find('.total-value')
-  $totalValue.text(dice.total)
-
-  $effectDiceContainer.find('.die-icon-wrapper')?.remove()
-  const faces = dice.effectDice.length === 0 ? 4 : dice.effectDice[0]
-  const index = dice.dice.findIndex(x => x.effect)
-
-  const dieContent = await getAppendDiceContent({ default: dice.effectDice.length === 0, dieRating: faces, key: index, value: faces })
-  $effectDiceContainer
-    .append(dieContent)
+  return { title: 'SelectEffect', selectable: true, dice, total, effectDice: [defaultEffectDie.faces] }
 }
 
 const dicePicker = async rollResults => {
   const themes = game.settings.get('cortexprime', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+  const pickerCase = getPickerCase(rollResults.results)
+
   const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/dialog/dice-picker.html', {
-    rollResults,
+    rollResults: { hitches: rollResults.hitches, results: pickerCase.dice },
+    title: pickerCase.title,
+    selectable: pickerCase.selectable,
+    total: pickerCase.total,
+    effectDieFace: pickerCase.effectDice[0] ?? 4,
     theme
   })
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    const resolveFromDom = html => {
+      const $diceBox = html.find('.dice-box')
+      const values = { dice: [], total: 0, effectDice: [] }
+
+      $diceBox
+        .find('.result-die')
+        .each(function () {
+          const $die = $(this)
+          const faces = $die.data('faces')
+          const result = parseInt($die.data('result'), 10)
+          const value = { effect: false, faces, result, total: false }
+
+          if ($die.hasClass('chosen')) {
+            values.total += result
+            value.total = true
+          } else if ($die.hasClass('effect')) {
+            values.effectDice.push(faces)
+            value.effect = true
+          }
+
+          values.dice.push(value)
+        })
+
+      resolve(values)
+    }
+
     new Dialog({
       title: "Select Your Dice",
       content,
@@ -170,246 +201,52 @@ const dicePicker = async rollResults => {
         confirm: {
           icon: '<i class="fa-solid fa-check"></i>',
           label: localizer('Confirm'),
-          callback (html) {
-            const $diceBox = html
-              .find('.dice-box')
-
-            const values = { dice: [], total: null, effectDice: [] }
-
-            $diceBox
-              .find('.result-die')
-              .each(function () {
-                const $die = $(this)
-                const faces = $die.data('faces')
-                const result = parseInt($die.data('result'), 10)
-                const value = { effect: false, faces, result, total: false }
-
-                if ($die.hasClass('chosen')) {
-                  values.total = values.total ? values.total + result : result
-                  value.total = true
-                } else if ($die.hasClass('effect')) {
-                  values.effectDice.push(faces)
-                  value.effect = true
-                }
-
-                values.dice.push(value)
-              })
-
-            resolve(values)
-          }
+          callback: resolveFromDom
         }
       },
       default: 'confirm',
+      close: resolveFromDom,
       render (html) {
+        if (!pickerCase.selectable) return
+
         const $diceBox = html.find('.dice-box')
-        const $addToTotal = html.find('.add-to-total')
-        const $addToEffect = html.find('.add-to-effect')
-        const $resetSelection = html.find('.reset-selection')
         const $effectDiceContainer = html.find('.effect-dice')
+        const $totalValue = html.find('.total-value')
 
-        const setSelectionOptionsDisableTo = (value) => {
-          $addToTotal.prop('disabled', value ?? !$addToTotal.prop('disabled'))
-          $addToEffect.prop('disabled', value ?? !$addToEffect.prop('disabled'))
-        }
+        $diceBox.on('click', '.selectable', async function () {
+          const $clicked = $(this)
+          const clickedKey = parseInt($clicked.data('key'), 10)
+          const clickedDie = rollResults.results[clickedKey]
 
-        const setSelectionDisable = () => {
-          const $selectedDice = $diceBox.find('.selected')
-          const $usedDice = $diceBox.find('.effect, .chosen')
+          const totalDice = getBestTwoExcluding(rollResults.results, clickedDie)
+          const totalDiceSet = new Set(totalDice)
+          const total = totalDice.reduce((sum, die) => sum + die.result, 0)
 
-          setSelectionOptionsDisableTo(!($selectedDice.length > 0))
-          $resetSelection.prop('disabled', !($selectedDice.length > 0 || $usedDice.length > 0))
-        }
+          $diceBox.find('.result-die').each(function (index) {
+            const $die = $(this)
+            const $dieCpt = $die.find('.die-cpt')
+            const die = rollResults.results[index]
 
-        const setEffectDice = async (values, defaultValue = false) => {
-          
-          const effectDiceHtml = await Promise.all(values
-            .map(async value => await getAppendDiceContent({ defaultValue, dieRating: value, value, type: 'effect' })))
+            $die.removeClass('chosen effect')
+            $dieCpt.removeClass('chosen-cpt effect-cpt unchosen-cpt')
 
-          $effectDiceContainer
-            .html(effectDiceHtml.join())
-         }
-
-        const setTotalValue = (value) => {
-          html
-            .find('.total-value')
-            .text(value)
-        }
-
-        html
-          .closest('.window-app.dialog')
-          .find('.header-button.close')
-          .click((event) => {
-            event.preventDefault()
-
-            const values = { dice: [], total: null, effectDice: [] }
-
-            $diceBox
-              .find('.result-die')
-              .each(function () {
-                const $die = $(this)
-                const faces = $die.data('faces')
-                const result = parseInt($die.data('result'), 10)
-                const value = { effect: false, faces, result, total: false }
-
-                values.dice.push(value)
-              })
-
-            resolve(values)
-          })
-
-        $diceBox.on('click', '.selectable', function () {
-          const $target = $(this)
-
-          $target.toggleClass('selected result')
-
-          $target.find('.die-cpt').toggleClass('selected-cpt unchosen-cpt')
-
-          setSelectionDisable()
-        })
-
-        $diceBox.on('click', '.effect', async function () {
-          const $selectedDie = $(this)
-          $selectedDie.toggleClass('result effect selectable')
-          $selectedDie.find('.die-cpt').toggleClass('unchosen-cpt effect-cpt')
-          const key = $selectedDie.data('key')
-
-          const $targetEffectDie = $effectDiceContainer.find(`[data-key="${key}"]`)
-          $targetEffectDie.remove()
-
-          const $effectDice = $effectDiceContainer.find('.die-icon-wrapper')
-
-          if ($effectDice.length === 0) {
-            const dieContent = await getAppendDiceContent({ defaultValue: true, dieRating: '4', value: '4', type: 'effect' })
-
-            $effectDiceContainer
-              .append(dieContent)
-          }
-
-          setSelectionDisable()
-        })
-
-        $diceBox.on('click', '.chosen', function () {
-          const $selectedDie = $(this)
-          $selectedDie.toggleClass('chosen result selectable')
-          $selectedDie.find('.die-cpt').toggleClass('chosen-cpt unchosen-cpt')
-          const result = parseInt($selectedDie.data('result'), 10)
-          const $totalValue = html.find('.total-value')
-          const currentValue = parseInt($totalValue.text(), 10)
-          $totalValue.text(currentValue - result)
-
-          setSelectionDisable()
-        })
-
-        $effectDiceContainer.on('mouseup', '.die-icon-wrapper', async function (event) {
-          if (event.button === 2) {
-            const $dieWrapper = $(this)
-
-            const key = $dieWrapper.data('key')
-
-            const $resultDie = $diceBox.find(`.result-die[data-key="${key}"]`)
-
-            $resultDie.toggleClass('effect result selectable')
-            $resultDie.find('.die-cpt').toggleClass('effect-cpt unchosen-cpt')
-
-            $dieWrapper.remove()
-
-            const $diceWrappers = $effectDiceContainer.find('.die-icon-wrapper')
-
-            if ($diceWrappers.length === 0) {
-              const dieContent = await getAppendDiceContent({ dieRating: '4', value: '4', type: 'effect' })
-
-              $effectDiceContainer
-                .append(dieContent)
-            }
-
-            setSelectionDisable()
-          }
-        })
-
-        $addToEffect
-          .click(function () {
-            const $diceForTotal = html.find('.result-die.selected')
-
-            if ($diceForTotal.length > 0) {
-
-              $effectDiceContainer.find('.default')?.remove()
-
-              $diceForTotal.each(async function () {
-                const $die = $(this)
-                const faces = $die.data('faces')
-                const key = $die.data('key')
-                $die.toggleClass('selected effect selectable')
-                $die.find('.die-cpt').toggleClass('selected-cpt effect-cpt')
-
-                const dieContent = await getAppendDiceContent({ key, dieRating: faces, value: faces, type: 'effect' })
-
-                $effectDiceContainer
-                  .append(dieContent)
-              })
-
-              setSelectionDisable()
+            if (die === clickedDie) {
+              $die.addClass('effect')
+              $dieCpt.addClass('effect-cpt')
+            } else if (totalDiceSet.has(die)) {
+              $die.addClass('chosen')
+              $dieCpt.addClass('chosen-cpt')
+            } else {
+              $dieCpt.addClass('unchosen-cpt')
             }
           })
 
-        $addToTotal
-          .click(function () {
-            const $diceForTotal = html.find('.result-die.selected')
+          $totalValue.text(total)
 
-            $diceForTotal.each(function () {
-              const $die = $(this)
-              $die.toggleClass('chosen selected selectable')
-              $die.find('.die-cpt').toggleClass('chosen-cpt selected-cpt')
-              const result = parseInt($die.data('result'), 10)
-              const $totalValue = html.find('.total-value')
-              const currentValue = parseInt($totalValue.text(), 10)
-              $totalValue.text(result + currentValue)
-            })
-
-            setSelectionDisable()
-          })
-
-        html
-          .find('.select-by-effect')
-          .click(function () {
-            const dice = getDiceByEffect(rollResults.results)
-
-            updateDice(html, dice)
-
-            setSelectionDisable()
-          })
-
-        html
-          .find('.select-by-total')
-          .click(function () {
-            const dice = getDiceByTotal(rollResults.results)
-
-            updateDice(html, dice)
-
-            setSelectionDisable()
-          })
-
-        $resetSelection
-          .click(function () {
-            $diceBox
-              .find('.selected, .effect, .chosen')
-              .each(function () {
-                const $target = $(this)
-
-                $target.removeClass('chosen effect selected')
-                $target.addClass('result selectable')
-
-                $target
-                  .find('.die-cpt')
-                  .removeClass('chosen-cpt effect-cpt selected-cpt')
-                  .addClass('unchosen-cpt')
-              })
-
-            setTotalValue(0)
-            setEffectDice([4], true)
-
-            setSelectionOptionsDisableTo(true)
-            $(this).prop('disabled', true)
-          })
+          $effectDiceContainer.find('.die-icon-wrapper').remove()
+          const dieContent = await getAppendDiceContent({ dieRating: clickedDie.faces, value: clickedDie.faces, type: 'effect' })
+          $effectDiceContainer.append(dieContent)
+        })
       }
     }, { jQuery: true, classes: ['dialog', 'dice-picker', 'cortexprime'] }).render(true)
   })

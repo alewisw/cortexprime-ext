@@ -7,13 +7,14 @@
         <div class="section-image"></div>
         <div class="section-background-alternate"></div>
         <div class="section-content">
+          <h3 class="section-primary-title-cpt text-center mb-2">{{localize title}}</h3>
           <div class="flex flex-c flex-wrap dice-box">
             {{#each rollResults.results as |rollResult rollResultIndex|}}
               <div class="die-icon-wrapper my-1">
-                <div class="cursor-pointer result-die d{{rollResult.faces}} selectable result" data-faces="{{rollResult.faces}}" data-key="{{rollResultIndex}}" data-result="{{rollResult.result}}">
+                <div class="{{#if ../selectable}}cursor-pointer selectable{{/if}} result-die d{{rollResult.faces}} result{{#if rollResult.total}} chosen{{/if}}{{#if rollResult.effect}} effect{{/if}}" data-faces="{{rollResult.faces}}" data-key="{{rollResultIndex}}" data-result="{{rollResult.result}}">
                   {{> (concat "systems/cortexprime/templates/partials/dice/d" rollResult.faces ".html")
                     number=rollResult.result
-                    type='unchosen'
+                    type=(ternary rollResult.total 'chosen' (ternary rollResult.effect 'effect' 'unchosen'))
                   }}
                 </div>
                 <div class="descriptor-label-cpt">d{{rollResult.faces}}</div>
@@ -31,13 +32,6 @@
             </div>
             {{/each}}
           </div>
-          <div class="action-buttons flex-row flex-c">
-            <div class="flex-col">
-              <button class="btn btn-icon btn-secondary-cpt reset-selection" disabled type="button">
-                <i class="fa fa-undo"></i>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
       <div class="flex-row my-2">
@@ -47,19 +41,7 @@
             <div class="section-background"></div>
             <div class="section-content pa-2 text-center">
               <h3 class="section-primary-title-cpt">{{localize 'Total'}}</h3>
-              <div class="flex-row flex-c mt-1">
-                <div class="px-1">
-                  <button class="btn btn-icon btn-secondary-cpt select-by-total" type="button">
-                    <i class="fa fa-check"></i>
-                  </button>
-                </div>
-                <div class="px-1">
-                  <button class="btn btn-icon btn-primary-cpt add-to-total" disabled type="button">
-                    <i class="fa fa-plus"></i>
-                  </button>
-                </div>
-              </div>
-              <p class="total-value pt-2 pb-1 section-secondary-title-cpt">0</p>
+              <p class="total-value pt-2 pb-1 section-secondary-title-cpt">{{total}}</p>
             </div>
           </div>
         </div>
@@ -69,22 +51,10 @@
             <div class="section-background"></div>
             <div class="section-content pa-2 text-center">
               <h3 class="section-primary-title-cpt">{{localize 'EffectDice'}}</h3>
-              <div class="flex-row flex-c my-1">
-                <div class="px-1">
-                  <button class="btn btn-icon btn-secondary-cpt select-by-effect" type="button">
-                    <i class="fa fa-check"></i>
-                  </button>
-                </div>
-                <div class="px-1">
-                  <button class="btn btn-icon btn-primary-cpt add-to-effect" disabled type="button">
-                    <i class="fa fa-plus"></i>
-                  </button>
-                </div>
-              </div>
               <div class="effect-dice flex-row flex-c flex-wrap">
-                <div class="die-icon-wrapper my-1 default">
-                  {{> (concat "systems/cortexprime/templates/partials/dice/d4.html")
-                    number=4
+                <div class="die-icon-wrapper my-1">
+                  {{> (concat "systems/cortexprime/templates/partials/dice/d" effectDieFace ".html")
+                    number=effectDieFace
                     type='effect'
                   }}
                 </div>
