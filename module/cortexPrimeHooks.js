@@ -3,12 +3,14 @@ import { UserDicePool } from './applications/UserDicePool.js'
 import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
 import { registerDoomPool } from './scripts/doomPool.js'
+import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
 import { registerSceneJournal } from './scripts/sceneJournal.js'
 import { registerSpotlight } from './scripts/spotlight.js'
 
 export default () => {
   registerDoomPool()
+  registerMyCharacter()
   registerSceneDistinctionActor()
   registerSceneJournal()
   registerSpotlight()
