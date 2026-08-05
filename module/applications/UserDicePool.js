@@ -43,7 +43,7 @@ export class UserDicePool extends FormApplication {
     const dice = game.user.getFlag('cortexprime', 'dicePool')
     const themes = game.settings.get('cortexprime', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
-    return { ...dice, theme }
+    return { ...dice, isGM: game.user.isGM, theme }
   }
 
   async _updateObject (event, formData) {
@@ -64,6 +64,7 @@ export class UserDicePool extends FormApplication {
     html.find('.reset-custom-pool-trait').click(this._resetCustomPoolTrait.bind(this))
     html.find('.roll-dice-pool').click(this._rollDicePool.bind(this))
     html.find('.clear-source').click(this._clearSource.bind(this))
+    html.find('.set-difficulty').click(this._setDifficulty.bind(this))
   }
 
   async initPool () {
@@ -95,6 +96,23 @@ export class UserDicePool extends FormApplication {
     const currentDice = game.user.getFlag('cortexprime', 'dicePool')
     const currentDiceLength = getLength(currentDice.pool[source] || {})
     foundry.utils.setProperty(currentDice, `pool.${source}.${currentDiceLength}`, { label, value })
+
+    await game.user.setFlag('cortexprime', 'dicePool', null)
+
+    await game.user.setFlag('cortexprime', 'dicePool', currentDice)
+
+    await this.render(true)
+  }
+
+  async _setDifficulty (event) {
+    event.preventDefault()
+
+    const { faces } = event.currentTarget.dataset
+    const currentDice = game.user.getFlag('cortexprime', 'dicePool')
+
+    foundry.utils.setProperty(currentDice, 'pool.Difficulty', {
+      0: { label: '', value: { 0: faces, 1: faces } }
+    })
 
     await game.user.setFlag('cortexprime', 'dicePool', null)
 

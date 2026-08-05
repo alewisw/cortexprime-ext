@@ -24,6 +24,25 @@
                   }}
                 </div>
               </div>
+              {{#if isGM}}
+              <div class="flex-row flex-ac flex-wrap mt-1">
+                <div class="flex-col pr-1 pb-1">
+                  <button class="btn btn-secondary-cpt set-difficulty" data-faces="4" type="button">{{localize 'VeryEasy'}}</button>
+                </div>
+                <div class="flex-col pr-1 pb-1">
+                  <button class="btn btn-secondary-cpt set-difficulty" data-faces="6" type="button">{{localize 'Easy'}}</button>
+                </div>
+                <div class="flex-col pr-1 pb-1">
+                  <button class="btn btn-secondary-cpt set-difficulty" data-faces="8" type="button">{{localize 'Challenging'}}</button>
+                </div>
+                <div class="flex-col pr-1 pb-1">
+                  <button class="btn btn-secondary-cpt set-difficulty" data-faces="10" type="button">{{localize 'Hard'}}</button>
+                </div>
+                <div class="flex-col pb-1">
+                  <button class="btn btn-secondary-cpt set-difficulty" data-faces="12" type="button">{{localize 'VeryHard'}}</button>
+                </div>
+              </div>
+              {{/if}}
             </div>
             <div class="flex-col pr-1">
               <button class="reset-custom-pool-trait btn btn-secondary-cpt btn-icon" type="button">
