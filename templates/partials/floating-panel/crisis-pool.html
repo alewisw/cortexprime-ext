@@ -1,0 +1,18 @@
+{{#if active}}
+  <div class="crisis-pool-card">
+    <div class="crisis-pool-text">
+      <span class="crisis-pool-label">{{localize 'CrisisPool'}}</span>
+      <span class="crisis-pool-name">{{name}}</span>
+    </div>
+    <div class="crisis-pool-dice flex flex-ac flex-wrap">
+      {{#each dice as |face|}}
+        <div class="die-icon-wrapper mx-1">
+          {{> (concat "systems/cortexprime/templates/partials/dice/d" face ".html")
+            number=face
+            type='die-rating'
+          }}
+        </div>
+      {{/each}}
+    </div>
+  </div>
+{{/if}}

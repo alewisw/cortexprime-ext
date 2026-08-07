@@ -1,6 +1,7 @@
 import { localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
+import { getCrisisPool } from '../scripts/crisisPool.js'
 import {
   canCurrentUserRoll,
   clearActiveChallenge,
@@ -22,6 +23,8 @@ const blankPool = {
   },
   pool: {}
 }
+
+const CRISIS_POOL_SOURCE = 'Crisis Pool'
 
 // Computes "who's currently up" for both the status line and the GM's Contest radio
 // selections. In a Contest, once the current "Roll Now" person has actually rolled, display
@@ -219,12 +222,20 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _clearDicePool (event) {
+  async _clearDicePool (event, { preserveCrisisPool = false } = {}) {
     if (event) event.preventDefault()
+
+    // The Crisis Pool is a standing resource the GM keeps rolling with, not a one-shot trait
+    // addition — a roll shouldn't wipe it out along with everything else.
+    const crisisPoolSource = preserveCrisisPool
+      ? game.user.getFlag('cortexprime', 'dicePool')?.pool?.[CRISIS_POOL_SOURCE]
+      : undefined
 
     await game.user.setFlag('cortexprime', 'dicePool', null)
 
-    await game.user.setFlag('cortexprime', 'dicePool', blankPool)
+    await game.user.setFlag('cortexprime', 'dicePool', crisisPoolSource
+      ? { ...blankPool, pool: { [CRISIS_POOL_SOURCE]: crisisPoolSource } }
+      : blankPool)
 
     await this.render(true)
   }
@@ -428,9 +439,88 @@ export class UserDicePool extends FormApplication {
 
   async toggle () {
     if (!this.rendered) {
+      if (game.user.isGM) await this._mergeCrisisPool()
       await this.render(true)
     } else {
       this.close()
     }
+  }
+
+  // For when the crisis pool changes while the GM already has their tray open — a roll
+  // reducing it (a die eliminated or stepped down) should show up right away rather than
+  // sitting stale until the tray is closed and reopened, so this fully resyncs the tray's
+  // CrisisPool entry to match, unlike _mergeCrisisPool's additive-only "top up" behavior.
+  async refreshCrisisPool () {
+    if (!game.user.isGM || !this.rendered) return
+
+    await this._syncCrisisPool()
+    await this.render(true)
+  }
+
+  // Fully overwrites the GM's CrisisPool source with the crisis pool's current dice — used for
+  // the live-refresh case above. Removes the source once the crisis has ended, same as
+  // _mergeCrisisPool, so a resolved crisis doesn't linger in the tray.
+  async _syncCrisisPool () {
+    const crisis = getCrisisPool()
+
+    if (!crisis.active || crisis.dice.length === 0) {
+      await this._removeCrisisPool()
+      return
+    }
+
+    const currentDice = game.user.getFlag('cortexprime', 'dicePool')
+    const value = crisis.dice.reduce((acc, face, index) => ({ ...acc, [index]: String(face) }), {})
+
+    foundry.utils.setProperty(currentDice, `pool.${CRISIS_POOL_SOURCE}`, { 0: { label: crisis.name, value } })
+
+    await game.user.setFlag('cortexprime', 'dicePool', null)
+    await game.user.setFlag('cortexprime', 'dicePool', currentDice)
+  }
+
+  // Tops up the GM's CrisisPool source with any crisis dice not currently present (by face
+  // count), so dice the GM has manually removed stay removed until the tray is closed and
+  // reopened, per the "if not already present" rule. Removes the source instead once the
+  // crisis has ended, so reopening the tray after a resolved crisis doesn't leave it behind.
+  async _mergeCrisisPool () {
+    const crisis = getCrisisPool()
+
+    if (!crisis.active || crisis.dice.length === 0) {
+      await this._removeCrisisPool()
+      return
+    }
+
+    const currentDice = game.user.getFlag('cortexprime', 'dicePool')
+    const existingRow = currentDice.pool[CRISIS_POOL_SOURCE]?.[0]
+    const existingFaces = existingRow ? Object.values(existingRow.value).map(face => parseInt(face, 10)) : []
+
+    const missingDice = [...crisis.dice]
+
+    for (const face of existingFaces) {
+      const index = missingDice.indexOf(face)
+      if (index !== -1) missingDice.splice(index, 1)
+    }
+
+    if (missingDice.length === 0) return
+
+    const mergedFaces = [...existingFaces, ...missingDice]
+    const value = mergedFaces.reduce((acc, face, index) => ({ ...acc, [index]: String(face) }), {})
+
+    foundry.utils.setProperty(currentDice, `pool.${CRISIS_POOL_SOURCE}`, { 0: { label: crisis.name, value } })
+
+    await game.user.setFlag('cortexprime', 'dicePool', null)
+    await game.user.setFlag('cortexprime', 'dicePool', currentDice)
+  }
+
+  // Removes the GM's CrisisPool source entirely — used once a crisis has ended (either the
+  // pool ran dry or the GM ended it manually), so it doesn't linger in the tray as dead weight.
+  async _removeCrisisPool () {
+    const currentDice = game.user.getFlag('cortexprime', 'dicePool')
+
+    if (!currentDice.pool[CRISIS_POOL_SOURCE]) return
+
+    delete currentDice.pool[CRISIS_POOL_SOURCE]
+
+    await game.user.setFlag('cortexprime', 'dicePool', null)
+    await game.user.setFlag('cortexprime', 'dicePool', currentDice)
   }
 }

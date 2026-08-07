@@ -1,5 +1,6 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer } from './foundryHelpers.js'
+import { previewCrisisReduction } from './crisisPool.js'
 import { getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
@@ -263,7 +264,7 @@ export default async function (pool, rollType, targetTotal) {
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
   const sourceDefaultCollapsed = game.settings.get('cortexprime', 'rollResultSourceCollapsed')
 
-  await this?._clearDicePool()
+  await this?._clearDicePool(null, { preserveCrisisPool: true })
 
   const selectedDice = rollType === 'total'
     ? getDiceByTotal(rollResults.results)
@@ -282,6 +283,14 @@ export default async function (pool, rollType, targetTotal) {
   const effectiveTargetTotal = rollType === 'toBeat' ? selectedDice.targetTotal : getTargetTotal(respondingToId)
   const won = rollType === 'toBeat' ? selectedDice.won : (isBeatAttempt ? selectedDice.total > effectiveTargetTotal : undefined)
 
+  // The GM's client performs the actual, authoritative Crisis Pool reduction reactively (see
+  // processChallengeAdvancement in rollToBeat.js), after this chat message is already sent —
+  // so this is a locally-computed preview of that same, deterministic outcome, purely for
+  // describing it here. Matches the existing player-only rule (a GM win never touches the pool).
+  const crisisPreview = (won && isBeatAttempt && !game.user.isGM)
+    ? previewCrisisReduction(selectedDice.effectDice)
+    : null
+
   await recordRollResult({ total: selectedDice.total, effectDice: selectedDice.effectDice, won })
 
   const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/roll-result.html', {
@@ -294,7 +303,9 @@ export default async function (pool, rollType, targetTotal) {
     total: selectedDice.total,
     isBeatAttempt,
     targetTotal: effectiveTargetTotal,
-    won
+    won,
+    crisisEvent: crisisPreview?.event ?? null,
+    crisisResolved: !!crisisPreview?.resolved
   })
 
   await ChatMessage.create({ content })

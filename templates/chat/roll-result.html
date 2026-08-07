@@ -109,7 +109,30 @@
           <div class="section-background"></div>
           <div class="section-content">
             <h3 class="section-secondary-title-cpt">{{localize 'Result'}}</h3>
-            <p class="section-primary-title-cpt pt-2 pb-1">{{ternary won (localize 'Won') (localize 'Lost')}}</p>
+            {{#if crisisEvent}}
+              <div class="flex flex-c flex-ac flex-wrap pt-2 pb-1">
+                {{#if (eq crisisEvent.type 'removed')}}
+                  <span class="section-primary-title-cpt pr-1">{{localize 'CrisisDieRemoved'}}</span>
+                  <div class="dice-wrapper ml-1">
+                    <div class="die" data-die-rating="{{crisisEvent.face}}" data-type="die-rating" data-value="{{crisisEvent.face}}"></div>
+                  </div>
+                {{else}}
+                  <span class="section-primary-title-cpt pr-1">{{localize 'CrisisDieSteppedDown'}}</span>
+                  <div class="dice-wrapper ml-1">
+                    <div class="die" data-die-rating="{{crisisEvent.from}}" data-type="die-rating" data-value="{{crisisEvent.from}}"></div>
+                  </div>
+                  <i class="fa fa-arrow-right mx-1"></i>
+                  <div class="dice-wrapper ml-1">
+                    <div class="die" data-die-rating="{{crisisEvent.to}}" data-type="die-rating" data-value="{{crisisEvent.to}}"></div>
+                  </div>
+                {{/if}}
+              </div>
+              {{#if crisisResolved}}
+                <p class="section-primary-title-cpt pb-1">{{localize 'CrisisResolved'}}</p>
+              {{/if}}
+            {{else}}
+              <p class="section-primary-title-cpt pt-2 pb-1">{{ternary won (localize 'Won') (localize 'Lost')}}</p>
+            {{/if}}
           </div>
         </div>
       </div>

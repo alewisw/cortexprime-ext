@@ -3,6 +3,7 @@
 // since a player normally owns that document), and the GM-driven Test/Contest "challenge"
 // state that decides who currently has "Roll To Beat" available and who they're targeting.
 import { localizer } from './foundryHelpers.js'
+import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
 
 const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0 }
 const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0 }
@@ -182,6 +183,10 @@ export const processChallengeAdvancement = async () => {
     if (!responder) continue
     if (responder.rolledAt <= challenge.updatedAt) continue
     if (responder.won === null) continue
+
+    if (responder.won && responderId !== 'gm') {
+      await reduceCrisisPoolByEffectDie(responder.effectDice)
+    }
 
     if (challenge.type === 'test') {
       // Win or lose, this responder is done — everyone else still rolls against the same

@@ -93,4 +93,36 @@
       color: #ffffff;
     }
   }
+
+  .crisis-pool-card {
+    align-items: center;
+    background: linear-gradient(180deg, #2b1616, #171010);
+    border: 2px solid #b30044;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(179, 0, 68, 0.5);
+    display: flex;
+    gap: toRem(8px);
+    padding: toRem(4px) toRem(10px);
+  }
+
+  .crisis-pool-text {
+    display: flex;
+    flex-direction: column;
+    gap: toRem(2px);
+    line-height: 1;
+  }
+
+  .crisis-pool-label {
+    color: #b30044;
+    font-size: toRem(10px);
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .crisis-pool-name {
+    color: #ffffff;
+    font-size: toRem(15px);
+    font-weight: bold;
+  }
 }

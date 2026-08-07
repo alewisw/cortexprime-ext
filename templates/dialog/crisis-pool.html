@@ -1,0 +1,26 @@
+<form class="cortexprime crisis-pool-dialog sheet-cpt" autocomplete="off">
+  <div class="sheet-background"></div>
+  <div class="sheet-image"></div>
+  <div class="sheet-content pa-2">
+    <div class="section-cpt pa-2">
+      <div class="section-image"></div>
+      <div class="section-background"></div>
+      <div class="section-content">
+        <label class="flex-col mb-2">
+          <span class="input-label-cpt">{{localize 'CrisisName'}}</span>
+          <input class="crisis-name input-cpt" name="name" type="text" value="{{name}}">
+        </label>
+        <div class="flex-col">
+          <span class="input-label-cpt">{{localize 'Dice'}}</span>
+          {{> "systems/cortexprime/templates/partials/dice/select.html"
+            dice=dice
+            selectName="dice"
+          }}
+        </div>
+        <div class="flex flex-je mt-2">
+          <button class="start-crisis btn btn-primary-cpt" type="button">{{localize 'StartCrisis'}}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>

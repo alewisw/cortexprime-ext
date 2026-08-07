@@ -2,6 +2,7 @@ import { FloatingPanel } from './applications/FloatingPanel.js'
 import { UserDicePool } from './applications/UserDicePool.js'
 import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
+import { registerCrisisPool } from './scripts/crisisPoolPanel.js'
 import { registerDoomPool } from './scripts/doomPool.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
@@ -10,6 +11,7 @@ import { registerSceneJournal } from './scripts/sceneJournal.js'
 import { registerSpotlight } from './scripts/spotlight.js'
 
 export default () => {
+  registerCrisisPool()
   registerDoomPool()
   registerMyCharacter()
   registerRollToBeat()

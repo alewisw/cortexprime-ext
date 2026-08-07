@@ -66,6 +66,14 @@ export const registerSettings = () => {
     config: false,
   })
 
+  game.settings.register('cortexprime', 'crisisPool', {
+    name: localizer('CrisisPool'),
+    default: { active: false, name: '', dice: [] },
+    scope: 'world',
+    type: Object,
+    config: false,
+  })
+
   game.settings.registerMenu("cortexprime", "ImportExportSettings", {
     name: localizer('ImportExportSettings'),
     hint: localizer('ImportExportSettingsHint'),

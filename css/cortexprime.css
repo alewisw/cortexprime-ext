@@ -1287,6 +1287,46 @@
   background-color: #171310;
   color: #ffffff;
 }
+#cortexprime-floating-panel .crisis-pool-card {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  background: -webkit-gradient(linear, left top, left bottom, from(#2b1616), to(#171010));
+  background: -o-linear-gradient(top, #2b1616, #171010);
+  background: linear-gradient(180deg, #2b1616, #171010);
+  border: 2px solid #b30044;
+  border-radius: 8px;
+  -webkit-box-shadow: 0 0 10px rgba(179, 0, 68, 0.5);
+  box-shadow: 0 0 10px rgba(179, 0, 68, 0.5);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0.625rem;
+}
+#cortexprime-floating-panel .crisis-pool-text {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1;
+}
+#cortexprime-floating-panel .crisis-pool-label {
+  color: #b30044;
+  font-size: 0.625rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+#cortexprime-floating-panel .crisis-pool-name {
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: bold;
+}
 
 .cortexprime .sheet-cpt {
   color: var(--cp-body-font-color, #000000);
