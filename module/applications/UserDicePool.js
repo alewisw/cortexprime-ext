@@ -2,13 +2,14 @@ import { localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
 import {
+  canCurrentUserRoll,
   clearActiveChallenge,
   getActiveChallenge,
+  getMyChallengeTarget,
   getMyResponderId,
   getRollToBeatTargets,
   getTargetTotal,
   hasInitiatorRolled,
-  isMyResponderReady,
   setChallengeInitiator,
   setChallengeResponders,
   setChallengeType
@@ -119,16 +120,20 @@ export class UserDicePool extends FormApplication {
     const activeChallenge = getActiveChallenge()
     const rollToBeatTargets = getRollToBeatTargets()
     const canRollToBeat = !!getMyResponderId()
-    const rollToBeatReady = isMyResponderReady()
+    const challengeTarget = getMyChallengeTarget()
 
     return {
       ...dice,
       isGM: game.user.isGM,
       theme,
       canRollToBeat,
-      // A designated responder shouldn't be able to dodge the "wait for the initiator" rule
-      // by rolling with any of the other three roll types instead.
-      awaitingInitiatorRoll: canRollToBeat && !rollToBeatReady,
+      // Covers both a bystander with no stake in the active challenge, and a designated
+      // responder who shouldn't be able to dodge the "wait for the initiator" rule by rolling
+      // with any of the other three roll types instead.
+      rollButtonsDisabled: !canCurrentUserRoll(),
+      showChallengeTarget: !!challengeTarget,
+      challengeTargetTotal: challengeTarget?.total ?? 0,
+      challengeTargetEffectDice: challengeTarget?.effectDice ?? [],
       activeChallenge,
       ...getChallengeDisplayData(activeChallenge, rollToBeatTargets)
     }
@@ -395,10 +400,10 @@ export class UserDicePool extends FormApplication {
   async _rollDicePool (event) {
     event.preventDefault()
 
-    // Second layer of protection beyond the buttons' disabled state — a designated responder
-    // can't roll at all (by any of the four roll types) until the initiator has actually
-    // rolled, even from a stale render.
-    if (!!getMyResponderId() && !isMyResponderReady()) return
+    // Second layer of protection beyond the buttons' disabled state — a bystander can't roll
+    // into someone else's Test/Contest, and a designated responder can't roll at all (by any
+    // of the four roll types) until the initiator has actually rolled, even from a stale render.
+    if (!canCurrentUserRoll()) return
 
     const $target = $(event.currentTarget)
 

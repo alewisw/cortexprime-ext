@@ -47,10 +47,12 @@ export const getRollToBeatTargets = () => {
   return [gmEntry, ...playerEntries]
 }
 
-export const getTargetTotal = targetId => {
+export const getTargetRecord = targetId => {
   const target = getRollToBeatTargets().find(({ id }) => id === targetId)
-  return target?.total ?? 0
+  return target ? { total: target.total, effectDice: target.effectDice } : null
 }
+
+export const getTargetTotal = targetId => getTargetRecord(targetId)?.total ?? 0
 
 export const getActiveChallenge = () => {
   const challenge = game.settings.get('cortexprime', 'activeChallenge')
@@ -103,6 +105,37 @@ export const isMyResponderReady = () => {
   if (!myId) return false
 
   return hasInitiatorRolled(getActiveChallenge())
+}
+
+// The initiator's current total/effect dice, for previewing what a ready responder needs to
+// beat before they roll. Null whenever there's nothing to preview yet (no challenge, not a
+// responder, or the initiator hasn't rolled this round).
+export const getMyChallengeTarget = () => {
+  if (!isMyResponderReady()) return null
+
+  return getTargetRecord(getActiveChallenge().initiatorId)
+}
+
+// Whether the current user has any stake in the active challenge (initiator or responder).
+// Always true when no challenge is active.
+const isChallengeParticipant = () => {
+  const challenge = getActiveChallenge()
+
+  if (!challenge.type) return true
+
+  const myId = getMyId()
+
+  return myId === challenge.initiatorId || challenge.responderIds.includes(myId)
+}
+
+// Single source of truth for whether the current user's roll buttons should be usable right
+// now: bystanders (anyone not the initiator or a responder) are blocked outright while a
+// challenge is active, and a designated responder is additionally blocked until the initiator
+// has actually rolled.
+export const canCurrentUserRoll = () => {
+  if (!isChallengeParticipant()) return false
+
+  return !getMyResponderId() || isMyResponderReady()
 }
 
 // GM action: starts a fresh challenge of the given type, defaulting the initiator to the GM.

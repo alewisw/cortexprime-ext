@@ -1,6 +1,6 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer } from './foundryHelpers.js'
-import { getActiveChallenge, getDiceByTargetTotal, getMyResponderId, getTargetTotal, recordRollResult } from './rollToBeat.js'
+import { getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
 
@@ -158,6 +158,7 @@ const dicePicker = async rollResults => {
   const themes = game.settings.get('cortexprime', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
   const pickerCase = getPickerCase(rollResults.results)
+  const challengeTarget = getMyChallengeTarget()
 
   const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/dialog/dice-picker.html', {
     rollResults: { hitches: rollResults.hitches, results: pickerCase.dice },
@@ -165,7 +166,10 @@ const dicePicker = async rollResults => {
     selectable: pickerCase.selectable,
     total: pickerCase.total,
     effectDieFace: pickerCase.effectDice[0] ?? 4,
-    theme
+    theme,
+    showChallengeTarget: !!challengeTarget,
+    challengeTargetTotal: challengeTarget?.total ?? 0,
+    challengeTargetEffectDice: challengeTarget?.effectDice ?? []
   })
 
   return new Promise((resolve) => {
