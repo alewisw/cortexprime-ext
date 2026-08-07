@@ -1,12 +1,18 @@
 import { getLength, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import { localizer } from '../scripts/foundryHelpers.js'
-import { startCrisis } from '../scripts/crisisPool.js'
+import { endCrisis, getCrisisPool, startCrisis } from '../scripts/crisisPool.js'
 
 export class CrisisPoolDialog extends FormApplication {
   constructor () {
     super()
-    this.name = ''
-    this.dice = { 0: '8' }
+
+    const crisis = getCrisisPool()
+
+    this.isEditing = crisis.active
+    this.name = crisis.active ? crisis.name : ''
+    this.dice = crisis.active
+      ? crisis.dice.reduce((acc, face, index) => ({ ...acc, [index]: String(face) }), {})
+      : { 0: '8' }
   }
 
   static get defaultOptions () {
@@ -23,11 +29,15 @@ export class CrisisPoolDialog extends FormApplication {
     })
   }
 
+  get title () {
+    return localizer(this.isEditing ? 'EditCrisis' : 'StartCrisis')
+  }
+
   async getData () {
     const themes = game.settings.get('cortexprime', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
-    return { name: this.name, dice: this.dice, theme }
+    return { name: this.name, dice: this.dice, isEditing: this.isEditing, theme }
   }
 
   activateListeners (html) {
@@ -36,7 +46,8 @@ export class CrisisPoolDialog extends FormApplication {
     html.find('.die-select').change(this._onDieChange.bind(this))
     html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
     html.find('.new-die').click(this._onNewDie.bind(this))
-    html.find('.start-crisis').click(this._onStart.bind(this))
+    html.find('.start-crisis, .update-crisis').click(this._onSubmit.bind(this))
+    html.find('.end-crisis').click(this._onEnd.bind(this))
   }
 
   _onDieChange (event) {
@@ -74,7 +85,7 @@ export class CrisisPoolDialog extends FormApplication {
     this.render(true)
   }
 
-  async _onStart (event) {
+  async _onSubmit (event) {
     event.preventDefault()
 
     const dice = Object.values(this.dice).map(face => parseInt(face, 10))
@@ -82,6 +93,14 @@ export class CrisisPoolDialog extends FormApplication {
     if (!dice.length) return
 
     await startCrisis({ name: this.name, dice })
+
+    this.close()
+  }
+
+  async _onEnd (event) {
+    event.preventDefault()
+
+    await endCrisis()
 
     this.close()
   }

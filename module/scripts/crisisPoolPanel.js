@@ -4,7 +4,7 @@
 import { FloatingPanel } from '../applications/FloatingPanel.js'
 import { CrisisPoolDialog } from '../applications/CrisisPoolDialog.js'
 import { localizer } from './foundryHelpers.js'
-import { endCrisis, getCrisisPool } from './crisisPool.js'
+import { getCrisisPool } from './crisisPool.js'
 
 export const registerCrisisPool = () => {
   FloatingPanel.registerWidget({
@@ -22,15 +22,11 @@ export const registerCrisisPool = () => {
   FloatingPanel.registerButton({
     id: 'crisis-pool-toggle',
     icon: 'fa-solid fa-triangle-exclamation',
-    tooltip: () => localizer(getCrisisPool().active ? 'EndCrisis' : 'StartCrisis'),
+    tooltip: () => localizer(getCrisisPool().active ? 'EditCrisis' : 'StartCrisis'),
     isVisible: () => game.user.isGM,
     isActive: () => getCrisisPool().active,
-    onClick: async () => {
-      if (getCrisisPool().active) {
-        await endCrisis()
-      } else {
-        new CrisisPoolDialog().render(true)
-      }
+    onClick: () => {
+      new CrisisPoolDialog().render(true)
     }
   })
 

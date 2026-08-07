@@ -18,7 +18,12 @@
           }}
         </div>
         <div class="flex flex-je mt-2">
-          <button class="start-crisis btn btn-primary-cpt" type="button">{{localize 'StartCrisis'}}</button>
+          {{#if isEditing}}
+            <button class="end-crisis btn btn-secondary-cpt" type="button">{{localize 'EndCrisis'}}</button>
+            <button class="update-crisis btn btn-primary-cpt ml-1" type="button">{{localize 'UpdateCrisis'}}</button>
+          {{else}}
+            <button class="start-crisis btn btn-primary-cpt" type="button">{{localize 'StartCrisis'}}</button>
+          {{/if}}
         </div>
       </div>
     </div>
