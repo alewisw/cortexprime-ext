@@ -1,7 +1,7 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
-import { getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetTotal, recordRollResult } from './rollToBeat.js'
+import { getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
 
@@ -283,6 +283,11 @@ export default async function (pool, rollType, targetTotal) {
   const effectiveTargetTotal = rollType === 'toBeat' ? selectedDice.targetTotal : getTargetTotal(respondingToId)
   const won = rollType === 'toBeat' ? selectedDice.won : (isBeatAttempt ? selectedDice.total > effectiveTargetTotal : undefined)
 
+  // On a loss, show the effect dice of the roll that wasn't beaten, so a "Lost" result still
+  // conveys what the responder was up against.
+  const targetId = rollType === 'toBeat' ? getActiveChallenge().initiatorId : respondingToId
+  const failureEffectDice = (isBeatAttempt && won === false) ? (getTargetRecord(targetId)?.effectDice ?? []) : []
+
   // The GM's client performs the actual, authoritative Crisis Pool reduction reactively (see
   // processChallengeAdvancement in rollToBeat.js), after this chat message is already sent —
   // so this is a locally-computed preview of that same, deterministic outcome, purely for
@@ -304,6 +309,7 @@ export default async function (pool, rollType, targetTotal) {
     isBeatAttempt,
     targetTotal: effectiveTargetTotal,
     won,
+    failureEffectDice,
     crisisEvent: crisisPreview?.event ?? null,
     crisisResolved: !!crisisPreview?.resolved
   })

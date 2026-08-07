@@ -130,8 +130,23 @@
               {{#if crisisResolved}}
                 <p class="section-primary-title-cpt pb-1">{{localize 'CrisisResolved'}}</p>
               {{/if}}
+            {{else if won}}
+              <p class="section-primary-title-cpt pt-2 pb-1">{{localize 'Won'}}</p>
             {{else}}
-              <p class="section-primary-title-cpt pt-2 pb-1">{{ternary won (localize 'Won') (localize 'Lost')}}</p>
+              <div class="flex flex-c flex-ac flex-wrap pt-2 pb-1">
+                <span class="section-primary-title-cpt pr-1">{{localize 'Lost'}}</span>
+                {{#if failureEffectDice}}
+                  {{#each failureEffectDice as |effectDie|}}
+                  <div class="dice-wrapper ml-1">
+                    <div class="die" data-die-rating="{{effectDie}}" data-type="die-rating" data-value="{{effectDie}}"></div>
+                  </div>
+                  {{/each}}
+                {{else}}
+                  <div class="dice-wrapper ml-1">
+                    <div class="die" data-die-rating="4" data-type="die-rating" data-value="4"></div>
+                  </div>
+                {{/if}}
+              </div>
             {{/if}}
           </div>
         </div>
