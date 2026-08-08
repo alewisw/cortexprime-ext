@@ -9,7 +9,7 @@
           <div class="section-background"></div>
           <h3 class="section-primary-title-cpt px-2 mb-1">{{localize 'AddCustomDice'}}</h3>
           <div class="flex flex-ae">
-            <div class="flex-col col-12">
+            <div class="flex-col col-12 flex-g-1">
               <div class="flex-row flex-ac">
                 <label class="flex-col flex-g-1">
                   <span class="input-label-cpt">{{localize 'Label'}}</span>
@@ -24,7 +24,21 @@
                   }}
                 </div>
               </div>
-              {{#if isGM}}
+            </div>
+            <div class="flex-col pr-1">
+              <button class="reset-custom-pool-trait btn btn-secondary-cpt btn-icon" type="button">
+                <i class="fa fa-undo"></i>
+              </button>
+            </div>
+            <div class="flex-col pl-0">
+              <button class="add-trait-to-pool btn btn-primary-cpt btn-icon" data-label="{{customAdd.label}}"
+                data-trait-target="customAdd" type="button">
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex-col col-12">
+          {{#if isGM}}
               <div class="flex-row flex-ac flex-wrap mt-1">
                 <div class="flex-col pr-1 pb-1">
                   <button class="btn btn-secondary-cpt set-difficulty" data-faces="4" type="button">{{localize 'VeryEasy'}}</button>
@@ -146,18 +160,6 @@
                 </div>
               </div>
               {{/if}}
-            </div>
-            <div class="flex-col pr-1">
-              <button class="reset-custom-pool-trait btn btn-secondary-cpt btn-icon" type="button">
-                <i class="fa fa-undo"></i>
-              </button>
-            </div>
-            <div class="flex-col pl-0">
-              <button class="add-trait-to-pool btn btn-primary-cpt btn-icon" data-label="{{customAdd.label}}"
-                data-trait-target="customAdd" type="button">
-                <i class="fa fa-plus"></i>
-              </button>
-            </div>
           </div>
         </div>
         <div class="separator-cpt"></div>
