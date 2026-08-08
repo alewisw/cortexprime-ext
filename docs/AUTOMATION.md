@@ -95,6 +95,13 @@ in defeat.
 Every roll posts a chat card. Beyond the dice/Total/Effect die, if a roll was checked against
 someone else's (a Test/Contest response), the card also shows:
 
+- **Heroic Success** — beating the target by 5 or more, in either a Test or a Contest, steps the
+  Effect die up one size for every full 5 points of margin (d4→d6→d8→d10→d12). The Effect Dice
+  box shows the before/after step (e.g. "d6→d8"); stepping past d12 shows "d12→SPECIAL" instead,
+  though the die actually recorded stays at d12 since there's nothing bigger to roll with. This
+  is calculated right when the roll happens — before the Contest Effect-die-blunting rule below,
+  so a Heroic Success's boosted die is what a later loss would have to blunt, and it's also what
+  counts against an active Crisis Pool.
 - **Target** — the total that needed to be beaten.
 - **Result** — "Won", or "Lost" along with the Effect die of the roll that wasn't beaten, so it's
   clear at a glance what the responder was up against. In a Contest, if that loss was the one

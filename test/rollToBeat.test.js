@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyContestEffectStepDown, getDiceByTargetTotal, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
+import { applyContestEffectStepDown, computeHeroicStepUp, getDiceByTargetTotal, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
 
 const die = (faces, result) => ({ faces, result })
 
@@ -183,5 +183,38 @@ describe('applyContestEffectStepDown', () => {
     // any further, it's returned unchanged rather than being normalized to [4].
     expect(applyContestEffectStepDown([], [12])).toEqual({ effectDice: [], steppedDown: null })
     expect(applyContestEffectStepDown([8], [])).toEqual({ effectDice: [8], steppedDown: null })
+  })
+})
+
+describe('computeHeroicStepUp', () => {
+  it('is not a Heroic Success when the margin is under 5', () => {
+    expect(computeHeroicStepUp([8], 4)).toBeNull()
+    expect(computeHeroicStepUp([8], 0)).toBeNull()
+  })
+
+  it('steps up one rung for a 5-9 point margin', () => {
+    expect(computeHeroicStepUp([6], 5)).toEqual({ effectDice: [8], from: 6, to: 8 })
+    expect(computeHeroicStepUp([6], 9)).toEqual({ effectDice: [8], from: 6, to: 8 })
+  })
+
+  it('steps up two rungs for a 10-14 point margin', () => {
+    expect(computeHeroicStepUp([4], 10)).toEqual({ effectDice: [8], from: 4, to: 8 })
+  })
+
+  it('landing exactly on D12 with no leftover steps displays normally, not as SPECIAL', () => {
+    expect(computeHeroicStepUp([8], 10)).toEqual({ effectDice: [12], from: 8, to: 12 })
+  })
+
+  it('overshooting D12 caps the recorded die at D12 and displays SPECIAL', () => {
+    expect(computeHeroicStepUp([8], 15)).toEqual({ effectDice: [12], from: 8, to: 'SPECIAL' })
+  })
+
+  it('an effect die already at D12 goes straight to SPECIAL on any qualifying margin', () => {
+    expect(computeHeroicStepUp([12], 5)).toEqual({ effectDice: [12], from: 12, to: 'SPECIAL' })
+  })
+
+  it('treats a missing/empty effect die as a D4 baseline before stepping up', () => {
+    expect(computeHeroicStepUp([], 5)).toEqual({ effectDice: [6], from: 4, to: 6 })
+    expect(computeHeroicStepUp(undefined, 5)).toEqual({ effectDice: [6], from: 4, to: 6 })
   })
 })

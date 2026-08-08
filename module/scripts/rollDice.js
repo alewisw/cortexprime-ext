@@ -1,7 +1,7 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
-import { applyContestEffectStepDown, getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
+import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
 
@@ -283,6 +283,15 @@ export default async function (pool, rollType, targetTotal) {
   const effectiveTargetTotal = rollType === 'toBeat' ? selectedDice.targetTotal : getTargetTotal(respondingToId)
   const won = rollType === 'toBeat' ? selectedDice.won : (isBeatAttempt ? selectedDice.total > effectiveTargetTotal : undefined)
 
+  // Heroic Success: beating the target by 5+ steps the Effect die up a rung per 5-point margin.
+  // Computed immediately after die selection, before the Contest-ending "blunt" step-down and
+  // the Crisis Pool reduction below — both of those need to see this boosted effect die, not
+  // the original one the roll-type algorithm picked.
+  const heroicSuccess = (won && isBeatAttempt)
+    ? computeHeroicStepUp(selectedDice.effectDice, selectedDice.total - effectiveTargetTotal)
+    : null
+  const finalEffectDice = heroicSuccess?.effectDice ?? selectedDice.effectDice
+
   // On a loss, show the effect dice of the roll that wasn't beaten, so a "Lost" result still
   // conveys what the responder was up against.
   const targetId = rollType === 'toBeat' ? getActiveChallenge().initiatorId : respondingToId
@@ -301,14 +310,14 @@ export default async function (pool, rollType, targetTotal) {
   // so this is a locally-computed preview of that same, deterministic outcome, purely for
   // describing it here. Matches the existing player-only rule (a GM win never touches the pool).
   const crisisPreview = (won && isBeatAttempt && !game.user.isGM)
-    ? previewCrisisReduction(selectedDice.effectDice)
+    ? previewCrisisReduction(finalEffectDice)
     : null
 
-  await recordRollResult({ total: selectedDice.total, effectDice: selectedDice.effectDice, won })
+  await recordRollResult({ total: selectedDice.total, effectDice: finalEffectDice, won })
 
   const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/roll-result.html', {
     dicePool: pool,
-    effectDice: selectedDice.effectDice,
+    effectDice: finalEffectDice,
     rollResults: { hitches: rollResults.hitches, results: selectedDice.dice },
     speaker: game.user,
     sourceDefaultCollapsed,
@@ -319,6 +328,7 @@ export default async function (pool, rollType, targetTotal) {
     won,
     failureEffectDice,
     effectStepDown,
+    heroicSuccess,
     crisisEvent: crisisPreview?.event ?? null,
     crisisResolved: !!crisisPreview?.resolved
   })

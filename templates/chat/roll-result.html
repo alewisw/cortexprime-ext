@@ -75,17 +75,34 @@
           <div class="section-background"></div>
           <div class="section-content">
             <h3 class="section-secondary-title-cpt">{{localize 'EffectDice'}}</h3>
-            <div class="effect-dice flex-row flex-c flex-wrap">
-              {{#if effectDice}}
-                {{#each effectDice as |effectDie|}}
+            {{#if heroicSuccess}}
+              <p class="section-primary-title-cpt">{{localize 'HeroicSuccess'}}</p>
+              <div class="effect-dice flex-row flex-c flex-ac flex-wrap">
                 <div class="dice-wrapper ma-1">
-                  <div class="die d{{effectDie}} effect" data-die-rating="{{effectDie}}" data-type="effect" data-value="{{effectDie}}"></div>
+                  <div class="die" data-die-rating="{{heroicSuccess.from}}" data-type="effect" data-value="{{heroicSuccess.from}}"></div>
                 </div>
-                {{/each}}
-              {{else}}
-                <div class="die d{{effectDie}} effect" data-die-rating="4" data-type="effect" data-value="4"></div>
-              {{/if}}
-            </div>
+                <i class="fa fa-arrow-right mx-1"></i>
+                {{#if (eq heroicSuccess.to 'SPECIAL')}}
+                  <span class="section-primary-title-cpt">{{localize 'Special'}}</span>
+                {{else}}
+                  <div class="dice-wrapper ma-1">
+                    <div class="die" data-die-rating="{{heroicSuccess.to}}" data-type="effect" data-value="{{heroicSuccess.to}}"></div>
+                  </div>
+                {{/if}}
+              </div>
+            {{else}}
+              <div class="effect-dice flex-row flex-c flex-wrap">
+                {{#if effectDice}}
+                  {{#each effectDice as |effectDie|}}
+                  <div class="dice-wrapper ma-1">
+                    <div class="die d{{effectDie}} effect" data-die-rating="{{effectDie}}" data-type="effect" data-value="{{effectDie}}"></div>
+                  </div>
+                  {{/each}}
+                {{else}}
+                  <div class="die d{{effectDie}} effect" data-die-rating="4" data-type="effect" data-value="4"></div>
+                {{/if}}
+              </div>
+            {{/if}}
           </div>
         </div>
       </div>

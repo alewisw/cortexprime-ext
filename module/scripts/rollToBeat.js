@@ -339,6 +339,26 @@ export const applyContestEffectStepDown = (winnerEffectDice, loserEffectDice) =>
   return { effectDice: [newFace], steppedDown: { from: winnerFace, to: newFace } }
 }
 
+// Pure: a beat-attempt roll that clears its target by 5+ steps its Effect die up one rung per
+// full 5-point margin. Returns null when the margin is under 5 (no Heroic Success). Stepping
+// past D12 caps the recorded effect die at D12, with `to: 'SPECIAL'` marking the display.
+export const computeHeroicStepUp = (effectDice, margin) => {
+  if (margin < 5) return null
+
+  const steps = Math.floor(margin / 5)
+  const currentFace = effectDice?.[0] ?? 4
+  const currentIndex = EFFECT_DIE_LADDER.indexOf(currentFace)
+  const finalIndex = currentIndex + steps
+
+  if (finalIndex > EFFECT_DIE_LADDER.length - 1) {
+    return { effectDice: [12], from: currentFace, to: 'SPECIAL' }
+  }
+
+  const newFace = EFFECT_DIE_LADDER[finalIndex]
+
+  return { effectDice: [newFace], from: currentFace, to: newFace }
+}
+
 // Picks the die combination that maximizes the Effect die, not the one that minimally beats
 // the target — Total is whatever falls out of that choice, and win/loss is only checked at
 // the very end.
