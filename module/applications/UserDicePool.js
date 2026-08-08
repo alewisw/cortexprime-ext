@@ -79,9 +79,6 @@ const getChallengeDisplayData = (activeChallenge, rollToBeatTargets) => {
           ? activeChallenge.responderIds.includes(target.id)
           : target.id === display.displayedResponderId
       })),
-    challengeResponderNoneChecked: activeChallenge.type === 'test'
-      ? activeChallenge.responderIds.length === 0
-      : !display.displayedResponderId,
     rollNowNames: display.rollNowNames,
     rollNextNames: display.rollNextNames
   }

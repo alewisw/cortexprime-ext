@@ -139,19 +139,40 @@ export const canCurrentUserRoll = () => {
   return !getMyResponderId() || isMyResponderReady()
 }
 
-// GM action: starts a fresh challenge of the given type, defaulting the initiator to the GM.
+// A Contest always needs exactly one responder — there's no "None" option for it — so this
+// picks one automatically: the first connected target (GM or player) other than the initiator,
+// or null if nobody else is available to respond.
+const getDefaultContestResponderId = initiatorId => {
+  const target = getRollToBeatTargets().find(target => target.id !== initiatorId)
+
+  return target ? target.id : null
+}
+
+// GM action: starts a fresh challenge of the given type, defaulting the initiator to the GM. A
+// Contest also defaults its responder to the first available target.
 export const setChallengeType = async type => {
-  await setActiveChallenge({ type, initiatorId: 'gm', responderIds: [], updatedAt: Date.now() })
+  const initiatorId = 'gm'
+  const responderIds = type === 'contest'
+    ? [getDefaultContestResponderId(initiatorId)].filter(Boolean)
+    : []
+
+  await setActiveChallenge({ type, initiatorId, responderIds, updatedAt: Date.now() })
 }
 
 // GM action: changes the initiator, dropping them from the responder list if they were on it.
+// If that leaves an active Contest with no responder, one is picked automatically again.
 export const setChallengeInitiator = async initiatorId => {
   const challenge = getActiveChallenge()
+  const responderIds = challenge.responderIds.filter(id => id !== initiatorId)
+
+  const finalResponderIds = challenge.type === 'contest' && responderIds.length === 0
+    ? [getDefaultContestResponderId(initiatorId)].filter(Boolean)
+    : responderIds
 
   await setActiveChallenge({
     ...challenge,
     initiatorId,
-    responderIds: challenge.responderIds.filter(id => id !== initiatorId),
+    responderIds: finalResponderIds,
     updatedAt: Date.now()
   })
 }

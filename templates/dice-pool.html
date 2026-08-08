@@ -84,10 +84,6 @@
                     {{else}}
                       <span class="input-label-cpt">{{localize 'RollNext'}}</span>
                       <div style="display: flex; flex-direction: column;">
-                        <label class="flex-row flex-ac">
-                          <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="" {{#if challengeResponderNoneChecked}}checked{{/if}}>
-                          <span class="pl-1">{{localize 'None'}}</span>
-                        </label>
                         {{#each challengeResponderOptions}}
                           <label class="flex-row flex-ac">
                             <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="{{id}}" {{#if checked}}checked{{/if}}>
