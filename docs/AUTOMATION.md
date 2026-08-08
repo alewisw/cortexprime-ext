@@ -40,7 +40,9 @@ Once a pool has dice in it, four buttons roll it:
   the largest remaining die for the Effect.
 - **Roll to Beat** — only appears when the GM has lined someone up to respond to someone else's
   roll (see Tests and Contests below); automatically builds the biggest Effect die while trying
-  to beat the designated Total.
+  to beat the designated Total. It always maximizes the Effect die, even when there's no way to
+  beat the Total — in a Contest, a losing Effect die can still blunt the eventual winner's (see
+  below), so it's never a wasted effort.
 
 Whichever button is used, the result posts to chat as a card showing the rolled dice, Total, and
 Effect die.
@@ -79,6 +81,15 @@ A Contest is a single head-to-head roll-off between two people.
 
 As with a Test, only the two people actually in the Contest can roll while it's active.
 
+**Blunting the winner's Effect die:** the moment a Contest actually ends (someone finally fails
+to beat the total), that losing roll's Effect die is compared against the eventual winner's
+already-rolled Effect die. If the winner's Effect die is equal to or higher, it stands as
+rolled. If it's lower, it steps down one size (d12 becomes d10, d10 becomes d8, and so on down
+to d4, which never steps down any further). This only happens once, at the very end of the
+Contest — the back-and-forth swapping along the way doesn't trigger it. It's why even a roll
+that's certain to lose still maximizes its Effect die: it's the one thing that can still matter
+in defeat.
+
 ## Reading a roll result
 
 Every roll posts a chat card. Beyond the dice/Total/Effect die, if a roll was checked against
@@ -86,7 +97,9 @@ someone else's (a Test/Contest response), the card also shows:
 
 - **Target** — the total that needed to be beaten.
 - **Result** — "Won", or "Lost" along with the Effect die of the roll that wasn't beaten, so it's
-  clear at a glance what the responder was up against.
+  clear at a glance what the responder was up against. In a Contest, if that loss was the one
+  that ended it and it was big enough to blunt the winner's Effect die, this shows the Effect
+  die stepping down (before and after) instead of just the one value.
 - If the roll won while a Crisis Pool was active, this box instead shows what happened to the
   crisis — see below.
 

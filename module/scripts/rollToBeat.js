@@ -25,6 +25,26 @@ export const recordRollResult = async ({ total, effectDice, won }) => {
   }
 }
 
+// Overwrites just the effectDice of a previously-recorded roll — the GM's reactive client uses
+// this to apply the Contest step-down (see applyContestEffectStepDown) to the contest's overall
+// winner, whose record may belong to a different person than whoever just rolled the loss that
+// triggered it, so only a GM client (which can write any actor's flags, and its own world
+// settings) can safely perform this.
+const updateRecordedEffectDice = async (targetId, effectDice) => {
+  if (targetId === 'gm') {
+    const record = game.settings.get('cortexprime', 'lastGmRoll')
+    await game.settings.set('cortexprime', 'lastGmRoll', { ...record, effectDice })
+    return
+  }
+
+  const actor = game.actors.get(targetId)
+
+  if (!actor) return
+
+  const record = actor.getFlag('cortexprime', 'lastRoll')
+  await actor.setFlag('cortexprime', 'lastRoll', { ...record, effectDice })
+}
+
 const withRecord = record => ({
   total: record?.total ?? blankRecord.total,
   effectDice: record?.effectDice ?? blankRecord.effectDice,
@@ -241,6 +261,18 @@ export const processChallengeAdvancement = async () => {
 
     const next = resolveChallengeAfterRoll(challenge, responderId, responder)
 
+    // A Contest ending in a loss is also the moment the contest's overall winner's effect die
+    // gets compared against — and possibly blunted by — the losing roll's effect die.
+    if (challenge.type === 'contest' && next === null) {
+      const winner = targets.find(target => target.id === challenge.initiatorId)
+
+      if (winner) {
+        const { effectDice, steppedDown } = applyContestEffectStepDown(winner.effectDice, responder.effectDice)
+
+        if (steppedDown) await updateRecordedEffectDice(challenge.initiatorId, effectDice)
+      }
+    }
+
     if (next === null) await clearActiveChallenge()
     else await setActiveChallenge(next)
 
@@ -280,6 +312,33 @@ export const registerRollToBeat = () => {
 
 export const sumOf = combo => combo.reduce((sum, die) => sum + die.result, 0)
 
+const EFFECT_DIE_LADDER = [4, 6, 8, 10, 12]
+
+// D12->D10->D8->D6->D4 — unlike the Crisis Pool ladder, an effect die is never removed; it
+// just stops stepping down once it reaches D4.
+const stepDownEffectFace = face => {
+  const index = EFFECT_DIE_LADDER.indexOf(face)
+
+  return index > 0 ? EFFECT_DIE_LADDER[index - 1] : face
+}
+
+// Pure: a Contest's overall winner's effect die vs. the effect die of the roll that just lost
+// and ended it. Equal-or-higher stands; lower steps down one rung. Returns the effect dice to
+// actually record for the winner, plus the before/after faces when a step-down happened (null
+// otherwise, including the D4-floor no-op case) so callers can decide whether to show it.
+export const applyContestEffectStepDown = (winnerEffectDice, loserEffectDice) => {
+  const winnerFace = winnerEffectDice?.[0] ?? 4
+  const loserFace = loserEffectDice?.[0] ?? 4
+
+  if (winnerFace >= loserFace) return { effectDice: winnerEffectDice, steppedDown: null }
+
+  const newFace = stepDownEffectFace(winnerFace)
+
+  if (newFace === winnerFace) return { effectDice: winnerEffectDice, steppedDown: null }
+
+  return { effectDice: [newFace], steppedDown: { from: winnerFace, to: newFace } }
+}
+
 // Picks the die combination that maximizes the Effect die, not the one that minimally beats
 // the target — Total is whatever falls out of that choice, and win/loss is only checked at
 // the very end.
@@ -307,20 +366,12 @@ export const getDiceByTargetTotal = (results, target) => {
     return { effectDie, totalDice, total: sumOf(totalDice) }
   })
 
-  const hasWinningCandidate = candidates.some(candidate => candidate.total > target)
-
-  // With exactly 3 non-hitch dice, if nothing can win regardless of which die becomes
-  // Effect, prioritize the highest possible Total instead (ties broken by the highest
-  // Effect die) — maximizing Effect is pointless on a guaranteed loss.
-  if (nonHitchResults.length === 3 && !hasWinningCandidate) {
-    candidates.sort((a, b) => a.total !== b.total
-      ? a.total - b.total
-      : a.effectDie.faces - b.effectDie.faces)
-  } else {
-    candidates.sort((a, b) => a.effectDie.faces !== b.effectDie.faces
-      ? a.effectDie.faces - b.effectDie.faces
-      : a.total - b.total)
-  }
+  // Always maximize the Effect die (tie-broken by Total), even on a guaranteed loss — in a
+  // Contest, a losing roll's Effect die can still blunt the eventual winner's (see
+  // applyContestEffectStepDown), so it's never pointless to maximize it.
+  candidates.sort((a, b) => a.effectDie.faces !== b.effectDie.faces
+    ? a.effectDie.faces - b.effectDie.faces
+    : a.total - b.total)
 
   const chosen = candidates[candidates.length - 1]
   const totalDiceSet = new Set(chosen.totalDice)

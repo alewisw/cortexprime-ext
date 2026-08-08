@@ -1,7 +1,7 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
-import { getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
+import { applyContestEffectStepDown, getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
 
@@ -288,6 +288,14 @@ export default async function (pool, rollType, targetTotal) {
   const targetId = rollType === 'toBeat' ? getActiveChallenge().initiatorId : respondingToId
   const failureEffectDice = (isBeatAttempt && won === false) ? (getTargetRecord(targetId)?.effectDice ?? []) : []
 
+  // Contest-only: even a losing roll's effect die can blunt the contest's overall winner's
+  // already-recorded one. The GM's client applies this for real, reactively, once this chat
+  // message is already sent — this is a locally-computed preview of that same deterministic
+  // outcome, purely so this losing roll's own chat card can show it happening.
+  const effectStepDown = (isBeatAttempt && won === false && getActiveChallenge().type === 'contest')
+    ? applyContestEffectStepDown(getTargetRecord(targetId)?.effectDice ?? [], selectedDice.effectDice).steppedDown
+    : null
+
   // The GM's client performs the actual, authoritative Crisis Pool reduction reactively (see
   // processChallengeAdvancement in rollToBeat.js), after this chat message is already sent —
   // so this is a locally-computed preview of that same, deterministic outcome, purely for
@@ -310,6 +318,7 @@ export default async function (pool, rollType, targetTotal) {
     targetTotal: effectiveTargetTotal,
     won,
     failureEffectDice,
+    effectStepDown,
     crisisEvent: crisisPreview?.event ?? null,
     crisisResolved: !!crisisPreview?.resolved
   })

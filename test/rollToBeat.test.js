@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getDiceByTargetTotal, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
+import { applyContestEffectStepDown, getDiceByTargetTotal, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
 
 const die = (faces, result) => ({ faces, result })
 
@@ -48,17 +48,17 @@ describe('getDiceByTargetTotal', () => {
     expect(effectDice).toEqual([12])
   })
 
-  it('with exactly 3 dice and no way to win, prioritizes the highest total instead, ties broken by effect die', () => {
+  it('with exactly 3 dice and no way to win, still maximizes the effect die rather than the total', () => {
     const results = [die(4, 4), die(6, 2), die(12, 3)]
 
     const { total, effectDice, won } = getDiceByTargetTotal(results, 100)
 
-    // None of the 3 possible splits (total 5, 7, or 6) can beat 100, so instead of the
-    // normal d12-as-effect pick (total 6), the highest achievable total (7, using d6 as
-    // effect) is chosen
-    expect(total).toBe(7)
+    // Even on a guaranteed loss, effect die size is never pointless — in a Contest it can
+    // still blunt the eventual winner's effect die (see applyContestEffectStepDown) — so the
+    // normal d12-as-effect pick (total 6) is still made, not the highest-total alternative (7).
+    expect(total).toBe(6)
     expect(won).toBe(false)
-    expect(effectDice).toEqual([6])
+    expect(effectDice).toEqual([12])
   })
 
   it('ignores 1s for effect die', () => {
@@ -153,5 +153,35 @@ describe('resolveChallengeAfterRoll', () => {
     const challenge = { type: 'test', initiatorId: 'gm', responderIds: ['actor1'], updatedAt: 5 }
 
     expect(resolveChallengeAfterRoll(challenge, 'actor1', { id: 'actor1', won: true, rolledAt: 100 })).toBeNull()
+  })
+})
+
+describe('applyContestEffectStepDown', () => {
+  it('stands as rolled when the winner\'s effect die is higher than the loser\'s', () => {
+    expect(applyContestEffectStepDown([12], [8])).toEqual({ effectDice: [12], steppedDown: null })
+  })
+
+  it('stands as rolled when the winner\'s effect die equals the loser\'s', () => {
+    expect(applyContestEffectStepDown([8], [8])).toEqual({ effectDice: [8], steppedDown: null })
+  })
+
+  it('steps down one rung when the winner\'s effect die is lower than the loser\'s', () => {
+    expect(applyContestEffectStepDown([8], [12])).toEqual({ effectDice: [6], steppedDown: { from: 8, to: 6 } })
+  })
+
+  it('never steps down more than one rung, regardless of how much bigger the loser\'s die is', () => {
+    expect(applyContestEffectStepDown([12], [12])).toEqual({ effectDice: [12], steppedDown: null })
+    expect(applyContestEffectStepDown([6], [12])).toEqual({ effectDice: [4], steppedDown: { from: 6, to: 4 } })
+  })
+
+  it('a D4 stays at D4 rather than being removed', () => {
+    expect(applyContestEffectStepDown([4], [12])).toEqual({ effectDice: [4], steppedDown: null })
+  })
+
+  it('treats missing/empty effect dice as D4 for comparison purposes', () => {
+    // Winner's empty array is treated as D4 for the comparison, but since D4 can't step down
+    // any further, it's returned unchanged rather than being normalized to [4].
+    expect(applyContestEffectStepDown([], [12])).toEqual({ effectDice: [], steppedDown: null })
+    expect(applyContestEffectStepDown([8], [])).toEqual({ effectDice: [8], steppedDown: null })
   })
 })

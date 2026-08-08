@@ -135,7 +135,15 @@
             {{else}}
               <div class="flex flex-c flex-ac flex-wrap pt-2 pb-1">
                 <span class="section-primary-title-cpt pr-1">{{localize 'Lost'}}</span>
-                {{#if failureEffectDice}}
+                {{#if effectStepDown}}
+                  <div class="dice-wrapper ml-1">
+                    <div class="die" data-die-rating="{{effectStepDown.from}}" data-type="die-rating" data-value="{{effectStepDown.from}}"></div>
+                  </div>
+                  <i class="fa fa-arrow-right mx-1"></i>
+                  <div class="dice-wrapper ml-1">
+                    <div class="die" data-die-rating="{{effectStepDown.to}}" data-type="die-rating" data-value="{{effectStepDown.to}}"></div>
+                  </div>
+                {{else if failureEffectDice}}
                   {{#each failureEffectDice as |effectDie|}}
                   <div class="dice-wrapper ml-1">
                     <div class="die" data-die-rating="{{effectDie}}" data-type="die-rating" data-value="{{effectDie}}"></div>
