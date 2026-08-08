@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { applyContestEffectStepDown, computeHeroicStepUp, filterEligibleInterferers, getDiceByTargetTotal, hasContestStarted, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
+import {
+  applyContestEffectStepDown,
+  canStartGroupInitiative,
+  computeHeroicStepUp,
+  filterEligibleInterferers,
+  getDiceByTargetTotal,
+  getGroupDisplayOrder,
+  getPendingGroupParticipants,
+  hasContestStarted,
+  isGroupComplete,
+  orderGroupInitiative,
+  removeFromGroup,
+  resolveChallengeAfterRoll,
+  resolveGroupDuel,
+  startGroupDueling
+} from '../module/scripts/rollToBeat.js'
 
 const die = (faces, result) => ({ faces, result })
 
@@ -285,5 +300,237 @@ describe('hasContestStarted', () => {
 
   it('is true once a Contest\'s initiator has rolled', () => {
     expect(hasContestStarted({ type: 'contest' }, true)).toBe(true)
+  })
+})
+
+const rollRecord = (id, total, effectDice, rolledAt = 100) => ({ id, name: id, total, effectDice, won: null, rolledAt })
+
+describe('orderGroupInitiative', () => {
+  it('orders participants by Total, lowest first', () => {
+    const targets = [rollRecord('a', 10, [8]), rollRecord('b', 5, [6]), rollRecord('c', 15, [10])]
+
+    expect(orderGroupInitiative(['a', 'b', 'c'], targets)).toEqual(['b', 'a', 'c'])
+  })
+
+  it('breaks a Total tie with the smaller effect die', () => {
+    const targets = [rollRecord('a', 10, [10]), rollRecord('b', 10, [6])]
+
+    expect(orderGroupInitiative(['a', 'b'], targets)).toEqual(['b', 'a'])
+  })
+
+  it('uses the largest of a two-element effect dice array as that roller\'s representative die', () => {
+    const targets = [rollRecord('a', 10, [4, 10]), rollRecord('b', 10, [8])]
+
+    // a's representative die is a D10 (max of 4/10), which loses the tie-break to b's D8
+    expect(orderGroupInitiative(['a', 'b'], targets)).toEqual(['b', 'a'])
+  })
+
+  it('treats missing/empty effect dice as a D4', () => {
+    const targets = [rollRecord('a', 10, []), rollRecord('b', 10, [6])]
+
+    expect(orderGroupInitiative(['a', 'b'], targets)).toEqual(['a', 'b'])
+  })
+
+  it('breaks a fully-tied entry with the injected random map', () => {
+    const targets = [rollRecord('a', 10, [8]), rollRecord('b', 10, [8])]
+
+    expect(orderGroupInitiative(['a', 'b'], targets, { a: 1, b: 2 })).toEqual(['a', 'b'])
+    expect(orderGroupInitiative(['a', 'b'], targets, { a: 2, b: 1 })).toEqual(['b', 'a'])
+  })
+
+  it('with no randoms supplied, leaves fully-tied entries in participantIds order', () => {
+    const targets = [rollRecord('a', 10, [8]), rollRecord('b', 10, [8])]
+
+    expect(orderGroupInitiative(['a', 'b'], targets)).toEqual(['a', 'b'])
+    expect(orderGroupInitiative(['b', 'a'], targets)).toEqual(['b', 'a'])
+  })
+
+  it('drops ids with no matching target record', () => {
+    const targets = [rollRecord('a', 10, [8])]
+
+    expect(orderGroupInitiative(['a', 'ghost'], targets)).toEqual(['a'])
+  })
+
+  it('returns an empty array for an empty roster', () => {
+    expect(orderGroupInitiative([], [])).toEqual([])
+  })
+})
+
+describe('startGroupDueling', () => {
+  it('the last (strongest) entry becomes champion and everyone else becomes the queue in order', () => {
+    const challenge = { type: 'group', group: { phase: 'initiative', participantIds: ['a', 'b', 'c'], queue: [], championId: null } }
+
+    const result = startGroupDueling(challenge, ['a', 'b', 'c'], 500)
+
+    expect(result.group).toEqual({ phase: 'dueling', participantIds: ['a', 'b', 'c'], queue: ['a', 'b'], championId: 'c' })
+    expect(result.updatedAt).toBe(500)
+  })
+
+  it('a single-entry order yields an empty queue and that entry as champion', () => {
+    const challenge = { type: 'group', group: { phase: 'initiative', participantIds: ['a'], queue: [], championId: null } }
+
+    const result = startGroupDueling(challenge, ['a'], 500)
+
+    expect(result.group.queue).toEqual([])
+    expect(result.group.championId).toBe('a')
+  })
+})
+
+describe('resolveGroupDuel', () => {
+  it('a win makes the challenger the new champion and sends the displaced champion to the back of the queue', () => {
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'b', 'c'], queue: ['a', 'b'], championId: 'c' } }
+
+    const result = resolveGroupDuel(challenge, { id: 'a', won: true }, 600)
+
+    expect(result.group.queue).toEqual(['b', 'c'])
+    expect(result.group.championId).toBe('a')
+    expect(result.updatedAt).toBe(600)
+  })
+
+  it('a loss keeps the standing champion and simply drops the challenger from the front of the queue', () => {
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'b', 'c'], queue: ['a', 'b'], championId: 'c' } }
+
+    const result = resolveGroupDuel(challenge, { id: 'a', won: false }, 600)
+
+    expect(result.group.queue).toEqual(['b'])
+    expect(result.group.championId).toBe('c')
+  })
+
+  it('resolving the last queued challenger with a loss leaves an empty queue', () => {
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'c'], queue: ['a'], championId: 'c' } }
+
+    const result = resolveGroupDuel(challenge, { id: 'a', won: false }, 600)
+
+    expect(result.group.queue).toEqual([])
+  })
+
+  it('a win by the last queued challenger does NOT end the group — the displaced champion rejoins the queue', () => {
+    // Regression test: with only two players left, a win used to empty the queue and
+    // incorrectly conclude the group. The displaced former champion must get another turn.
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'c'], queue: ['a'], championId: 'c' } }
+
+    const result = resolveGroupDuel(challenge, { id: 'a', won: true }, 600)
+
+    expect(result.group.queue).toEqual(['c'])
+    expect(result.group.championId).toBe('a')
+    expect(isGroupComplete(result)).toBe(false)
+  })
+})
+
+describe('removeFromGroup', () => {
+  it('removes the id from both participantIds and queue', () => {
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'b', 'c'], queue: ['a', 'b'], championId: 'c' } }
+
+    const result = removeFromGroup(challenge, 'a')
+
+    expect(result.group.participantIds).toEqual(['b', 'c'])
+    expect(result.group.queue).toEqual(['b'])
+    expect(result.group.championId).toBe('c')
+  })
+
+  it('clears championId without promoting anyone when the champion is removed', () => {
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'b', 'c'], queue: ['a', 'b'], championId: 'c' } }
+
+    const result = removeFromGroup(challenge, 'c')
+
+    expect(result.group.championId).toBeNull()
+    expect(result.group.queue).toEqual(['a', 'b'])
+  })
+
+  it('is a no-op for an id that is not in the group', () => {
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'b', 'c'], queue: ['a', 'b'], championId: 'c' } }
+
+    const result = removeFromGroup(challenge, 'ghost')
+
+    expect(result.group).toEqual(challenge.group)
+  })
+
+  it('removing the last queued challenger leaves a complete group', () => {
+    const challenge = { group: { phase: 'dueling', participantIds: ['a', 'c'], queue: ['a'], championId: 'c' } }
+
+    const result = removeFromGroup(challenge, 'a')
+
+    expect(isGroupComplete(result)).toBe(true)
+  })
+})
+
+describe('isGroupComplete', () => {
+  it('is true when the queue is empty and a champion is standing', () => {
+    expect(isGroupComplete({ group: { queue: [], championId: 'a' } })).toBe(true)
+  })
+
+  it('is false while anyone is still queued', () => {
+    expect(isGroupComplete({ group: { queue: ['b'], championId: 'a' } })).toBe(false)
+  })
+
+  it('is false when the queue is empty but the champion was removed', () => {
+    expect(isGroupComplete({ group: { queue: [], championId: null } })).toBe(false)
+  })
+})
+
+describe('getPendingGroupParticipants', () => {
+  it('returns everyone before anyone has rolled', () => {
+    const challenge = { updatedAt: 500, group: { participantIds: ['a', 'b'] } }
+    const targets = [rollRecord('a', 0, [], 100), rollRecord('b', 0, [], 100)]
+
+    expect(getPendingGroupParticipants(challenge, targets)).toEqual(['a', 'b'])
+  })
+
+  it('returns only those whose rolledAt is not after updatedAt', () => {
+    const challenge = { updatedAt: 500, group: { participantIds: ['a', 'b'] } }
+    const targets = [rollRecord('a', 10, [8], 600), rollRecord('b', 0, [], 100)]
+
+    expect(getPendingGroupParticipants(challenge, targets)).toEqual(['b'])
+  })
+
+  it('treats rolledAt exactly equal to updatedAt as not-yet-rolled', () => {
+    const challenge = { updatedAt: 500, group: { participantIds: ['a'] } }
+    const targets = [rollRecord('a', 10, [8], 500)]
+
+    expect(getPendingGroupParticipants(challenge, targets)).toEqual(['a'])
+  })
+
+  it('ignores participants with no live target record', () => {
+    const challenge = { updatedAt: 500, group: { participantIds: ['a', 'ghost'] } }
+    const targets = [rollRecord('a', 0, [], 100)]
+
+    expect(getPendingGroupParticipants(challenge, targets)).toEqual(['a'])
+  })
+
+  it('returns an empty array once everyone has rolled', () => {
+    const challenge = { updatedAt: 500, group: { participantIds: ['a', 'b'] } }
+    const targets = [rollRecord('a', 10, [8], 600), rollRecord('b', 5, [6], 700)]
+
+    expect(getPendingGroupParticipants(challenge, targets)).toEqual([])
+  })
+})
+
+describe('canStartGroupInitiative', () => {
+  it('is false for 0, 1, or 2 participants and true at exactly 3 or more', () => {
+    const base = { type: 'group', group: { phase: 'selecting' } }
+
+    expect(canStartGroupInitiative({ ...base, group: { ...base.group, participantIds: [] } })).toBe(false)
+    expect(canStartGroupInitiative({ ...base, group: { ...base.group, participantIds: ['a'] } })).toBe(false)
+    expect(canStartGroupInitiative({ ...base, group: { ...base.group, participantIds: ['a', 'b'] } })).toBe(false)
+    expect(canStartGroupInitiative({ ...base, group: { ...base.group, participantIds: ['a', 'b', 'c'] } })).toBe(true)
+    expect(canStartGroupInitiative({ ...base, group: { ...base.group, participantIds: ['a', 'b', 'c', 'd'] } })).toBe(true)
+  })
+
+  it('is false outside the selecting phase, even with enough participants', () => {
+    expect(canStartGroupInitiative({ type: 'group', group: { phase: 'dueling', participantIds: ['a', 'b', 'c', 'd'] } })).toBe(false)
+  })
+
+  it('is false for a non-group challenge', () => {
+    expect(canStartGroupInitiative({ type: 'contest', group: null })).toBe(false)
+  })
+})
+
+describe('getGroupDisplayOrder', () => {
+  it('lists the queue first, champion last', () => {
+    expect(getGroupDisplayOrder({ queue: ['a', 'b'], championId: 'c' })).toEqual(['a', 'b', 'c'])
+  })
+
+  it('omits the champion slot entirely when there is no champion', () => {
+    expect(getGroupDisplayOrder({ queue: ['a', 'b'], championId: null })).toEqual(['a', 'b'])
   })
 })

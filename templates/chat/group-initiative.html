@@ -1,0 +1,68 @@
+<div class="cortexprime roll-result" style="position: relative;">
+  <div class="my-2 section-cpt pa-2 text-center">
+    <div class="section-image"></div>
+    <div class="section-background-alternate"></div>
+    <div class="section-content">
+      <h2 class="trait-title-cpt mb-0">{{localize 'GroupInitiativeResults'}}</h2>
+    </div>
+  </div>
+  <div class="flex-row my-2">
+    <div class="flex-col col-6">
+      <div class="section-cpt pa-2 text-center">
+        <div class="section-image"></div>
+        <div class="section-background"></div>
+        <div class="section-content">
+          <h3 class="section-secondary-title-cpt">{{localize 'TargetTotal'}}</h3>
+          <p class="section-primary-title-cpt pt-2 pb-1">{{targetTotal}}</p>
+        </div>
+      </div>
+    </div>
+    <div class="flex-col col-6">
+      <div class="section-cpt pa-2 text-center">
+        <div class="section-image"></div>
+        <div class="section-background"></div>
+        <div class="section-content">
+          <h3 class="section-secondary-title-cpt">{{localize 'EffectDice'}}</h3>
+          <div class="effect-dice flex-row flex-c flex-wrap">
+            {{#if targetEffectDice}}
+              {{#each targetEffectDice as |effectDie|}}
+                <div class="dice-wrapper ma-1">
+                  <div class="die" data-die-rating="{{effectDie}}" data-type="effect" data-value="{{effectDie}}"></div>
+                </div>
+              {{/each}}
+            {{else}}
+              <div class="dice-wrapper ma-1">
+                <div class="die" data-die-rating="4" data-type="effect" data-value="4"></div>
+              </div>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="my-2 section-cpt pa-2">
+    <div class="section-image"></div>
+    <div class="section-background-alternate"></div>
+    <div class="section-content">
+      {{#each order as |entry|}}
+        <div class="flex flex-ac flex-jsb py-1">
+          <span class="trait-title-cpt flex-col">
+            {{entry.position}}. {{entry.name}}
+          </span>
+          <div class="flex-row flex-ac flex-wrap">
+            <span class="pr-1">{{entry.total}}</span>
+            {{#each entry.effectDice as |effectDie|}}
+              <div class="dice-wrapper ml-1">
+                <div class="die" data-die-rating="{{effectDie}}" data-type="effect" data-value="{{effectDie}}"></div>
+              </div>
+            {{else}}
+              <div class="dice-wrapper ml-1">
+                <div class="die" data-die-rating="4" data-type="effect" data-value="4"></div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+</div>

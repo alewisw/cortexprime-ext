@@ -6,7 +6,7 @@ import { localizer } from './foundryHelpers.js'
 import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
 
 const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0 }
-const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0, interference: null }
+const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0, interference: null, group: null }
 
 export const recordRollResult = async ({ total, effectDice, won }) => {
   const record = { total, effectDice, won: won ?? null, rolledAt: Date.now() }
@@ -83,7 +83,8 @@ export const getActiveChallenge = () => {
     initiatorId: challenge?.initiatorId ?? blankChallenge.initiatorId,
     responderIds: challenge?.responderIds ?? blankChallenge.responderIds,
     updatedAt: challenge?.updatedAt ?? blankChallenge.updatedAt,
-    interference: challenge?.interference ?? blankChallenge.interference
+    interference: challenge?.interference ?? blankChallenge.interference,
+    group: challenge?.group ?? blankChallenge.group
   }
 }
 
@@ -172,6 +173,180 @@ export const endInterference = async () => {
   await setActiveChallenge({ ...challenge, interference: null })
 }
 
+const GROUP_MINIMUM_PARTICIPANTS = 3
+
+// The single die that represents a 1-or-2 element effect dice array for comparison purposes —
+// the largest, matching applyContestEffectStepDown/computeHeroicStepUp. A missing or empty
+// array counts as a D4, same as everywhere else in this file.
+const representativeEffectFace = effectDice => effectDice?.length ? Math.max(...effectDice) : 4
+
+// Pure: whether the GM's roster is big enough to start Initiative. Drives both the Start
+// Initiative button's disabled state and the handler's defense-in-depth guard.
+export const canStartGroupInitiative = challenge =>
+  challenge.type === 'group' &&
+  challenge.group?.phase === 'selecting' &&
+  challenge.group.participantIds.length >= GROUP_MINIMUM_PARTICIPANTS
+
+// Pure: which participants still owe an Initiative roll — i.e. haven't rolled since the phase
+// began. Participants with no live target record (e.g. disconnected mid-phase) are deliberately
+// NOT counted as pending, so one dropped player can't deadlock the whole group. Shared by the
+// reactive resolver's "is everyone done?" check and the GM's "waiting on…" status line, so the
+// two can never disagree.
+export const getPendingGroupParticipants = (challenge, targets) =>
+  challenge.group.participantIds.filter(id => {
+    const target = targets.find(t => t.id === id)
+
+    return !!target && target.rolledAt <= challenge.updatedAt
+  })
+
+// Pure: the duel order — weakest first, strongest last. Lowest Total wins the front of the
+// queue; ties broken by the smaller representative effect die; still-tied entries broken by an
+// injected per-participant random value (an id -> number map), so this stays deterministic and
+// testable. Omitting `randoms` leaves tied entries in participantIds order (Array#sort is
+// stable). Ids with no live target record are dropped.
+export const orderGroupInitiative = (participantIds, targets, randoms = {}) =>
+  participantIds
+    .map(id => ({ id, target: targets.find(t => t.id === id) }))
+    .filter(entry => !!entry.target)
+    .map(({ id, target }) => ({
+      id,
+      total: target.total ?? 0,
+      effect: representativeEffectFace(target.effectDice),
+      random: randoms[id] ?? 0
+    }))
+    .sort((a, b) =>
+      a.total !== b.total
+        ? a.total - b.total
+        : a.effect !== b.effect
+          ? a.effect - b.effect
+          : a.random - b.random)
+    .map(entry => entry.id)
+
+// Pure: the challenge state that follows a completed Initiative phase — everyone but the
+// strongest roller becomes the queue, and the strongest becomes the standing champion whose
+// Total/Effect Dice is now the Target.
+export const startGroupDueling = (challenge, order, updatedAt) => ({
+  ...challenge,
+  group: {
+    ...challenge.group,
+    phase: 'dueling',
+    queue: order.slice(0, -1),
+    championId: order.at(-1) ?? null
+  },
+  updatedAt
+})
+
+// Pure: the challenge state after the front-of-queue challenger's roll resolves. Players are
+// only ever eliminated by losing — winning never removes anyone from play, it just hands the
+// Target to whoever won. A loss simply drops the challenger from the front of the queue,
+// leaving the champion standing. A win makes the challenger the new champion (their Total is
+// now the one to beat) and sends the *displaced* former champion to the back of the queue —
+// they're still in the running, just waiting for their next turn — so the group only actually
+// concludes once enough losses have whittled the queue down to nobody left to challenge.
+// updatedAt is bumped so the next challenger's stale Initiative roll can't be mistaken for
+// their duel roll.
+//
+// Unlike resolveChallengeAfterRoll, this never returns null for "the group is over" — the
+// caller needs the surviving champion's id to announce them. Completion is expressed as a
+// normal state whose queue has emptied (see isGroupComplete).
+export const resolveGroupDuel = (challenge, challenger, updatedAt) => ({
+  ...challenge,
+  group: {
+    ...challenge.group,
+    queue: challenger.won
+      ? [...challenge.group.queue.slice(1), challenge.group.championId]
+      : challenge.group.queue.slice(1),
+    championId: challenger.won ? challenger.id : challenge.group.championId
+  },
+  updatedAt
+})
+
+// Pure: removes someone from a dueling group — off the roster, out of the queue, and out of the
+// champion slot if they held it. Deliberately does NOT promote anyone in a removed champion's
+// place: per the GM's own call, the group simply has no Target until the GM does something
+// about it (most likely Clear Challenge).
+export const removeFromGroup = (challenge, participantId) => ({
+  ...challenge,
+  group: {
+    ...challenge.group,
+    participantIds: challenge.group.participantIds.filter(id => id !== participantId),
+    queue: challenge.group.queue.filter(id => id !== participantId),
+    championId: challenge.group.championId === participantId ? null : challenge.group.championId
+  }
+})
+
+// Pure: the group is decided once nobody is left to challenge and someone is still holding the
+// Target. Reached both by the last duel resolving and by the GM removing the last challenger.
+// An empty queue with no champion (the GM removed the champion too) is explicitly NOT complete —
+// there's no winner to announce, so the challenge stays put for the GM to clear.
+export const isGroupComplete = challenge => challenge.group?.queue.length === 0 && !!challenge.group.championId
+
+// Pure: the standing order for display — remaining challengers weakest-first, champion last.
+export const getGroupDisplayOrder = group => [...group.queue, ...(group.championId ? [group.championId] : [])]
+
+// GM action: replaces the roster wholesale — the checkbox list, mirroring setChallengeResponders.
+// No updatedAt bump — nothing is gated on it until startGroupInitiative sets the phase clock.
+export const setGroupParticipants = async participantIds => {
+  const challenge = getActiveChallenge()
+
+  if (challenge.type !== 'group' || challenge.group?.phase !== 'selecting') return
+
+  await setActiveChallenge({ ...challenge, group: { ...challenge.group, participantIds } })
+}
+
+// GM action: opens the Initiative phase. updatedAt becomes the clock every participant's one
+// Initiative roll is measured against.
+export const startGroupInitiative = async () => {
+  const challenge = getActiveChallenge()
+
+  if (!canStartGroupInitiative(challenge)) return
+
+  await setActiveChallenge({
+    ...challenge,
+    group: { ...challenge.group, phase: 'initiative' },
+    updatedAt: Date.now()
+  })
+}
+
+// What the current user is allowed to do in an active group right now:
+//   'initiative' — a participant who still owes their one Initiative roll
+//   'duel'       — the front-of-queue challenger, and only while a champion's Total exists
+//   null         — everyone else (waiting their turn, already eliminated, or a bystander)
+// Single source of truth for group roll eligibility, the Target preview, and the beat-target
+// resolution in rollDice.js.
+export const getMyGroupRollRole = () => {
+  const challenge = getActiveChallenge()
+
+  if (challenge.type !== 'group' || !challenge.group) return null
+
+  const myId = getMyId()
+
+  if (!myId) return null
+
+  if (challenge.group.phase === 'initiative') {
+    return getPendingGroupParticipants(challenge, getRollToBeatTargets()).includes(myId) ? 'initiative' : null
+  }
+
+  if (challenge.group.phase === 'dueling') {
+    return challenge.group.championId && challenge.group.queue[0] === myId ? 'duel' : null
+  }
+
+  return null
+}
+
+// The id whose recorded Total the current user is currently trying to beat, whatever the
+// mechanism: a designated Test/Contest responder and a Contest interferer both shoot at the
+// initiator, while a group's front-of-queue challenger shoots at the reigning champion.
+export const getMyBeatTargetId = () => {
+  const challenge = getActiveChallenge()
+
+  if (challenge.type === 'group') {
+    return getMyGroupRollRole() === 'duel' ? challenge.group.championId : null
+  }
+
+  return (getMyResponderId() || getMyInterfererId()) ? challenge.initiatorId : null
+}
+
 // Whether a designated responder's "Roll To Beat" is actually usable right now — the
 // initiator has to have rolled since this round began, otherwise there's no target yet to
 // beat. Drives the button's disabled state, and is checked again before a roll is actually
@@ -184,11 +359,25 @@ export const isMyResponderReady = () => {
   return hasInitiatorRolled(getActiveChallenge())
 }
 
-// The initiator's current total/effect dice, for previewing what a ready responder — or the
-// designated, not-yet-rolled interferer — needs to beat before they roll. Null whenever there's
-// nothing to preview yet.
+// The initiator's current total/effect dice, for previewing what a ready responder or the
+// designated, not-yet-rolled interferer needs to beat before they roll. For a Group Challenge
+// this is different: the champion's Target is visible to every participant (and the GM) for the
+// whole dueling phase, not just whoever's turn it currently is — everyone watching a duel unfold
+// wants to see the standing Target, not just the one person about to roll against it. Null
+// whenever there's nothing to preview yet.
 export const getMyChallengeTarget = () => {
   const challenge = getActiveChallenge()
+
+  if (challenge.type === 'group') {
+    if (challenge.group?.phase !== 'dueling' || !challenge.group.championId) return null
+
+    const myId = getMyId()
+
+    if (myId !== 'gm' && !challenge.group.participantIds.includes(myId)) return null
+
+    return getTargetRecord(challenge.group.championId)
+  }
+
   const readyAsResponder = isMyResponderReady()
   const readyAsInterferer = !!getMyInterfererId() && !hasInterfererRolled(challenge)
 
@@ -222,6 +411,12 @@ export const canCurrentUserRoll = () => {
     return getMyId() === challenge.interference.interfererId && !hasInterfererRolled(challenge)
   }
 
+  // The GM assembling a roster doesn't restrict anyone — nothing is "underway" until Start
+  // Initiative sets the phase clock. Once it does, this is the sole gate for the phase.
+  if (challenge.type === 'group') {
+    return challenge.group?.phase === 'selecting' || getMyGroupRollRole() !== null
+  }
+
   if (!isChallengeParticipant()) return false
 
   return !getMyResponderId() || isMyResponderReady()
@@ -237,14 +432,22 @@ const getDefaultContestResponderId = initiatorId => {
 }
 
 // GM action: starts a fresh challenge of the given type, defaulting the initiator to the GM. A
-// Contest also defaults its responder to the first available target.
+// Contest also defaults its responder to the first available target. A Group defaults its
+// roster to just the GM — "a set of players + the GM" reads as "the GM is normally in," but the
+// checkbox list stays live so they can uncheck themselves. Switching away from a prior Group (or
+// Contest interference) implicitly drops that state by omitting it here — setActiveChallenge
+// replaces the stored value wholesale, so getActiveChallenge's defaulting picks it back up as
+// null on the next read.
 export const setChallengeType = async type => {
   const initiatorId = 'gm'
   const responderIds = type === 'contest'
     ? [getDefaultContestResponderId(initiatorId)].filter(Boolean)
     : []
+  const group = type === 'group'
+    ? { phase: 'selecting', participantIds: ['gm'], queue: [], championId: null }
+    : null
 
-  await setActiveChallenge({ type, initiatorId, responderIds, updatedAt: Date.now() })
+  await setActiveChallenge({ type, initiatorId, responderIds, updatedAt: Date.now(), group })
 }
 
 // GM action: changes the initiator, dropping them from the responder list if they were on it.
@@ -348,6 +551,128 @@ export const processChallengeAdvancement = async () => {
   }
 }
 
+const announceGroupInitiative = async (order, targets) => {
+  const championId = order.at(-1)
+  const champion = targets.find(target => target.id === championId)
+
+  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/group-initiative.html', {
+    championName: champion?.name ?? '',
+    targetTotal: champion?.total ?? 0,
+    targetEffectDice: champion?.effectDice ?? [],
+    order: order.map((id, index) => {
+      const target = targets.find(t => t.id === id)
+
+      return {
+        position: index + 1,
+        name: target?.name ?? '',
+        total: target?.total ?? 0,
+        effectDice: target?.effectDice ?? []
+      }
+    })
+  })
+
+  await ChatMessage.create({ content })
+}
+
+const announceGroupWinner = async championId => {
+  const winner = getRollToBeatTargets().find(target => target.id === championId)
+
+  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/group-winner.html', {
+    winnerName: winner?.name ?? '',
+    total: winner?.total ?? 0,
+    effectDice: winner?.effectDice ?? []
+  })
+
+  await ChatMessage.create({ content })
+}
+
+// The group's single exit point: announce the survivor, then clear.
+const endGroup = async championId => {
+  await announceGroupWinner(championId)
+  await clearActiveChallenge()
+}
+
+// GM action: drops someone mid-duel — off the roster, out of the queue, out of the champion
+// slot if held. If that leaves the last challenger gone, the group is decided by default and
+// ends through the same announce-and-clear path a final duel takes.
+export const removeGroupParticipant = async participantId => {
+  const challenge = getActiveChallenge()
+
+  if (challenge.type !== 'group' || challenge.group?.phase !== 'dueling') return
+
+  const next = removeFromGroup(challenge, participantId)
+
+  if (isGroupComplete(next)) {
+    await endGroup(next.group.championId)
+    return
+  }
+
+  await setActiveChallenge(next)
+}
+
+// Runs only on the elected primary GM's client, reacting to fresh rolls from Group
+// participants. During Initiative, waits for everyone to have rolled, then orders them and
+// opens the duel queue. During dueling, reacts to the front-of-queue challenger's roll,
+// resolves it, and either advances to the next challenger or ends the group. Deliberately
+// separate from processChallengeAdvancement (which only ever scans challenge.responderIds, and
+// a group's participants are never added there) rather than folded into it — the two phases
+// here don't map onto that function's single-responder-at-a-time shape.
+export const processGroupAdvancement = async () => {
+  if (game.user !== game.users.activeGM) return
+
+  const challenge = getActiveChallenge()
+
+  if (challenge.type !== 'group' || !challenge.group) return
+
+  const targets = getRollToBeatTargets()
+
+  if (challenge.group.phase === 'initiative') {
+    if (getPendingGroupParticipants(challenge, targets).length > 0) return
+
+    const randoms = Object.fromEntries(challenge.group.participantIds.map(id => [id, Math.random()]))
+    const order = orderGroupInitiative(challenge.group.participantIds, targets, randoms)
+
+    if (order.length === 0) {
+      await clearActiveChallenge()
+      return
+    }
+
+    const next = startGroupDueling(challenge, order, Date.now())
+
+    await announceGroupInitiative(order, targets)
+
+    // A roster of one survivor after disconnects (rare): they win outright, no duels needed.
+    if (isGroupComplete(next)) {
+      await endGroup(next.group.championId)
+      return
+    }
+
+    await setActiveChallenge(next)
+    return
+  }
+
+  if (challenge.group.phase === 'dueling') {
+    const challengerId = challenge.group.queue[0]
+
+    if (!challengerId || !challenge.group.championId) return
+
+    const challenger = targets.find(target => target.id === challengerId)
+
+    if (!challenger) return
+    if (challenger.rolledAt <= challenge.updatedAt) return
+    if (challenger.won === null) return
+
+    const next = resolveGroupDuel(challenge, challenger, Date.now())
+
+    if (isGroupComplete(next)) {
+      await endGroup(next.group.championId)
+      return
+    }
+
+    await setActiveChallenge(next)
+  }
+}
+
 // Keeps an already-open dice-pool tray's Roll To Beat target totals current when someone
 // else rolls, instead of leaving them stale until the local user triggers a re-render.
 export const registerRollToBeat = () => {
@@ -362,6 +687,7 @@ export const registerRollToBeat = () => {
   Hooks.on('updateSetting', setting => {
     if (setting.key === 'cortexprime.lastGmRoll') {
       processChallengeAdvancement()
+      processGroupAdvancement()
       refreshDicePool()
     }
 
@@ -373,6 +699,7 @@ export const registerRollToBeat = () => {
   Hooks.on('updateActor', (actor, data) => {
     if (foundry.utils.hasProperty(data, 'flags.cortexprime.lastRoll')) {
       processChallengeAdvancement()
+      processGroupAdvancement()
       refreshDicePool()
     }
   })

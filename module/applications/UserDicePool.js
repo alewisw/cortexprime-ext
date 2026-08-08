@@ -4,20 +4,28 @@ import rollDice from '../scripts/rollDice.js'
 import { getCrisisPool } from '../scripts/crisisPool.js'
 import {
   canCurrentUserRoll,
+  canStartGroupInitiative,
   clearActiveChallenge,
   endInterference,
   getActiveChallenge,
   getEligibleInterferers,
+  getGroupDisplayOrder,
+  getMyBeatTargetId,
   getMyChallengeTarget,
+  getMyGroupRollRole,
   getMyInterfererId,
   getMyResponderId,
+  getPendingGroupParticipants,
   getRollToBeatTargets,
   getTargetTotal,
   hasContestStarted,
   hasInitiatorRolled,
+  removeGroupParticipant,
   setChallengeInitiator,
   setChallengeResponders,
   setChallengeType,
+  setGroupParticipants,
+  startGroupInitiative,
   startInterference
 } from '../scripts/rollToBeat.js'
 
@@ -91,6 +99,43 @@ const getChallengeDisplayData = (activeChallenge, rollToBeatTargets) => {
   }
 }
 
+// Bundles everything the template needs for the GM's Group controls and status line, per phase.
+// Returns isGroupChallenge:false for non-Group challenges so it can be spread unconditionally,
+// exactly like getChallengeDisplayData.
+const getGroupDisplayData = (activeChallenge, rollToBeatTargets) => {
+  if (activeChallenge.type !== 'group' || !activeChallenge.group) return { isGroupChallenge: false }
+
+  const group = activeChallenge.group
+  const targetOf = id => rollToBeatTargets.find(target => target.id === id)
+  const nameOf = id => targetOf(id)?.name
+  const champion = group.championId ? targetOf(group.championId) : null
+
+  return {
+    isGroupChallenge: true,
+    isGroupSelecting: group.phase === 'selecting',
+    isGroupInitiative: group.phase === 'initiative',
+    isGroupDueling: group.phase === 'dueling',
+    groupParticipantOptions: rollToBeatTargets.map(target => ({
+      ...target,
+      checked: group.participantIds.includes(target.id)
+    })),
+    groupCanStartInitiative: canStartGroupInitiative(activeChallenge),
+    groupPendingNames: group.phase === 'initiative'
+      ? getPendingGroupParticipants(activeChallenge, rollToBeatTargets).map(nameOf).filter(Boolean)
+      : [],
+    groupOrder: group.phase === 'dueling'
+      ? getGroupDisplayOrder(group)
+          .map(id => ({ id, name: nameOf(id), isChampion: id === group.championId, isCurrent: id === group.queue[0] }))
+          .filter(entry => !!entry.name)
+      : [],
+    groupChampionName: champion?.name ?? null,
+    groupCurrentChallengerName: group.phase === 'dueling' && group.queue[0] ? nameOf(group.queue[0]) : null,
+    // The champion was removed mid-duel: no Target, nobody can roll until the GM acts. Surfaced
+    // so the frozen roll buttons have a visible explanation.
+    groupNeedsChampion: group.phase === 'dueling' && !group.championId
+  }
+}
+
 export class UserDicePool extends FormApplication {
   constructor() {
     super()
@@ -127,7 +172,8 @@ export class UserDicePool extends FormApplication {
     const activeChallenge = getActiveChallenge()
     const rollToBeatTargets = getRollToBeatTargets()
     const myInterfererId = getMyInterfererId()
-    const canRollToBeat = !!getMyResponderId() || !!myInterfererId
+    const myGroupRole = getMyGroupRollRole()
+    const canRollToBeat = !!getMyResponderId() || !!myInterfererId || myGroupRole === 'duel'
     const challengeTarget = getMyChallengeTarget()
     const contestStarted = hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))
 
@@ -152,7 +198,8 @@ export class UserDicePool extends FormApplication {
       interfererName: activeChallenge.interference
         ? rollToBeatTargets.find(target => target.id === activeChallenge.interference.interfererId)?.name
         : null,
-      ...getChallengeDisplayData(activeChallenge, rollToBeatTargets)
+      ...getChallengeDisplayData(activeChallenge, rollToBeatTargets),
+      ...getGroupDisplayData(activeChallenge, rollToBeatTargets)
     }
   }
 
@@ -182,6 +229,9 @@ export class UserDicePool extends FormApplication {
     html.find('.clear-challenge').click(this._clearChallenge.bind(this))
     html.find('.start-interference').click(this._startInterference.bind(this))
     html.find('.end-interference').click(this._endInterference.bind(this))
+    html.find('.group-participant-checkbox').change(this._onGroupParticipantCheckboxChange.bind(this))
+    html.find('.start-group-initiative').click(this._startGroupInitiative.bind(this))
+    html.find('.remove-group-participant').click(this._removeGroupParticipant.bind(this))
     html.find('.spend-plot-point-extra-die').change(this._onSpendPlotPointExtraDieChange.bind(this))
   }
 
@@ -479,6 +529,40 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
+  async _onGroupParticipantCheckboxChange (event) {
+    event.preventDefault()
+
+    const participantIds = this.element.find('.group-participant-checkbox:checked').get().map(el => el.value)
+
+    await setGroupParticipants(participantIds)
+
+    await this.render(true)
+  }
+
+  async _startGroupInitiative (event) {
+    event.preventDefault()
+
+    // Defense-in-depth, matching _startInterference above — the button is only rendered once
+    // the roster is big enough, but a stale render shouldn't be able to start with fewer.
+    if (!canStartGroupInitiative(getActiveChallenge())) return
+
+    await startGroupInitiative()
+
+    await this.render(true)
+  }
+
+  async _removeGroupParticipant (event) {
+    event.preventDefault()
+
+    const activeChallenge = getActiveChallenge()
+
+    if (activeChallenge.type !== 'group' || activeChallenge.group?.phase !== 'dueling') return
+
+    await removeGroupParticipant(event.currentTarget.dataset.id)
+
+    await this.render(true)
+  }
+
   async _rollDicePool (event) {
     event.preventDefault()
 
@@ -502,7 +586,7 @@ export class UserDicePool extends FormApplication {
           : 'select'
 
     const targetTotal = rollType === 'toBeat'
-      ? getTargetTotal(getActiveChallenge().initiatorId)
+      ? getTargetTotal(getMyBeatTargetId())
       : undefined
 
     await rollDice.call(this, dicePool, rollType, targetTotal, !!currentDicePool.spendPlotPointForExtraDie)

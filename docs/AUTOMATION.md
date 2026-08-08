@@ -1,9 +1,10 @@
 # Automation Guide
 
 This guide explains the automated tools Cortex Prime adds on top of Foundry: the **Dice Pool**
-tray, running a **Test** or **Contest**, and managing a **Crisis Pool** — plus the other buttons
-on the floating panel at the top of the screen. It describes these features from the perspective
-of a GM or player running a game, not from a developer's perspective.
+tray, running a **Test**, **Contest**, or **Group Challenge**, and managing a **Crisis Pool** —
+plus the other buttons on the floating panel at the top of the screen. It describes these
+features from the perspective of a GM or player running a game, not from a developer's
+perspective.
 
 ## The floating panel
 
@@ -39,10 +40,11 @@ Once a pool has dice in it, four buttons roll it:
 - **Roll for Total** — rolls and automatically uses the two highest dice as the Total, picking
   the largest remaining die for the Effect.
 - **Roll to Beat** — only appears when the GM has lined someone up to respond to someone else's
-  roll (see Tests and Contests below); automatically builds the biggest Effect die while trying
-  to beat the designated Total. It always maximizes the Effect die, even when there's no way to
-  beat the Total — in a Contest, a losing Effect die can still blunt the eventual winner's (see
-  below), so it's never a wasted effort.
+  roll (a Test or Contest responder, a Contest interferer, or a Group Challenge's current duelist
+  — see below); automatically builds the biggest Effect die while trying to beat the designated
+  Total. It always maximizes the Effect die, even when there's no way to beat the Total — in a
+  Contest, a losing Effect die can still blunt the eventual winner's (see below), so it's never a
+  wasted effort.
 
 Whichever button is used, the result posts to chat as a card showing the rolled dice, Total, and
 Effect die.
@@ -90,25 +92,99 @@ Contest — the back-and-forth swapping along the way doesn't trigger it. It's w
 that's certain to lose still maximizes its Effect die: it's the one thing that can still matter
 in defeat.
 
+**Once a Contest has started** — the first roll has happened — the GM can no longer change who's
+**Roll Now** or **Roll Next** by clicking those radios. They lock for the rest of the Contest,
+still updating automatically to show the correct side as the back-and-forth swaps, but no longer
+clickable. This is what makes Interference (below) the intended way to shake up an already-running
+Contest, rather than the GM just re-picking who's involved.
+
+**Interference:** at any point once a Contest has started, the GM can pause it and let a third
+party jump in for one roll. Below the (now-locked) Roll Now/Roll Next radios, a **Select
+Interfering Character** list appears, offering anyone connected who isn't currently one of the
+two people in the Contest — including the GM's own side, if the GM isn't part of this particular
+Contest. Picking someone and clicking **Start Interference**:
+
+- Pauses the Contest — both regular participants' roll buttons freeze.
+- Enables the chosen interferer's roll buttons for one roll, showing them the same Target
+  Total/Effect Dice preview a normal responder would see.
+- Once they roll, their buttons disable again, whether they won or lost.
+
+The GM then clicks **Resume Contest** whenever they're ready to continue, and the same button
+covers both outcomes:
+
+- If the interferer failed to beat the Target, resuming simply hands control back to the normal
+  Roll Now/Roll Next pair, against the exact same Target as before — nothing else changes.
+- If the interferer succeeded, resuming does the same thing, but the GM would typically use
+  **Clear Challenge** instead at this point to end the Contest outright and narrate the outcome
+  — beating the Target during Interference isn't itself tracked as winning the ongoing Contest.
+
+An interference roll can still trigger Heroic Success, but it never blunts the Contest's Effect
+die and never reduces an active Crisis Pool — those only ever happen through the Contest's own
+back-and-forth.
+
+## Running a Group Challenge
+
+A Group Challenge pits three or more people against each other at once: everyone rolls once to
+establish an order, then takes turns trying to knock the current leader off the top. Players are
+only ever eliminated by losing a duel — winning never removes anyone from play, it just hands the
+Target to whoever won and sends the previous leader back into the rotation for another turn. This
+continues until only one person hasn't lost a duel.
+
+1. The GM opens their Dice Pool tray and picks **Group**.
+2. The GM checks off everyone taking part — at least three participants are required (the GM
+   themselves is an eligible pick too). **Start Initiative** stays disabled, with a hint
+   explaining why, until there are enough.
+3. Clicking **Start Initiative** opens the Initiative phase: every checked participant's roll
+   buttons enable — Roll to Beat isn't offered yet, since there's nothing to beat — and each
+   rolls exactly once, in any order, whenever they're ready. The GM's status line names who's
+   still pending.
+4. Once everyone has rolled, the group is automatically ordered from lowest Total to highest,
+   ties broken by the smaller Effect die, and any remaining tie broken at random. A chat card
+   announces the order and shows the strongest roller's Total/Effect Dice as the Target — that
+   person becomes the standing **champion**.
+5. Dueling begins: the next participant in line rolls once, trying to beat the champion's Target,
+   with the same Target Total/Effect Dice preview a Contest responder would see:
+   - If they fail, they're eliminated outright, and the next person in line is up against the
+     same Target.
+   - If they succeed, their roll becomes the new Target and they become the champion — but the
+     player they just displaced isn't eliminated. That player rejoins the back of the line to
+     get another turn once it comes back around, and the next person already in line rolls
+     against the new champion.
+6. This keeps cycling — the champion's seat can change hands repeatedly — until enough duels have
+   been lost that only one person is left in the running. A chat card announces that winner, and
+   the Group Challenge clears itself automatically — no manual step needed.
+
+At any point once dueling has started, the GM can remove any participant from the **Order** list
+with the X button next to their name — including the reigning champion. Removing the champion
+doesn't promote anyone in their place; the group is simply left with no Target until the GM does
+something about it, typically **Clear Challenge**. Removing anyone else just skips them — the
+challenge continues normally with whoever's left.
+
+As with a Test or Contest, only whoever's turn it currently is can roll while a Group Challenge is
+active — everyone else, including the champion, is locked out until it's resolved.
+
 ## Reading a roll result
 
 Every roll posts a chat card. Beyond the dice/Total/Effect die, if a roll was checked against
-someone else's (a Test/Contest response), the card also shows:
+someone else's (a Test/Contest response, a Contest interference, or a Group Challenge duel), the
+card also shows:
 
-- **Heroic Success** — beating the target by 5 or more, in either a Test or a Contest, steps the
-  Effect die up one size for every full 5 points of margin (d4→d6→d8→d10→d12). The Effect Dice
-  box shows the before/after step (e.g. "d6→d8"); stepping past d12 shows "d12→SPECIAL" instead,
-  though the die actually recorded stays at d12 since there's nothing bigger to roll with. This
-  is calculated right when the roll happens — before the Contest Effect-die-blunting rule below,
-  so a Heroic Success's boosted die is what a later loss would have to blunt, and it's also what
-  counts against an active Crisis Pool.
+- **Heroic Success** — beating the target by 5 or more, in a Test, Contest, Interference roll, or
+  Group Challenge duel, steps the Effect die up one size for every full 5 points of margin
+  (d4→d6→d8→d10→d12). The Effect Dice box shows the before/after step (e.g. "d6→d8"); stepping
+  past d12 shows "d12→SPECIAL" instead, though the die actually recorded stays at d12 since
+  there's nothing bigger to roll with. This is calculated right when the roll happens — before
+  the Contest Effect-die-blunting rule below, so a Heroic Success's boosted die is what a later
+  loss would have to blunt, and it's also what counts against an active Crisis Pool.
 - **Target** — the total that needed to be beaten.
 - **Result** — "Won", or "Lost" along with the Effect die of the roll that wasn't beaten, so it's
   clear at a glance what the responder was up against. In a Contest, if that loss was the one
   that ended it and it was big enough to blunt the winner's Effect die, this shows the Effect
   die stepping down (before and after) instead of just the one value.
 - If the roll won while a Crisis Pool was active, this box instead shows what happened to the
-  crisis — see below.
+  crisis — see below. Only a genuine Test or Contest win does this; an Interference roll or a
+  Group Challenge duel never touches the Crisis Pool or blunts anyone's Effect die, even on a
+  win or loss that would otherwise qualify.
 
 ## Crisis Pool
 

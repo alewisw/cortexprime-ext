@@ -65,80 +65,143 @@
                   <div class="flex-col pr-1 pb-1">
                     <button class="btn {{ternary (eq activeChallenge.type 'contest') 'btn-primary-cpt' 'btn-secondary-cpt'}} set-challenge-type" data-type="contest" type="button">{{localize 'Contest'}}</button>
                   </div>
+                  <div class="flex-col pr-1 pb-1">
+                    <button class="btn {{ternary (eq activeChallenge.type 'group') 'btn-primary-cpt' 'btn-secondary-cpt'}} set-challenge-type" data-type="group" type="button">{{localize 'Group'}}</button>
+                  </div>
                   {{#if activeChallenge.type}}
                   <div class="flex-col pb-1">
                     <button class="btn btn-secondary-cpt clear-challenge" type="button">{{localize 'ClearChallenge'}}</button>
                   </div>
                   {{/if}}
                 </div>
-                {{#if activeChallenge.type}}
-                <div class="flex-row flex-as flex-wrap">
-                  <div class="flex-col col-6 pr-1 pb-1">
-                    <span class="input-label-cpt">{{localize 'RollNow'}}</span>
-                    <div style="display: flex; flex-direction: column;">
-                      {{#each challengeInitiatorOptions}}
-                        <label class="flex-row flex-ac">
-                          <input class="challenge-initiator" type="radio" name="challenge-initiator" value="{{id}}" {{#if selected}}checked{{/if}} {{#if ../challengeRadiosReadOnly}}disabled{{/if}}>
-                          <span class="pl-1">{{name}}</span>
-                        </label>
-                      {{/each}}
+                {{#if isGroupChallenge}}
+                  {{#if isGroupSelecting}}
+                  <div class="flex-row flex-as flex-wrap">
+                    <div class="flex-col col-12">
+                      <span class="input-label-cpt">{{localize 'GroupParticipants'}}</span>
+                      <div style="display: flex; flex-direction: column;">
+                        {{#each groupParticipantOptions}}
+                          <label class="flex-row flex-ac">
+                            <input class="group-participant-checkbox" type="checkbox" value="{{id}}" {{#if checked}}checked{{/if}}>
+                            <span class="pl-1">{{name}}</span>
+                          </label>
+                        {{/each}}
+                      </div>
+                      <button class="btn btn-secondary-cpt start-group-initiative mt-1" type="button" {{#unless groupCanStartInitiative}}disabled{{/unless}}>{{localize 'StartInitiative'}}</button>
+                      {{#unless groupCanStartInitiative}}
+                        <p>{{localize 'GroupMinimumParticipants'}}</p>
+                      {{/unless}}
                     </div>
                   </div>
-                  <div class="flex-col col-6 pb-1">
-                    {{#if (eq activeChallenge.type 'test')}}
-                      <span class="input-label-cpt">{{localize 'RollNext'}}</span>
+                  {{/if}}
+                  {{#if isGroupDueling}}
+                  <div class="flex-row flex-as flex-wrap">
+                    <div class="flex-col col-12">
+                      <span class="input-label-cpt">{{localize 'GroupOrder'}}</span>
                       <div style="display: flex; flex-direction: column;">
-                        {{#each challengeResponderOptions}}
-                          <label class="flex-row flex-ac">
-                            <input class="challenge-responder-checkbox" type="checkbox" value="{{id}}" {{#if checked}}checked{{/if}}>
-                            <span class="pl-1">{{name}}</span>
-                          </label>
+                        {{#each groupOrder}}
+                          <div class="flex-row flex-ac flex-jsb">
+                            <span class="pl-1">
+                              {{name}}
+                              {{#if isChampion}} &mdash; {{localize 'GroupChampion'}}{{/if}}
+                              {{#if isCurrent}} &mdash; {{localize 'RollNow'}}{{/if}}
+                            </span>
+                            <button class="remove-group-participant btn btn-icon btn-secondary-cpt btn-small" data-id="{{id}}" type="button">
+                              <i class="fa fa-times"></i>
+                            </button>
+                          </div>
                         {{/each}}
                       </div>
-                    {{else}}
-                      <span class="input-label-cpt">{{localize 'RollNext'}}</span>
-                      <div style="display: flex; flex-direction: column;">
-                        {{#each challengeResponderOptions}}
-                          <label class="flex-row flex-ac">
-                            <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="{{id}}" {{#if checked}}checked{{/if}} {{#if ../challengeRadiosReadOnly}}disabled{{/if}}>
-                            <span class="pl-1">{{name}}</span>
-                          </label>
-                        {{/each}}
-                      </div>
-                    {{/if}}
+                      {{#if groupNeedsChampion}}
+                        <p class="sub-trait-label-cpt mt-1">{{localize 'GroupChampionRemoved'}}</p>
+                      {{/if}}
+                    </div>
                   </div>
-                </div>
-                {{/if}}
-                {{#if challengeRadiosReadOnly}}
-                <div class="flex-row flex-as flex-wrap mt-2">
-                  <div class="flex-col col-12">
-                    {{#if activeChallenge.interference}}
-                      <span class="input-label-cpt">{{localize 'Interference'}}</span>
-                      <p class="sub-trait-label-cpt">{{interfererName}}</p>
-                      <button class="btn btn-secondary-cpt end-interference mt-1" type="button">{{localize 'ResumeContest'}}</button>
-                    {{else}}
-                      <span class="input-label-cpt">{{localize 'SelectInterferingCharacter'}}</span>
+                  {{/if}}
+                {{else}}
+                  {{#if activeChallenge.type}}
+                  <div class="flex-row flex-as flex-wrap">
+                    <div class="flex-col col-6 pr-1 pb-1">
+                      <span class="input-label-cpt">{{localize 'RollNow'}}</span>
                       <div style="display: flex; flex-direction: column;">
-                        {{#each eligibleInterferers}}
+                        {{#each challengeInitiatorOptions}}
                           <label class="flex-row flex-ac">
-                            <input class="interferer-radio" type="radio" name="interferer" value="{{id}}">
+                            <input class="challenge-initiator" type="radio" name="challenge-initiator" value="{{id}}" {{#if selected}}checked{{/if}} {{#if ../challengeRadiosReadOnly}}disabled{{/if}}>
                             <span class="pl-1">{{name}}</span>
                           </label>
-                        {{else}}
-                          <p>{{localize 'NoEligibleInterferers'}}</p>
                         {{/each}}
                       </div>
-                      <button class="btn btn-secondary-cpt start-interference mt-1" type="button" {{#unless eligibleInterferers}}disabled{{/unless}}>{{localize 'StartInterference'}}</button>
-                    {{/if}}
+                    </div>
+                    <div class="flex-col col-6 pb-1">
+                      {{#if (eq activeChallenge.type 'test')}}
+                        <span class="input-label-cpt">{{localize 'RollNext'}}</span>
+                        <div style="display: flex; flex-direction: column;">
+                          {{#each challengeResponderOptions}}
+                            <label class="flex-row flex-ac">
+                              <input class="challenge-responder-checkbox" type="checkbox" value="{{id}}" {{#if checked}}checked{{/if}}>
+                              <span class="pl-1">{{name}}</span>
+                            </label>
+                          {{/each}}
+                        </div>
+                      {{else}}
+                        <span class="input-label-cpt">{{localize 'RollNext'}}</span>
+                        <div style="display: flex; flex-direction: column;">
+                          {{#each challengeResponderOptions}}
+                            <label class="flex-row flex-ac">
+                              <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="{{id}}" {{#if checked}}checked{{/if}} {{#if ../challengeRadiosReadOnly}}disabled{{/if}}>
+                              <span class="pl-1">{{name}}</span>
+                            </label>
+                          {{/each}}
+                        </div>
+                      {{/if}}
+                    </div>
                   </div>
-                </div>
+                  {{/if}}
+                  {{#if challengeRadiosReadOnly}}
+                  <div class="flex-row flex-as flex-wrap mt-2">
+                    <div class="flex-col col-12">
+                      {{#if activeChallenge.interference}}
+                        <span class="input-label-cpt">{{localize 'Interference'}}</span>
+                        <p class="sub-trait-label-cpt">{{interfererName}}</p>
+                        <button class="btn btn-secondary-cpt end-interference mt-1" type="button">{{localize 'ResumeContest'}}</button>
+                      {{else}}
+                        <span class="input-label-cpt">{{localize 'SelectInterferingCharacter'}}</span>
+                        <div style="display: flex; flex-direction: column;">
+                          {{#each eligibleInterferers}}
+                            <label class="flex-row flex-ac">
+                              <input class="interferer-radio" type="radio" name="interferer" value="{{id}}">
+                              <span class="pl-1">{{name}}</span>
+                            </label>
+                          {{else}}
+                            <p>{{localize 'NoEligibleInterferers'}}</p>
+                          {{/each}}
+                        </div>
+                        <button class="btn btn-secondary-cpt start-interference mt-1" type="button" {{#unless eligibleInterferers}}disabled{{/unless}}>{{localize 'StartInterference'}}</button>
+                      {{/if}}
+                    </div>
+                  </div>
+                  {{/if}}
                 {{/if}}
               </div>
               {{/if}}
               {{#if activeChallenge.type}}
               <div class="mt-1">
                 <p class="sub-trait-label-cpt">
-                  {{#if activeChallenge.interference}}
+                  {{#if isGroupChallenge}}
+                    {{localize 'Group'}} &mdash;
+                    {{#if isGroupSelecting}}{{localize 'GroupSelecting'}}{{/if}}
+                    {{#if isGroupInitiative}}
+                      {{localize 'Initiative'}} &mdash;
+                      {{#if groupPendingNames}}
+                        {{localize 'WaitingOnRolls'}}: {{#each groupPendingNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+                      {{else}}
+                        {{localize 'GroupInitiativeComplete'}}
+                      {{/if}}
+                    {{/if}}
+                    {{#if isGroupDueling}}
+                      {{#if groupCurrentChallengerName}}{{localize 'RollNow'}}: {{groupCurrentChallengerName}}{{/if}}
+                    {{/if}}
+                  {{else if activeChallenge.interference}}
                     {{localize 'Contest'}} &mdash; {{localize 'Interfere'}}: {{interfererName}}
                   {{else}}
                     {{localize (ternary (eq activeChallenge.type 'test') 'Test' 'Contest')}} &mdash; {{localize 'RollNow'}}: {{#each rollNowNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#if rollNextNames}} &middot; {{localize 'RollNext'}}: {{#each rollNextNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}

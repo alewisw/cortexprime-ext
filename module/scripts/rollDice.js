@@ -1,7 +1,7 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer, showPlotPointSpendAnimation } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
-import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyInterfererId, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
+import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyBeatTargetId, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
 
@@ -354,12 +354,13 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
         ? getDiceByTargetTotal(rollResults.results, targetTotal)
         : await dicePicker(rollResults)
 
-  // Any roll made while the roller is a designated responder — or the designated Contest
-  // interferer using their one-time roll — counts as an attempt to beat that target, exactly
-  // like "Roll To Beat" — regardless of which of the four roll types was actually used to build
-  // the Total/Effect. Only "Roll To Beat" itself picks its dice with the target in mind; the
-  // other three just get their normal result compared against it too.
-  const respondingToId = rollType !== 'toBeat' && (getMyResponderId() || getMyInterfererId()) ? getActiveChallenge().initiatorId : null
+  // Any roll made while the roller is a designated responder, the designated Contest interferer
+  // using their one-time roll, or a Group's front-of-queue challenger counts as an attempt to
+  // beat that target, exactly like "Roll To Beat" — regardless of which of the four roll types
+  // was actually used to build the Total/Effect. Only "Roll To Beat" itself picks its dice with
+  // the target in mind; the other three just get their normal result compared against it too.
+  const beatTargetId = getMyBeatTargetId()
+  const respondingToId = rollType !== 'toBeat' ? beatTargetId : null
   const isBeatAttempt = rollType === 'toBeat' || respondingToId !== null
   const effectiveTargetTotal = rollType === 'toBeat' ? selectedDice.targetTotal : getTargetTotal(respondingToId)
   const won = rollType === 'toBeat' ? selectedDice.won : (isBeatAttempt ? selectedDice.total > effectiveTargetTotal : undefined)
@@ -375,8 +376,8 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
 
   // On a loss, show the effect dice of the roll that wasn't beaten, so a "Lost" result still
   // conveys what the responder was up against.
-  const targetId = rollType === 'toBeat' ? getActiveChallenge().initiatorId : respondingToId
-  const failureEffectDice = (isBeatAttempt && won === false) ? (getTargetRecord(targetId)?.effectDice ?? []) : []
+  const targetId = beatTargetId
+  const failureEffectDice = (isBeatAttempt && won === false) ? (getTargetRecord(beatTargetId)?.effectDice ?? []) : []
 
   // Contest-only: even a losing roll's effect die can blunt the contest's overall winner's
   // already-recorded one. The GM's client applies this for real, reactively, once this chat
@@ -399,8 +400,6 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     ? previewCrisisReduction(finalEffectDice)
     : null
 
-  await recordRollResult({ total: selectedDice.total, effectDice: finalEffectDice, won })
-
   const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/roll-result.html', {
     dicePool: pool,
     effectDice: finalEffectDice,
@@ -419,5 +418,12 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     crisisResolved: !!crisisPreview?.resolved
   })
 
+  // This roll's own chat card must exist before recordRollResult writes the flag/setting that
+  // fires the reactive Group Challenge advancement hooks (see registerRollToBeat in
+  // rollToBeat.js) — those can post their own chat message (e.g. the Initiative results card)
+  // as soon as this write lands, so recording the roll only after the card is created keeps
+  // that follow-up message from racing ahead of it in the chat log.
   await ChatMessage.create({ content })
+
+  await recordRollResult({ total: selectedDice.total, effectDice: finalEffectDice, won })
 }
