@@ -214,6 +214,15 @@
         <div class="separator-cpt"></div>
         <div class="relative-section">
           <div class="section-background"></div>
+          {{#unless isGM}}
+          <div class="flex-col col-12 py-1">
+            <label class="flex-row flex-ac">
+              <input class="spend-plot-point-extra-die" type="checkbox" name="spendPlotPointForExtraDie"
+                {{#if spendPlotPointForExtraDie}}checked{{/if}} {{#unless hasPlotPoints}}disabled{{/unless}}>
+              <span class="pl-1">{{localize 'SpendPlotPointExtraDieCheckbox'}}</span>
+            </label>
+          </div>
+          {{/unless}}
           <div class="flex-col col-12 flex flex-je flex-as py-2">
             <div class="flex-col pl-0">
               <button class="clear-dice-pool btn btn-secondary-cpt" type="button">{{localize 'Clear'}}</button>

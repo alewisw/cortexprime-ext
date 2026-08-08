@@ -19,6 +19,18 @@ export const getBorderWidth = (borderPosition, borderWidth) => {
 
 export const localizer = target => game.i18n.localize(target)
 
+// Shows the same Dice So Nice "plot point" die-flip animation used everywhere a Plot Point is
+// spent, so every spend mechanism in the system reads the same visually — pass a count when a
+// single action can spend more than one point (e.g. multiple Roll & Select checkboxes) so that
+// many plot-point dice appear together in one throw.
+export const showPlotPointSpendAnimation = (count = 1) => {
+  if (!game.dice3d) return
+
+  const dice = Array.from({ length: count }, () => ({ result: 1, resultLabel: 1, type: 'dp', vectors: [], options: {} }))
+
+  game.dice3d.show({ throws: [{ dice }] }, game.user, true)
+}
+
 export const setCssVars = (theme) => {
   Object.entries(theme).forEach(([ key, value ]) => {
     if ('inputBorderPosition' === key) {

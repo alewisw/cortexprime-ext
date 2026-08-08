@@ -56,37 +56,74 @@ describe('reduceCrisisDice', () => {
 
 describe('computeCrisisReduction', () => {
   it('reports a removed event with the eliminated die\'s face', () => {
-    const { dice, event } = computeCrisisReduction([12, 8, 6], [10])
+    const { dice, events } = computeCrisisReduction([12, 8, 6], [10])
 
     expect(dice).toEqual([12, 6])
-    expect(event).toEqual({ type: 'removed', face: 8 })
+    expect(events).toEqual([{ type: 'removed', face: 8 }])
   })
 
   it('reports a steppedDown event with the from/to faces', () => {
-    const { dice, event } = computeCrisisReduction([12, 8], [4])
+    const { dice, events } = computeCrisisReduction([12, 8], [4])
 
     expect(dice).toEqual([10, 8])
-    expect(event).toEqual({ type: 'steppedDown', from: 12, to: 10 })
+    expect(events).toEqual([{ type: 'steppedDown', from: 12, to: 10 }])
   })
 
   it('reports a removed event when a D4 is stepped below D4', () => {
-    const { dice, event } = computeCrisisReduction([4], [4])
+    const { dice, events } = computeCrisisReduction([4], [4])
 
     expect(dice).toEqual([])
-    expect(event).toEqual({ type: 'removed', face: 4 })
+    expect(events).toEqual([{ type: 'removed', face: 4 }])
   })
 
   it('reports a steppedDown event for D6 stepping down to D4', () => {
-    const { dice, event } = computeCrisisReduction([6], [4])
+    const { dice, events } = computeCrisisReduction([6], [4])
 
     expect(dice).toEqual([4])
-    expect(event).toEqual({ type: 'steppedDown', from: 6, to: 4 })
+    expect(events).toEqual([{ type: 'steppedDown', from: 6, to: 4 }])
   })
 
-  it('reports no event for an already-empty pool', () => {
-    const { dice, event } = computeCrisisReduction([], [12])
+  it('reports no events for an already-empty pool', () => {
+    const { dice, events } = computeCrisisReduction([], [12])
 
     expect(dice).toEqual([])
-    expect(event).toBeNull()
+    expect(events).toEqual([])
+  })
+
+  it('with two effect dice, applies each individually (largest first), eliminating two dice', () => {
+    const { dice, events } = computeCrisisReduction([12, 10, 8, 6], [12, 10])
+
+    expect(dice).toEqual([12, 6])
+    expect(events).toEqual([
+      { type: 'removed', face: 10 },
+      { type: 'removed', face: 8 }
+    ])
+  })
+
+  it('with two effect dice, one eliminates and the other steps a die down', () => {
+    const { dice, events } = computeCrisisReduction([12, 8], [10, 4])
+
+    expect(dice).toEqual([10])
+    expect(events).toEqual([
+      { type: 'removed', face: 8 },
+      { type: 'steppedDown', from: 12, to: 10 }
+    ])
+  })
+
+  it('with two effect dice, both step dice down in sequence', () => {
+    const { dice, events } = computeCrisisReduction([8, 6], [6, 4])
+
+    expect(dice).toEqual([4, 6])
+    expect(events).toEqual([
+      { type: 'steppedDown', from: 8, to: 6 },
+      { type: 'steppedDown', from: 6, to: 4 }
+    ])
+  })
+
+  it('stops applying further effect dice once the pool has been emptied', () => {
+    const { dice, events } = computeCrisisReduction([4], [12, 4])
+
+    expect(dice).toEqual([])
+    expect(events).toEqual([{ type: 'removed', face: 4 }])
   })
 })

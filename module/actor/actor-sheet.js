@@ -3,7 +3,7 @@
  * @extends {foundry.appv1.sheets.ActorSheet}
  */
 import { getLength, objectMapValues, objectReindexFilter, objectFindValue, objectSome } from '../../lib/helpers.js'
-import { localizer } from '../scripts/foundryHelpers.js'
+import { localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import {
   removeItems,
@@ -361,9 +361,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
     await this.actor.changePpBy(-1, false, usage)
 
-    if (game.dice3d) {
-      game.dice3d.show({ throws: [{ dice: [{ result: 1, resultLabel: 1, type: 'dp', vectors: [], options: {} }] }] }, game.user, true)
-    }
+    showPlotPointSpendAnimation()
   }
 
   async _resetDataPoint(path, target, value) {

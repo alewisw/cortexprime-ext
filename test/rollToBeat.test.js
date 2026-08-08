@@ -184,6 +184,17 @@ describe('applyContestEffectStepDown', () => {
     expect(applyContestEffectStepDown([], [12])).toEqual({ effectDice: [], steppedDown: null })
     expect(applyContestEffectStepDown([8], [])).toEqual({ effectDice: [8], steppedDown: null })
   })
+
+  it('with two winner dice, steps down only the largest, leaving the other untouched', () => {
+    expect(applyContestEffectStepDown([8, 4], [12])).toEqual({
+      effectDice: [6, 4],
+      steppedDown: { from: 8, to: 6, other: 4 }
+    })
+  })
+
+  it('with two winner dice, stands as rolled when the largest already beats the loser\'s largest', () => {
+    expect(applyContestEffectStepDown([12, 4], [8])).toEqual({ effectDice: [12, 4], steppedDown: null })
+  })
 })
 
 describe('computeHeroicStepUp', () => {
@@ -216,5 +227,13 @@ describe('computeHeroicStepUp', () => {
   it('treats a missing/empty effect die as a D4 baseline before stepping up', () => {
     expect(computeHeroicStepUp([], 5)).toEqual({ effectDice: [6], from: 4, to: 6 })
     expect(computeHeroicStepUp(undefined, 5)).toEqual({ effectDice: [6], from: 4, to: 6 })
+  })
+
+  it('with two effect dice, steps up only the lowest, leaving the other untouched', () => {
+    expect(computeHeroicStepUp([8, 4], 5)).toEqual({ effectDice: [8, 6], from: 4, to: 6, other: 8 })
+  })
+
+  it('with two effect dice, overshooting D12 caps the lowest at D12 and displays SPECIAL', () => {
+    expect(computeHeroicStepUp([12, 8], 15)).toEqual({ effectDice: [12, 12], from: 8, to: 'SPECIAL', other: 12 })
   })
 })

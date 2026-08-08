@@ -51,18 +51,36 @@
             <div class="section-background"></div>
             <div class="section-content pa-2 text-center">
               <h3 class="section-primary-title-cpt">{{localize 'EffectDice'}}</h3>
-              <div class="effect-dice flex-row flex-c flex-wrap">
-                <div class="die-icon-wrapper my-1">
-                  {{> (concat "systems/cortexprime/templates/partials/dice/d" effectDieFace ".html")
-                    number=effectDieFace
-                    type='effect'
-                  }}
-                </div>
+              <div class="effect-dice your-effect-dice flex-row flex-c flex-wrap">
+                {{#each effectDiceFaces as |effectDie|}}
+                  <div class="die-icon-wrapper my-1">
+                    {{> (concat "systems/cortexprime/templates/partials/dice/d" effectDie ".html")
+                      number=effectDie
+                      type='effect'
+                    }}
+                  </div>
+                {{/each}}
               </div>
             </div>
           </div>
         </div>
       </div>
+      {{#unless isGM}}
+        <div class="flex-row my-2">
+          <div class="flex-col col-12">
+            <label class="flex-row flex-ac">
+              <input class="extra-total-die-checkbox" type="checkbox">
+              <span class="pl-1">{{localize 'ExtraTotalDieCheckbox'}}</span>
+            </label>
+          </div>
+          <div class="flex-col col-12">
+            <label class="flex-row flex-ac">
+              <input class="extra-effect-die-checkbox" type="checkbox">
+              <span class="pl-1">{{localize 'ExtraEffectDieCheckbox'}}</span>
+            </label>
+          </div>
+        </div>
+      {{/unless}}
       {{#if showChallengeTarget}}
       <div class="flex-row my-2">
         <div class="flex-col col-6">

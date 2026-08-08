@@ -21,7 +21,8 @@ const blankPool = {
     label: '',
     value: { 0: '8' }
   },
-  pool: {}
+  pool: {},
+  spendPlotPointForExtraDie: false
 }
 
 const CRISIS_POOL_SOURCE = 'Crisis Pool'
@@ -127,6 +128,7 @@ export class UserDicePool extends FormApplication {
       isGM: game.user.isGM,
       theme,
       canRollToBeat,
+      hasPlotPoints: !game.user.isGM && (game.user.character?.system.pp.value ?? 0) >= 1,
       // Covers both a bystander with no stake in the active challenge, and a designated
       // responder who shouldn't be able to dodge the "wait for the initiator" rule by rolling
       // with any of the other three roll types instead.
@@ -163,11 +165,29 @@ export class UserDicePool extends FormApplication {
     html.find('.challenge-responder-checkbox').change(this._onChallengeResponderCheckboxChange.bind(this))
     html.find('.challenge-responder-radio').change(this._onChallengeResponderSelectChange.bind(this))
     html.find('.clear-challenge').click(this._clearChallenge.bind(this))
+    html.find('.spend-plot-point-extra-die').change(this._onSpendPlotPointExtraDieChange.bind(this))
   }
 
   async initPool () {
     await game.user.setFlag('cortexprime', 'dicePool', null)
     await game.user.setFlag('cortexprime', 'dicePool', this.dicePool)
+  }
+
+  // Explicit read-modify-write, matching every other button/handler in this tray, rather than
+  // relying on the generic submitOnChange flow — that flow doesn't re-render (by design, so
+  // typing/selecting elsewhere doesn't get interrupted), so any other button's own
+  // getFlag-then-setFlag round trip can race ahead of it and save over an in-flight checkbox
+  // change, silently reverting the checkbox on the tray's next render.
+  async _onSpendPlotPointExtraDieChange (event) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const currentDice = game.user.getFlag('cortexprime', 'dicePool')
+
+    foundry.utils.setProperty(currentDice, 'spendPlotPointForExtraDie', event.currentTarget.checked)
+
+    await game.user.setFlag('cortexprime', 'dicePool', null)
+    await game.user.setFlag('cortexprime', 'dicePool', currentDice)
   }
 
   async _addCustomTraitToPool (event) {
@@ -431,7 +451,7 @@ export class UserDicePool extends FormApplication {
       ? getTargetTotal(getActiveChallenge().initiatorId)
       : undefined
 
-    await rollDice.call(this, dicePool, rollType, targetTotal)
+    await rollDice.call(this, dicePool, rollType, targetTotal, !!currentDicePool.spendPlotPointForExtraDie)
   }
 
   async toggle () {

@@ -322,41 +322,64 @@ const stepDownEffectFace = face => {
   return index > 0 ? EFFECT_DIE_LADDER[index - 1] : face
 }
 
-// Pure: a Contest's overall winner's effect die vs. the effect die of the roll that just lost
-// and ended it. Equal-or-higher stands; lower steps down one rung. Returns the effect dice to
-// actually record for the winner, plus the before/after faces when a step-down happened (null
-// otherwise, including the D4-floor no-op case) so callers can decide whether to show it.
+// Pure: a Contest's overall winner's effect die (or dice — one or two) vs. the largest effect
+// die of the roll that just lost and ended it. Equal-or-higher stands; lower steps down the
+// winner's largest die one rung, leaving any other winner die untouched. Returns the effect
+// dice to actually record for the winner, plus the before/after faces when a step-down happened
+// (null otherwise, including the D4-floor no-op case) — `other` is only present when the winner
+// had a second, unaffected die, so the shape stays identical to before for single-die callers.
 export const applyContestEffectStepDown = (winnerEffectDice, loserEffectDice) => {
-  const winnerFace = winnerEffectDice?.[0] ?? 4
-  const loserFace = loserEffectDice?.[0] ?? 4
+  const winnerDice = winnerEffectDice?.length ? winnerEffectDice : [4]
+  const loserDice = loserEffectDice?.length ? loserEffectDice : [4]
 
-  if (winnerFace >= loserFace) return { effectDice: winnerEffectDice, steppedDown: null }
+  const winnerLargest = Math.max(...winnerDice)
+  const loserLargest = Math.max(...loserDice)
 
-  const newFace = stepDownEffectFace(winnerFace)
+  if (winnerLargest >= loserLargest) return { effectDice: winnerEffectDice ?? [], steppedDown: null }
 
-  if (newFace === winnerFace) return { effectDice: winnerEffectDice, steppedDown: null }
+  const newFace = stepDownEffectFace(winnerLargest)
 
-  return { effectDice: [newFace], steppedDown: { from: winnerFace, to: newFace } }
+  if (newFace === winnerLargest) return { effectDice: winnerEffectDice ?? [], steppedDown: null }
+
+  const largestPos = winnerDice.indexOf(winnerLargest)
+  const other = winnerDice.length > 1 ? winnerDice.filter((_, index) => index !== largestPos)[0] : null
+  const newDice = [...winnerDice]
+
+  newDice[largestPos] = newFace
+
+  return {
+    effectDice: newDice,
+    steppedDown: { from: winnerLargest, to: newFace, ...(other !== null ? { other } : {}) }
+  }
 }
 
-// Pure: a beat-attempt roll that clears its target by 5+ steps its Effect die up one rung per
-// full 5-point margin. Returns null when the margin is under 5 (no Heroic Success). Stepping
-// past D12 caps the recorded effect die at D12, with `to: 'SPECIAL'` marking the display.
+// Pure: a beat-attempt roll that clears its target by 5+ steps its Effect die (or the lowest of
+// two) up one rung per full 5-point margin. Returns null when the margin is under 5 (no Heroic
+// Success). Stepping past D12 caps the recorded effect die at D12, with `to: 'SPECIAL'` marking
+// the display. `other` is only present when there was a second, unaffected die.
 export const computeHeroicStepUp = (effectDice, margin) => {
   if (margin < 5) return null
 
+  const dice = effectDice?.length ? effectDice : [4]
   const steps = Math.floor(margin / 5)
-  const currentFace = effectDice?.[0] ?? 4
-  const currentIndex = EFFECT_DIE_LADDER.indexOf(currentFace)
+  const lowestFace = Math.min(...dice)
+  const lowestPos = dice.indexOf(lowestFace)
+  const other = dice.length > 1 ? dice.filter((_, index) => index !== lowestPos)[0] : null
+  const currentIndex = EFFECT_DIE_LADDER.indexOf(lowestFace)
   const finalIndex = currentIndex + steps
+  const newDice = [...dice]
 
   if (finalIndex > EFFECT_DIE_LADDER.length - 1) {
-    return { effectDice: [12], from: currentFace, to: 'SPECIAL' }
+    newDice[lowestPos] = 12
+
+    return { effectDice: newDice, from: lowestFace, to: 'SPECIAL', ...(other !== null ? { other } : {}) }
   }
 
   const newFace = EFFECT_DIE_LADDER[finalIndex]
 
-  return { effectDice: [newFace], from: currentFace, to: newFace }
+  newDice[lowestPos] = newFace
+
+  return { effectDice: newDice, from: lowestFace, to: newFace, ...(other !== null ? { other } : {}) }
 }
 
 // Picks the die combination that maximizes the Effect die, not the one that minimally beats

@@ -89,6 +89,11 @@
                     <div class="die" data-die-rating="{{heroicSuccess.to}}" data-type="effect" data-value="{{heroicSuccess.to}}"></div>
                   </div>
                 {{/if}}
+                {{#if heroicSuccess.other}}
+                  <div class="dice-wrapper ma-1">
+                    <div class="die" data-die-rating="{{heroicSuccess.other}}" data-type="effect" data-value="{{heroicSuccess.other}}"></div>
+                  </div>
+                {{/if}}
               </div>
             {{else}}
               <div class="effect-dice flex-row flex-c flex-wrap">
@@ -126,24 +131,26 @@
           <div class="section-background"></div>
           <div class="section-content">
             <h3 class="section-secondary-title-cpt">{{localize 'Result'}}</h3>
-            {{#if crisisEvent}}
-              <div class="flex flex-c flex-ac flex-wrap pt-2 pb-1">
-                {{#if (eq crisisEvent.type 'removed')}}
-                  <span class="section-primary-title-cpt pr-1">{{localize 'CrisisDieRemoved'}}</span>
-                  <div class="dice-wrapper ml-1">
-                    <div class="die" data-die-rating="{{crisisEvent.face}}" data-type="die-rating" data-value="{{crisisEvent.face}}"></div>
-                  </div>
-                {{else}}
-                  <span class="section-primary-title-cpt pr-1">{{localize 'CrisisDieSteppedDown'}}</span>
-                  <div class="dice-wrapper ml-1">
-                    <div class="die" data-die-rating="{{crisisEvent.from}}" data-type="die-rating" data-value="{{crisisEvent.from}}"></div>
-                  </div>
-                  <i class="fa fa-arrow-right mx-1"></i>
-                  <div class="dice-wrapper ml-1">
-                    <div class="die" data-die-rating="{{crisisEvent.to}}" data-type="die-rating" data-value="{{crisisEvent.to}}"></div>
-                  </div>
-                {{/if}}
-              </div>
+            {{#if crisisEvents}}
+              {{#each crisisEvents as |crisisEvent|}}
+                <div class="flex flex-c flex-ac flex-wrap pt-2 pb-1">
+                  {{#if (eq crisisEvent.type 'removed')}}
+                    <span class="section-primary-title-cpt pr-1">{{localize 'CrisisDieRemoved'}}</span>
+                    <div class="dice-wrapper ml-1">
+                      <div class="die" data-die-rating="{{crisisEvent.face}}" data-type="die-rating" data-value="{{crisisEvent.face}}"></div>
+                    </div>
+                  {{else}}
+                    <span class="section-primary-title-cpt pr-1">{{localize 'CrisisDieSteppedDown'}}</span>
+                    <div class="dice-wrapper ml-1">
+                      <div class="die" data-die-rating="{{crisisEvent.from}}" data-type="die-rating" data-value="{{crisisEvent.from}}"></div>
+                    </div>
+                    <i class="fa fa-arrow-right mx-1"></i>
+                    <div class="dice-wrapper ml-1">
+                      <div class="die" data-die-rating="{{crisisEvent.to}}" data-type="die-rating" data-value="{{crisisEvent.to}}"></div>
+                    </div>
+                  {{/if}}
+                </div>
+              {{/each}}
               {{#if crisisResolved}}
                 <p class="section-primary-title-cpt pb-1">{{localize 'CrisisResolved'}}</p>
               {{/if}}
@@ -160,6 +167,11 @@
                   <div class="dice-wrapper ml-1">
                     <div class="die" data-die-rating="{{effectStepDown.to}}" data-type="die-rating" data-value="{{effectStepDown.to}}"></div>
                   </div>
+                  {{#if effectStepDown.other}}
+                    <div class="dice-wrapper ml-1">
+                      <div class="die" data-die-rating="{{effectStepDown.other}}" data-type="die-rating" data-value="{{effectStepDown.other}}"></div>
+                    </div>
+                  {{/if}}
                 {{else if failureEffectDice}}
                   {{#each failureEffectDice as |effectDie|}}
                   <div class="dice-wrapper ml-1">

@@ -39,35 +39,55 @@ export const chooseCrisisDieIndex = (dice, effectFace) => {
   return dice.reduce((bestIndex, face, index) => face > dice[bestIndex] ? index : bestIndex, 0)
 }
 
-// Pure: given the crisis pool's current dice and a winning effect die, returns both the new
-// dice array and a description of what happened to whichever die chooseCrisisDieIndex picked.
-// An empty input is returned as-is with no event — the caller decides what an empty result
-// means (i.e. ending the crisis).
-export const computeCrisisReduction = (dice, effectDice) => {
-  if (dice.length === 0) return { dice, event: null }
-
-  const effectFace = effectDice?.[0] ?? 4
+// Pure: given the crisis pool's current dice and a single winning effect die, returns both the
+// new dice array and a description of what happened to whichever die chooseCrisisDieIndex
+// picked.
+const applyOneEffectDie = (dice, effectFace) => {
   const index = chooseCrisisDieIndex(dice, effectFace)
   const face = dice[index]
   const result = [...dice]
-  let event
 
   if (effectFace > face) {
     result.splice(index, 1)
-    event = { type: 'removed', face }
-  } else {
-    const stepped = stepDownFace(face)
-
-    if (stepped === null) {
-      result.splice(index, 1)
-      event = { type: 'removed', face }
-    } else {
-      result[index] = stepped
-      event = { type: 'steppedDown', from: face, to: stepped }
-    }
+    return { dice: result, event: { type: 'removed', face } }
   }
 
-  return { dice: result, event }
+  const stepped = stepDownFace(face)
+
+  if (stepped === null) {
+    result.splice(index, 1)
+    return { dice: result, event: { type: 'removed', face } }
+  }
+
+  result[index] = stepped
+
+  return { dice: result, event: { type: 'steppedDown', from: face, to: stepped } }
+}
+
+// Pure: given the crisis pool's current dice and a winning roll's effect dice (one or two),
+// applies EACH effect die against the pool in turn, largest first, each one following the
+// normal eliminate-or-step-down rule against whatever the pool looks like after the previous
+// die was applied. Returns the final dice array and one event per die actually applied — fewer
+// than the number of effect dice if the pool empties partway through. An already-empty pool
+// returns no events — the caller decides what an empty result means (i.e. ending the crisis).
+export const computeCrisisReduction = (dice, effectDice) => {
+  if (dice.length === 0) return { dice, events: [] }
+
+  const faces = (effectDice?.length ? [...effectDice] : [4]).sort((a, b) => b - a)
+
+  let currentDice = dice
+  const events = []
+
+  for (const face of faces) {
+    if (currentDice.length === 0) break
+
+    const result = applyOneEffectDie(currentDice, face)
+
+    currentDice = result.dice
+    events.push(result.event)
+  }
+
+  return { dice: currentDice, events }
 }
 
 export const reduceCrisisDice = (dice, effectDice) => computeCrisisReduction(dice, effectDice).dice
@@ -83,16 +103,16 @@ export const reduceCrisisPoolByEffectDie = async effectDice => {
   else await setCrisisPoolState({ ...pool, dice })
 }
 
-// What WOULD happen if the crisis pool were reduced right now by this effect die — used to
-// describe the outcome on the roller's own chat message. The actual, authoritative mutation
+// What WOULD happen if the crisis pool were reduced right now by this roll's effect dice — used
+// to describe the outcome on the roller's own chat message. The actual, authoritative mutation
 // still happens separately via reduceCrisisPoolByEffectDie on the GM's client; both agree
-// because the underlying computation is deterministic given the same pool state and effect die.
+// because the underlying computation is deterministic given the same pool state and effect dice.
 export const previewCrisisReduction = effectDice => {
   const pool = getCrisisPool()
 
   if (!pool.active || pool.dice.length === 0) return null
 
-  const { dice, event } = computeCrisisReduction(pool.dice, effectDice)
+  const { dice, events } = computeCrisisReduction(pool.dice, effectDice)
 
-  return { event, resolved: dice.length === 0 }
+  return { events, resolved: dice.length === 0 }
 }
