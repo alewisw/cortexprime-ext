@@ -1,0 +1,32 @@
+<div class="cortexprime plot-point-use-dialog">
+  <div class="sheet-cpt">
+    <div class="sheet-background"></div>
+    <div class="sheet-image"></div>
+    <div class="sheet-content pa-2">
+      <div class="pa-2 section-cpt">
+        <div class="section-image"></div>
+        <div class="section-background"></div>
+        <div class="section-content">
+          {{#each groups as |group|}}
+            {{#if group.uses}}
+              <h3 class="section-secondary-title-cpt">{{group.label}}</h3>
+              <ul class="list-style-none my-0 px-0 mb-2">
+                {{#each group.uses as |use|}}
+                  <li class="py-1">
+                    <label class="flex-row flex-ac">
+                      <input class="plot-point-use-option" type="radio" name="plot-point-use" value="{{use.label}}">
+                      <span class="pl-1">{{use.label}}</span>
+                    </label>
+                  </li>
+                {{/each}}
+              </ul>
+            {{/if}}
+          {{/each}}
+          <div class="flex flex-je mt-2">
+            <button class="btn btn-primary-cpt spend-plot-point" type="button">{{localize 'SpendPlotPoint'}}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

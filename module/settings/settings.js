@@ -1,7 +1,9 @@
 import ActorSettings from './ActorSettings.js'
 import DoomPoolSettings from './DoomPoolSettings.js'
 import ImportExportSettings from './ImportExportSettings.js'
+import PlotPointUsesSettings from './PlotPointUsesSettings.js'
 import defaultActorTypes from '../actor/defaultActorTypes.js'
+import defaultPlotPointUses from '../actor/defaultPlotPointUses.js'
 import defaultThemes from '../theme/defaultThemes.js'
 import ThemeSettings from './ThemeSettings.js'
 
@@ -69,6 +71,23 @@ export const registerSettings = () => {
   game.settings.register('cortexprime', 'crisisPool', {
     name: localizer('CrisisPool'),
     default: { active: false, name: '', dice: [] },
+    scope: 'world',
+    type: Object,
+    config: false,
+  })
+
+  game.settings.registerMenu('cortexprime', 'PlotPointUsesSettings', {
+    hint: localizer('PlotPointUsesSettingsH'),
+    icon: 'fa-solid fa-star',
+    label: localizer('PlotPointUsesSettings'),
+    name: localizer('PlotPointUsesSettings'),
+    restricted: true,
+    type: PlotPointUsesSettings
+  })
+
+  game.settings.register('cortexprime', 'plotPointUses', {
+    name: localizer('PlotPointUses'),
+    default: defaultPlotPointUses,
     scope: 'world',
     type: Object,
     config: false,

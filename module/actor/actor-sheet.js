@@ -4,6 +4,7 @@
  */
 import { getLength, objectMapValues, objectReindexFilter, objectFindValue, objectSome } from '../../lib/helpers.js'
 import { localizer } from '../scripts/foundryHelpers.js'
+import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import {
   removeItems,
   toggleItems
@@ -59,15 +60,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
     html.find('.new-die').click(this._newDie.bind(this))
     html.find('.pp-number-field').change(this._ppNumberChange.bind(this))
-    html.find('.spend-pp').click(() => {
-      this.actor
-        .changePpBy(-1)
-        .then(() => {
-          if (game.dice3d) {
-            game.dice3d.show({ throws: [{ dice: [{ result: 1, resultLabel: 1, type: 'dp', vectors: [], options: {} }] }] }, game.user, true)
-          }
-        })
-    })
+    html.find('.spend-pp').click(this._spendPp.bind(this))
     html.find('.trait-set-edit').click(this._traitSetEdit.bind(this))
     removeItems.call(this, html)
     toggleItems.call(this, html)
@@ -357,6 +350,20 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     const changeAmount = newValue - currentValue
 
     this.actor.changePpBy(changeAmount, true)
+  }
+
+  async _spendPp (event) {
+    event.preventDefault()
+
+    const usage = await selectPlotPointUsage()
+
+    if (!usage) return
+
+    await this.actor.changePpBy(-1, false, usage)
+
+    if (game.dice3d) {
+      game.dice3d.show({ throws: [{ dice: [{ result: 1, resultLabel: 1, type: 'dp', vectors: [], options: {} }] }] }, game.user, true)
+    }
   }
 
   async _resetDataPoint(path, target, value) {

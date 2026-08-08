@@ -2,7 +2,7 @@ import { localizer } from '../scripts/foundryHelpers.js'
 
 export class CortexPrimeActor extends Actor {
   // add or subtract plot point value assigned to the actor by specified amount
-  async changePpBy (value, directChange = false) {
+  async changePpBy (value, directChange = false, usage = null) {
     // ensure current value is an integer
     const currentValue = +(this.system.pp.value ?? 0)
 
@@ -20,18 +20,19 @@ export class CortexPrimeActor extends Actor {
             ? localizer('Added')
             : localizer('Received')
 
-      await this.createPpMessage(valueChangeType, Math.abs(currentValue - newValue), newValue)
+      await this.createPpMessage(valueChangeType, Math.abs(currentValue - newValue), newValue, usage)
     }
   }
 
   // Send a message to the chat on the pp change
-  async createPpMessage (changeType, value, total) {
+  async createPpMessage (changeType, value, total, usage = null) {
     const message = await foundry.applications.handlebars.renderTemplate(`systems/cortexprime/templates/chat/change-pp.html`, {
       changeType,
       speaker: game.user,
       target: this,
       total,
-      value
+      value,
+      usage
     })
 
     ChatMessage.create({ content: message })
