@@ -78,7 +78,7 @@
                     <div style="display: flex; flex-direction: column;">
                       {{#each challengeInitiatorOptions}}
                         <label class="flex-row flex-ac">
-                          <input class="challenge-initiator" type="radio" name="challenge-initiator" value="{{id}}" {{#if selected}}checked{{/if}}>
+                          <input class="challenge-initiator" type="radio" name="challenge-initiator" value="{{id}}" {{#if selected}}checked{{/if}} {{#if ../challengeRadiosReadOnly}}disabled{{/if}}>
                           <span class="pl-1">{{name}}</span>
                         </label>
                       {{/each}}
@@ -100,7 +100,7 @@
                       <div style="display: flex; flex-direction: column;">
                         {{#each challengeResponderOptions}}
                           <label class="flex-row flex-ac">
-                            <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="{{id}}" {{#if checked}}checked{{/if}}>
+                            <input class="challenge-responder-radio" type="radio" name="challenge-responder" value="{{id}}" {{#if checked}}checked{{/if}} {{#if ../challengeRadiosReadOnly}}disabled{{/if}}>
                             <span class="pl-1">{{name}}</span>
                           </label>
                         {{/each}}

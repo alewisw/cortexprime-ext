@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyContestEffectStepDown, computeHeroicStepUp, getDiceByTargetTotal, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
+import { applyContestEffectStepDown, computeHeroicStepUp, getDiceByTargetTotal, hasContestStarted, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
 
 const die = (faces, result) => ({ faces, result })
 
@@ -235,5 +235,23 @@ describe('computeHeroicStepUp', () => {
 
   it('with two effect dice, overshooting D12 caps the lowest at D12 and displays SPECIAL', () => {
     expect(computeHeroicStepUp([12, 8], 15)).toEqual({ effectDice: [12, 12], from: 8, to: 'SPECIAL', other: 12 })
+  })
+})
+
+describe('hasContestStarted', () => {
+  it('is false when there is no active challenge', () => {
+    expect(hasContestStarted({ type: null }, false)).toBe(false)
+  })
+
+  it('is false for a Test, even once its initiator has rolled — Contest-only', () => {
+    expect(hasContestStarted({ type: 'test' }, true)).toBe(false)
+  })
+
+  it('is false for a fresh Contest whose initiator has not rolled yet', () => {
+    expect(hasContestStarted({ type: 'contest' }, false)).toBe(false)
+  })
+
+  it('is true once a Contest\'s initiator has rolled', () => {
+    expect(hasContestStarted({ type: 'contest' }, true)).toBe(true)
   })
 })

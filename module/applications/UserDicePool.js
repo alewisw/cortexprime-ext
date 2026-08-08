@@ -10,6 +10,7 @@ import {
   getMyResponderId,
   getRollToBeatTargets,
   getTargetTotal,
+  hasContestStarted,
   hasInitiatorRolled,
   setChallengeInitiator,
   setChallengeResponders,
@@ -81,7 +82,8 @@ const getChallengeDisplayData = (activeChallenge, rollToBeatTargets) => {
           : target.id === display.displayedResponderId
       })),
     rollNowNames: display.rollNowNames,
-    rollNextNames: display.rollNextNames
+    rollNextNames: display.rollNextNames,
+    challengeRadiosReadOnly: hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))
   }
 }
 
@@ -392,6 +394,11 @@ export class UserDicePool extends FormApplication {
   async _onChallengeInitiatorChange (event) {
     event.preventDefault()
 
+    // Second layer of protection beyond the radio's disabled state, matching _rollDicePool's
+    // approach — a stale render shouldn't let a reassignment through once a Contest is underway.
+    const activeChallenge = getActiveChallenge()
+    if (hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))) return
+
     await setChallengeInitiator(event.currentTarget.value)
 
     await this.render(true)
@@ -409,6 +416,11 @@ export class UserDicePool extends FormApplication {
 
   async _onChallengeResponderSelectChange (event) {
     event.preventDefault()
+
+    // Second layer of protection beyond the radio's disabled state, matching _rollDicePool's
+    // approach — a stale render shouldn't let a reassignment through once a Contest is underway.
+    const activeChallenge = getActiveChallenge()
+    if (hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))) return
 
     const { value } = event.currentTarget
 

@@ -116,6 +116,14 @@ export const hasInitiatorRolled = challenge => {
   return !!initiator && initiator.rolledAt > challenge.updatedAt
 }
 
+// Pure: once a Contest's current initiator has rolled for the first time, the GM's Roll
+// Now/Roll Next radios lock — see UserDicePool.js — so a stray click can't silently reset
+// updatedAt and discard whoever's mid-round roll-to-beat state. Not applicable to Tests. Takes
+// the already-computed hasInitiatorRolled result rather than a challenge object, since that
+// itself depends on live Foundry state (game.settings/game.users) and can't be recomputed here.
+export const hasContestStarted = (activeChallenge, initiatorHasRolled) =>
+  activeChallenge.type === 'contest' && initiatorHasRolled
+
 // Whether a designated responder's "Roll To Beat" is actually usable right now — the
 // initiator has to have rolled since this round began, otherwise there's no target yet to
 // beat. Drives the button's disabled state, and is checked again before a roll is actually
