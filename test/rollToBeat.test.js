@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getDiceByTargetTotal } from '../module/scripts/rollToBeat.js'
+import { getDiceByTargetTotal, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
 
 const die = (faces, result) => ({ faces, result })
 
@@ -116,5 +116,42 @@ describe('getDiceByTargetTotal', () => {
     expect(total).toBe(11)
     expect(won).toBe(true)
     expect(effectDice).toEqual([])
+  })
+})
+
+describe('resolveChallengeAfterRoll', () => {
+  it('Contest: a loss ends it — the responder who failed to beat the total is the loser', () => {
+    const challenge = { type: 'contest', initiatorId: 'gm', responderIds: ['actor1'], updatedAt: 0 }
+    const responder = { id: 'actor1', won: false, rolledAt: 100 }
+
+    expect(resolveChallengeAfterRoll(challenge, 'actor1', responder)).toBeNull()
+  })
+
+  it('Contest: a win continues it — the winner becomes initiator, the old initiator must respond', () => {
+    const challenge = { type: 'contest', initiatorId: 'gm', responderIds: ['actor1'], updatedAt: 0 }
+    const responder = { id: 'actor1', won: true, rolledAt: 100 }
+
+    expect(resolveChallengeAfterRoll(challenge, 'actor1', responder)).toEqual({
+      type: 'contest',
+      initiatorId: 'actor1',
+      responderIds: ['gm'],
+      updatedAt: 99
+    })
+  })
+
+  it('Test: a responder is removed whether they won or lost, and the challenge continues if others remain', () => {
+    const challenge = { type: 'test', initiatorId: 'gm', responderIds: ['actor1', 'actor2'], updatedAt: 5 }
+
+    expect(resolveChallengeAfterRoll(challenge, 'actor1', { id: 'actor1', won: true, rolledAt: 100 }))
+      .toEqual({ type: 'test', initiatorId: 'gm', responderIds: ['actor2'], updatedAt: 5 })
+
+    expect(resolveChallengeAfterRoll(challenge, 'actor1', { id: 'actor1', won: false, rolledAt: 100 }))
+      .toEqual({ type: 'test', initiatorId: 'gm', responderIds: ['actor2'], updatedAt: 5 })
+  })
+
+  it('Test: clears once the last responder has gone', () => {
+    const challenge = { type: 'test', initiatorId: 'gm', responderIds: ['actor1'], updatedAt: 5 }
+
+    expect(resolveChallengeAfterRoll(challenge, 'actor1', { id: 'actor1', won: true, rolledAt: 100 })).toBeNull()
   })
 })

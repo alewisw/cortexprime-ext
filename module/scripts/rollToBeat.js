@@ -185,9 +185,39 @@ export const setChallengeResponders = async responderIds => {
   await setActiveChallenge({ ...challenge, responderIds, updatedAt: Date.now() })
 }
 
+// Pure: what should happen to the active challenge after a given responder's roll resolves.
+// Returns null to mean "clear the challenge", otherwise a full replacement for it.
+export const resolveChallengeAfterRoll = (challenge, responderId, responder) => {
+  if (challenge.type === 'test') {
+    // Win or lose, this responder is done — everyone else still rolls against the same
+    // initiator total, so updatedAt is deliberately left untouched (bumping it would wrongly
+    // make the initiator's already-recorded roll look stale to the remaining responders).
+    const remaining = challenge.responderIds.filter(id => id !== responderId)
+
+    if (remaining.length === 0) return null
+
+    return { ...challenge, responderIds: remaining }
+  }
+
+  // Contest: a loss ends it outright — the responder who just failed to beat the total is the
+  // loser.
+  if (!responder.won) return null
+
+  // Contest, won: swap roles — the responder who just won becomes the new initiator (their
+  // total is now the one to beat) and the old initiator must respond. updatedAt is set to just
+  // *before* their roll, rather than "now", so the new initiator is immediately recognized as
+  // already having rolled for this new round.
+  return {
+    type: 'contest',
+    initiatorId: responderId,
+    responderIds: [challenge.initiatorId],
+    updatedAt: responder.rolledAt - 1
+  }
+}
+
 // Runs only on the elected primary GM's client, reacting to fresh "Roll To Beat" results from
 // designated responders: removes them from a Test (auto-clearing once everyone's gone), or
-// swaps initiator/responder roles for a Contest — until someone actually wins, which clears
+// swaps initiator/responder roles for a Contest — until someone actually loses, which clears
 // the challenge outright. `updatedAt` is the de-dupe guard against processing the same roll twice.
 export const processChallengeAdvancement = async () => {
   if (game.user !== game.users.activeGM) return
@@ -209,38 +239,10 @@ export const processChallengeAdvancement = async () => {
       await reduceCrisisPoolByEffectDie(responder.effectDice)
     }
 
-    if (challenge.type === 'test') {
-      // Win or lose, this responder is done — everyone else still rolls against the same
-      // initiator total, so updatedAt is deliberately left untouched (bumping it would
-      // wrongly make the initiator's already-recorded roll look stale to the remaining
-      // responders).
-      const remaining = challenge.responderIds.filter(id => id !== responderId)
+    const next = resolveChallengeAfterRoll(challenge, responderId, responder)
 
-      if (remaining.length === 0) {
-        await clearActiveChallenge()
-      } else {
-        await setActiveChallenge({ ...challenge, responderIds: remaining })
-      }
-
-      return
-    }
-
-    // Contest: a win ends it outright.
-    if (responder.won) {
-      await clearActiveChallenge()
-      return
-    }
-
-    // Contest, lost: swap roles — the responder who just rolled becomes the new initiator
-    // (their total is now the one to beat) and the old initiator must respond. updatedAt is
-    // set to just *before* their roll, rather than "now", so the new initiator is
-    // immediately recognized as already having rolled for this new round.
-    await setActiveChallenge({
-      type: 'contest',
-      initiatorId: responderId,
-      responderIds: [challenge.initiatorId],
-      updatedAt: responder.rolledAt - 1
-    })
+    if (next === null) await clearActiveChallenge()
+    else await setActiveChallenge(next)
 
     return
   }
