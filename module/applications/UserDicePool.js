@@ -5,8 +5,11 @@ import { getCrisisPool } from '../scripts/crisisPool.js'
 import {
   canCurrentUserRoll,
   clearActiveChallenge,
+  endInterference,
   getActiveChallenge,
+  getEligibleInterferers,
   getMyChallengeTarget,
+  getMyInterfererId,
   getMyResponderId,
   getRollToBeatTargets,
   getTargetTotal,
@@ -14,7 +17,8 @@ import {
   hasInitiatorRolled,
   setChallengeInitiator,
   setChallengeResponders,
-  setChallengeType
+  setChallengeType,
+  startInterference
 } from '../scripts/rollToBeat.js'
 
 const blankPool = {
@@ -122,8 +126,10 @@ export class UserDicePool extends FormApplication {
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
     const activeChallenge = getActiveChallenge()
     const rollToBeatTargets = getRollToBeatTargets()
-    const canRollToBeat = !!getMyResponderId()
+    const myInterfererId = getMyInterfererId()
+    const canRollToBeat = !!getMyResponderId() || !!myInterfererId
     const challengeTarget = getMyChallengeTarget()
+    const contestStarted = hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))
 
     return {
       ...dice,
@@ -138,7 +144,14 @@ export class UserDicePool extends FormApplication {
       showChallengeTarget: !!challengeTarget,
       challengeTargetTotal: challengeTarget?.total ?? 0,
       challengeTargetEffectDice: challengeTarget?.effectDice ?? [],
+      isInterfering: !!myInterfererId,
       activeChallenge,
+      // Only offered once the Contest is actually underway and nobody's currently interfering —
+      // starting a second interference before the first is resumed isn't supported.
+      eligibleInterferers: contestStarted && !activeChallenge.interference ? getEligibleInterferers() : [],
+      interfererName: activeChallenge.interference
+        ? rollToBeatTargets.find(target => target.id === activeChallenge.interference.interfererId)?.name
+        : null,
       ...getChallengeDisplayData(activeChallenge, rollToBeatTargets)
     }
   }
@@ -167,6 +180,8 @@ export class UserDicePool extends FormApplication {
     html.find('.challenge-responder-checkbox').change(this._onChallengeResponderCheckboxChange.bind(this))
     html.find('.challenge-responder-radio').change(this._onChallengeResponderSelectChange.bind(this))
     html.find('.clear-challenge').click(this._clearChallenge.bind(this))
+    html.find('.start-interference').click(this._startInterference.bind(this))
+    html.find('.end-interference').click(this._endInterference.bind(this))
     html.find('.spend-plot-point-extra-die').change(this._onSpendPlotPointExtraDieChange.bind(this))
   }
 
@@ -433,6 +448,33 @@ export class UserDicePool extends FormApplication {
     event.preventDefault()
 
     await clearActiveChallenge()
+
+    await this.render(true)
+  }
+
+  async _startInterference (event) {
+    event.preventDefault()
+
+    const activeChallenge = getActiveChallenge()
+
+    // Defense-in-depth, matching the radio-lock guards above — the button is only rendered once
+    // the Contest has started and nothing is already interfering, but a stale render shouldn't
+    // be able to stack a second interference on top of one already in progress.
+    if (!hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge)) || activeChallenge.interference) return
+
+    const interfererId = this.element.find('.interferer-radio:checked').val()
+
+    if (!interfererId) return
+
+    await startInterference(interfererId)
+
+    await this.render(true)
+  }
+
+  async _endInterference (event) {
+    event.preventDefault()
+
+    await endInterference()
 
     await this.render(true)
   }

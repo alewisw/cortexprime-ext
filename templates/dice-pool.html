@@ -109,16 +109,47 @@
                   </div>
                 </div>
                 {{/if}}
+                {{#if challengeRadiosReadOnly}}
+                <div class="flex-row flex-as flex-wrap mt-2">
+                  <div class="flex-col col-12">
+                    {{#if activeChallenge.interference}}
+                      <span class="input-label-cpt">{{localize 'Interference'}}</span>
+                      <p class="sub-trait-label-cpt">{{interfererName}}</p>
+                      <button class="btn btn-secondary-cpt end-interference mt-1" type="button">{{localize 'ResumeContest'}}</button>
+                    {{else}}
+                      <span class="input-label-cpt">{{localize 'SelectInterferingCharacter'}}</span>
+                      <div style="display: flex; flex-direction: column;">
+                        {{#each eligibleInterferers}}
+                          <label class="flex-row flex-ac">
+                            <input class="interferer-radio" type="radio" name="interferer" value="{{id}}">
+                            <span class="pl-1">{{name}}</span>
+                          </label>
+                        {{else}}
+                          <p>{{localize 'NoEligibleInterferers'}}</p>
+                        {{/each}}
+                      </div>
+                      <button class="btn btn-secondary-cpt start-interference mt-1" type="button" {{#unless eligibleInterferers}}disabled{{/unless}}>{{localize 'StartInterference'}}</button>
+                    {{/if}}
+                  </div>
+                </div>
+                {{/if}}
               </div>
               {{/if}}
               {{#if activeChallenge.type}}
               <div class="mt-1">
                 <p class="sub-trait-label-cpt">
-                  {{localize (ternary (eq activeChallenge.type 'test') 'Test' 'Contest')}} &mdash; {{localize 'RollNow'}}: {{#each rollNowNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#if rollNextNames}} &middot; {{localize 'RollNext'}}: {{#each rollNextNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+                  {{#if activeChallenge.interference}}
+                    {{localize 'Contest'}} &mdash; {{localize 'Interfere'}}: {{interfererName}}
+                  {{else}}
+                    {{localize (ternary (eq activeChallenge.type 'test') 'Test' 'Contest')}} &mdash; {{localize 'RollNow'}}: {{#each rollNowNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{#if rollNextNames}} &middot; {{localize 'RollNext'}}: {{#each rollNextNames}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
+                  {{/if}}
                 </p>
               </div>
               {{/if}}
               {{#if showChallengeTarget}}
+              {{#if isInterfering}}
+              <p class="sub-trait-label-cpt mt-2">{{localize 'InterferenceRoll'}}</p>
+              {{/if}}
               <div class="flex-row my-2">
                 <div class="flex-col col-6">
                   <div class="section-cpt pa-2 text-center">

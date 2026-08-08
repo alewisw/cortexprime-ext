@@ -6,7 +6,7 @@ import { localizer } from './foundryHelpers.js'
 import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
 
 const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0 }
-const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0 }
+const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0, interference: null }
 
 export const recordRollResult = async ({ total, effectDice, won }) => {
   const record = { total, effectDice, won: won ?? null, rolledAt: Date.now() }
@@ -82,7 +82,8 @@ export const getActiveChallenge = () => {
     type: challenge?.type ?? blankChallenge.type,
     initiatorId: challenge?.initiatorId ?? blankChallenge.initiatorId,
     responderIds: challenge?.responderIds ?? blankChallenge.responderIds,
-    updatedAt: challenge?.updatedAt ?? blankChallenge.updatedAt
+    updatedAt: challenge?.updatedAt ?? blankChallenge.updatedAt,
+    interference: challenge?.interference ?? blankChallenge.interference
   }
 }
 
@@ -124,6 +125,53 @@ export const hasInitiatorRolled = challenge => {
 export const hasContestStarted = (activeChallenge, initiatorHasRolled) =>
   activeChallenge.type === 'contest' && initiatorHasRolled
 
+// Pure: anyone connected except the current initiator and current responder(s) — a true third
+// party. This includes the GM entry (id 'gm'), which is eligible whenever the GM isn't already
+// part of this Contest.
+export const filterEligibleInterferers = (challenge, targets) =>
+  targets.filter(target =>
+    target.id !== challenge.initiatorId &&
+    !challenge.responderIds.includes(target.id)
+  )
+
+export const getEligibleInterferers = () =>
+  filterEligibleInterferers(getActiveChallenge(), getRollToBeatTargets())
+
+// If the current user is the designated interferer for an active pause, their id — otherwise
+// null. Deliberately unrelated to getMyResponderId/challenge.responderIds — an interferer is
+// never added there, so processChallengeAdvancement's normal Contest-advancement logic (which
+// only ever scans responderIds) can never see or react to their roll.
+export const getMyInterfererId = () => {
+  const challenge = getActiveChallenge()
+  const myId = getMyId()
+
+  return challenge.interference && myId === challenge.interference.interfererId ? myId : null
+}
+
+// Whether the designated interferer has already used their one roll since the pause began.
+export const hasInterfererRolled = challenge => {
+  if (!challenge.interference) return false
+
+  const interferer = getRollToBeatTargets().find(target => target.id === challenge.interference.interfererId)
+
+  return !!interferer && interferer.rolledAt > challenge.interference.startedAt
+}
+
+// GM action: pauses the Contest and designates who gets the one-time interference roll.
+export const startInterference = async interfererId => {
+  const challenge = getActiveChallenge()
+
+  await setActiveChallenge({ ...challenge, interference: { interfererId, startedAt: Date.now() } })
+}
+
+// GM action: lifts the pause — used whether the interference roll won or lost, since the GM
+// always resumes manually (see canCurrentUserRoll/UserDicePool.js).
+export const endInterference = async () => {
+  const challenge = getActiveChallenge()
+
+  await setActiveChallenge({ ...challenge, interference: null })
+}
+
 // Whether a designated responder's "Roll To Beat" is actually usable right now — the
 // initiator has to have rolled since this round began, otherwise there's no target yet to
 // beat. Drives the button's disabled state, and is checked again before a roll is actually
@@ -136,13 +184,17 @@ export const isMyResponderReady = () => {
   return hasInitiatorRolled(getActiveChallenge())
 }
 
-// The initiator's current total/effect dice, for previewing what a ready responder needs to
-// beat before they roll. Null whenever there's nothing to preview yet (no challenge, not a
-// responder, or the initiator hasn't rolled this round).
+// The initiator's current total/effect dice, for previewing what a ready responder — or the
+// designated, not-yet-rolled interferer — needs to beat before they roll. Null whenever there's
+// nothing to preview yet.
 export const getMyChallengeTarget = () => {
-  if (!isMyResponderReady()) return null
+  const challenge = getActiveChallenge()
+  const readyAsResponder = isMyResponderReady()
+  const readyAsInterferer = !!getMyInterfererId() && !hasInterfererRolled(challenge)
 
-  return getTargetRecord(getActiveChallenge().initiatorId)
+  if (!readyAsResponder && !readyAsInterferer) return null
+
+  return getTargetRecord(challenge.initiatorId)
 }
 
 // Whether the current user has any stake in the active challenge (initiator or responder).
@@ -160,8 +212,16 @@ const isChallengeParticipant = () => {
 // Single source of truth for whether the current user's roll buttons should be usable right
 // now: bystanders (anyone not the initiator or a responder) are blocked outright while a
 // challenge is active, and a designated responder is additionally blocked until the initiator
-// has actually rolled.
+// has actually rolled. While a Contest is paused for interference, this is the sole gate —
+// everyone (including the normal initiator/responder) is blocked except the designated
+// interferer, and only until they've used their one roll.
 export const canCurrentUserRoll = () => {
+  const challenge = getActiveChallenge()
+
+  if (challenge.interference) {
+    return getMyId() === challenge.interference.interfererId && !hasInterfererRolled(challenge)
+  }
+
   if (!isChallengeParticipant()) return false
 
   return !getMyResponderId() || isMyResponderReady()

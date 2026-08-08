@@ -1,7 +1,7 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer, showPlotPointSpendAnimation } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
-import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
+import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyChallengeTarget, getMyInterfererId, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
 
@@ -354,11 +354,12 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
         ? getDiceByTargetTotal(rollResults.results, targetTotal)
         : await dicePicker(rollResults)
 
-  // Any roll made while the roller is a designated responder counts as an attempt to beat
-  // that target, exactly like "Roll To Beat" — regardless of which of the four roll types was
-  // actually used to build the Total/Effect. Only "Roll To Beat" itself picks its dice with
-  // the target in mind; the other three just get their normal result compared against it too.
-  const respondingToId = rollType !== 'toBeat' && getMyResponderId() ? getActiveChallenge().initiatorId : null
+  // Any roll made while the roller is a designated responder — or the designated Contest
+  // interferer using their one-time roll — counts as an attempt to beat that target, exactly
+  // like "Roll To Beat" — regardless of which of the four roll types was actually used to build
+  // the Total/Effect. Only "Roll To Beat" itself picks its dice with the target in mind; the
+  // other three just get their normal result compared against it too.
+  const respondingToId = rollType !== 'toBeat' && (getMyResponderId() || getMyInterfererId()) ? getActiveChallenge().initiatorId : null
   const isBeatAttempt = rollType === 'toBeat' || respondingToId !== null
   const effectiveTargetTotal = rollType === 'toBeat' ? selectedDice.targetTotal : getTargetTotal(respondingToId)
   const won = rollType === 'toBeat' ? selectedDice.won : (isBeatAttempt ? selectedDice.total > effectiveTargetTotal : undefined)
@@ -380,8 +381,12 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
   // Contest-only: even a losing roll's effect die can blunt the contest's overall winner's
   // already-recorded one. The GM's client applies this for real, reactively, once this chat
   // message is already sent — this is a locally-computed preview of that same deterministic
-  // outcome, purely so this losing roll's own chat card can show it happening.
-  const effectStepDown = (isBeatAttempt && won === false && getActiveChallenge().type === 'contest')
+  // outcome, purely so this losing roll's own chat card can show it happening. Gated on
+  // getMyResponderId() specifically (not the broader isBeatAttempt, which now also covers a
+  // Contest interferer's roll) — this only ever actually applies via processChallengeAdvancement,
+  // which scans challenge.responderIds and structurally never sees an interferer's roll, so
+  // showing this preview for one would describe something that never really happens.
+  const effectStepDown = (won === false && getMyResponderId() && getActiveChallenge().type === 'contest')
     ? applyContestEffectStepDown(getTargetRecord(targetId)?.effectDice ?? [], selectedDice.effectDice).steppedDown
     : null
 
@@ -389,7 +394,8 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
   // processChallengeAdvancement in rollToBeat.js), after this chat message is already sent —
   // so this is a locally-computed preview of that same, deterministic outcome, purely for
   // describing it here. Matches the existing player-only rule (a GM win never touches the pool).
-  const crisisPreview = (won && isBeatAttempt && !game.user.isGM)
+  // Same getMyResponderId() scoping as effectStepDown above, for the same reason.
+  const crisisPreview = (won && getMyResponderId() && !game.user.isGM)
     ? previewCrisisReduction(finalEffectDice)
     : null
 

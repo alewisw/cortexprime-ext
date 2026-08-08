@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyContestEffectStepDown, computeHeroicStepUp, getDiceByTargetTotal, hasContestStarted, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
+import { applyContestEffectStepDown, computeHeroicStepUp, filterEligibleInterferers, getDiceByTargetTotal, hasContestStarted, resolveChallengeAfterRoll } from '../module/scripts/rollToBeat.js'
 
 const die = (faces, result) => ({ faces, result })
 
@@ -235,6 +235,38 @@ describe('computeHeroicStepUp', () => {
 
   it('with two effect dice, overshooting D12 caps the lowest at D12 and displays SPECIAL', () => {
     expect(computeHeroicStepUp([12, 8], 15)).toEqual({ effectDice: [12, 12], from: 8, to: 'SPECIAL', other: 12 })
+  })
+})
+
+describe('filterEligibleInterferers', () => {
+  const target = id => ({ id, name: id })
+
+  it('excludes the current initiator and current responder, keeping everyone else', () => {
+    const challenge = { initiatorId: 'gm', responderIds: ['actor1'] }
+    const targets = [target('gm'), target('actor1'), target('actor2'), target('actor3')]
+
+    expect(filterEligibleInterferers(challenge, targets)).toEqual([target('actor2'), target('actor3')])
+  })
+
+  it('includes the GM entry when the GM is not already the initiator or a responder', () => {
+    const challenge = { initiatorId: 'actor1', responderIds: ['actor2'] }
+    const targets = [target('gm'), target('actor1'), target('actor2')]
+
+    expect(filterEligibleInterferers(challenge, targets)).toEqual([target('gm')])
+  })
+
+  it('excludes the GM entry when the GM is the current initiator', () => {
+    const challenge = { initiatorId: 'gm', responderIds: ['actor1'] }
+    const targets = [target('gm'), target('actor1')]
+
+    expect(filterEligibleInterferers(challenge, targets)).toEqual([])
+  })
+
+  it('returns an empty list when every connected target is already part of the Contest, including the GM as a responder', () => {
+    const challenge = { initiatorId: 'actor1', responderIds: ['gm', 'actor2'] }
+    const targets = [target('gm'), target('actor1'), target('actor2')]
+
+    expect(filterEligibleInterferers(challenge, targets)).toEqual([])
   })
 })
 
