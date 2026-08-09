@@ -168,6 +168,28 @@ export default () => {
         const pool = getPool($rollResult)
         await game.cortexprime.UserDicePool._setPool(pool)
       })
+
+      // Foundry's chat log scrolls to the bottom based on this message's height at insertion
+      // time — before the dice-hydration above has finished growing empty die placeholders into
+      // real artwork — so a message that ends up taller than its placeholder is left with its
+      // bottom below the fold. Re-sync the scroll once hydration settles, but only for a message
+      // that's genuinely new; this hook also re-fires for older messages scrolling into view
+      // while paging through history, and we don't want to yank the view to the bottom while
+      // someone's reading back.
+      //
+      // Walking up to the nearest actually-overflowing ancestor (rather than assuming a fixed
+      // #chat-log id/depth) keeps this working regardless of how Foundry's own chat log markup
+      // is structured — that structure changed significantly with the ApplicationV2 sidebar
+      // rewrite, and ui.chat.scrollBottom() alone was not enough to fix this.
+      if (game.messages.contents.at(-1)?.id === message.id) {
+        let scrollParent = $chatMessage[0]?.parentElement
+
+        while (scrollParent && scrollParent.scrollHeight <= scrollParent.clientHeight) {
+          scrollParent = scrollParent.parentElement
+        }
+
+        if (scrollParent) scrollParent.scrollTop = scrollParent.scrollHeight
+      }
     }
   })
 }
