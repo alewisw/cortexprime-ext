@@ -41,4 +41,11 @@ export const registerSpotlight = () => {
   Hooks.on('renderPlayerList', () => {
     game.cortexprime.FloatingPanel?.refresh()
   })
+
+  // renderPlayerList alone isn't reliable for a freshly-connecting player — the eligible-target
+  // list (getConnectedPlayerActors, filtered on user.active) needs to refresh the moment someone
+  // else's connection state actually changes, which is exactly what this hook is for.
+  Hooks.on('userConnected', () => {
+    game.cortexprime.FloatingPanel?.refresh()
+  })
 }
