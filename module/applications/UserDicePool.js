@@ -2,6 +2,7 @@ import { localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
 import { getCrisisPool } from '../scripts/crisisPool.js'
+import { getDicePoolInvalidReason } from '../scripts/dicePoolValidation.js'
 import {
   canCurrentUserRoll,
   canStartGroupInitiative,
@@ -176,6 +177,10 @@ export class UserDicePool extends FormApplication {
     const canRollToBeat = !!getMyResponderId() || !!myInterfererId || myGroupRole === 'duel'
     const challengeTarget = getMyChallengeTarget()
     const contestStarted = hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))
+    const dicePoolInvalidResult = getDicePoolInvalidReason(dice.pool, !!dice.spendPlotPointForExtraDie)
+    const dicePoolInvalidReason = dicePoolInvalidResult
+      ? game.i18n.format(dicePoolInvalidResult.key, dicePoolInvalidResult.data)
+      : null
 
     return {
       ...dice,
@@ -183,10 +188,12 @@ export class UserDicePool extends FormApplication {
       theme,
       canRollToBeat,
       hasPlotPoints: !game.user.isGM && (game.user.character?.system.pp.value ?? 0) >= 1,
+      dicePoolInvalidReason,
       // Covers both a bystander with no stake in the active challenge, and a designated
       // responder who shouldn't be able to dodge the "wait for the initiator" rule by rolling
-      // with any of the other three roll types instead.
-      rollButtonsDisabled: !canCurrentUserRoll(),
+      // with any of the other three roll types instead, AND the current pool's composition
+      // being invalid to roll (Limit One / Mutually Exclusive / duplicate trait rules).
+      rollButtonsDisabled: !canCurrentUserRoll() || !!dicePoolInvalidReason,
       showChallengeTarget: !!challengeTarget,
       challengeTargetTotal: challengeTarget?.total ?? 0,
       challengeTargetEffectDice: challengeTarget?.effectDice ?? [],
@@ -255,6 +262,11 @@ export class UserDicePool extends FormApplication {
 
     await game.user.setFlag('cortexprime', 'dicePool', null)
     await game.user.setFlag('cortexprime', 'dicePool', currentDice)
+
+    // The Limit One threshold (1 vs 2 dice from a single Trait Set) depends on this checkbox, so
+    // the pool's validity — and therefore the roll buttons/warning message — must be recomputed
+    // immediately, the same as every other pool-mutating handler in this tray.
+    await this.render(true)
   }
 
   async _addCustomTraitToPool (event) {
@@ -277,10 +289,10 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _addTraitToPool (source, label, value) {
+  async _addTraitToPool (source, label, value, traitPath = null, traitSetId = null) {
     const currentDice = game.user.getFlag('cortexprime', 'dicePool')
     const currentDiceLength = getLength(currentDice.pool[source] || {})
-    foundry.utils.setProperty(currentDice, `pool.${source}.${currentDiceLength}`, { label, value })
+    foundry.utils.setProperty(currentDice, `pool.${source}.${currentDiceLength}`, { label, value, traitPath, traitSetId })
 
     await game.user.setFlag('cortexprime', 'dicePool', null)
 

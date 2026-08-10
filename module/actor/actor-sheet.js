@@ -205,7 +205,12 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     }
 
     if (getLength(value)) {
-      await game.cortexprime.UserDicePool._addTraitToPool(this.actor.name, label, value)
+      const traitSetMatch = path.match(/^system\.actorType\.traitSets\.(\d+)\./)
+      const traitSetId = traitSetMatch
+        ? foundry.utils.getProperty(this.actor, `system.actorType.traitSets.${traitSetMatch[1]}.id`)
+        : null
+
+      await game.cortexprime.UserDicePool._addTraitToPool(this.actor.name, label, value, path, traitSetId)
     }
   }
 

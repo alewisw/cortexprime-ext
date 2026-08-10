@@ -319,6 +319,11 @@
             </label>
           </div>
           {{/unless}}
+          {{#if dicePoolInvalidReason}}
+          <div class="flex-col col-12 py-1 dice-pool-invalid-message">
+            <p>{{dicePoolInvalidReason}}</p>
+          </div>
+          {{/if}}
           <div class="flex-col col-12 flex flex-je flex-as py-2">
             <div class="flex-col pl-0">
               <button class="clear-dice-pool btn btn-secondary-cpt" type="button">{{localize 'Clear'}}</button>

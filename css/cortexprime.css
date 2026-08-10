@@ -1142,6 +1142,12 @@
   z-index: -1;
 }
 
+.dice-pool-invalid-message p {
+  color: #b3261e;
+  font-weight: bold;
+  margin: 0;
+}
+
 .die-select {
   border: none !important;
   background-color: transparent !important;
