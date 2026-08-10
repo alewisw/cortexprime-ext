@@ -5,6 +5,7 @@
 import { getLength, objectMapValues, objectReindexFilter, objectFindValue, objectSome } from '../../lib/helpers.js'
 import { localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
+import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
 import {
   removeItems,
   toggleItems
@@ -27,10 +28,19 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  getData (options) {
+  async getData (options) {
     const data = super.getData(options)
     const themes = game.settings.get('cortexprime', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+
+    if (this.actor.isOwner) {
+      const normalization = computeTraitDiceNormalization(this.actor.system.actorType)
+
+      if (normalization) {
+        await this.actor.update(normalization.unset)
+        await this.actor.update(normalization.set)
+      }
+    }
 
     return {
       ...data,
@@ -338,9 +348,13 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       const $target = $(event.currentTarget)
       const target = $target.data('target')
       const targetKey = $target.data('key')
+      const min = parseInt($target.data('min'), 10) || 0
       const currentDiceData = foundry.utils.getProperty(this.actor, target)
+      const currentValue = currentDiceData.value ?? {}
 
-      const newValue = objectReindexFilter(currentDiceData.value ?? {}, (_, key) => parseInt(key, 10) !== parseInt(targetKey))
+      if (getLength(currentValue) <= min) return
+
+      const newValue = objectReindexFilter(currentValue, (_, key) => parseInt(key, 10) !== parseInt(targetKey))
 
       await this._resetDataPoint(target, 'value', newValue)
     }

@@ -10,6 +10,15 @@
         <span class="input-label-cpt mb-0 ml-2">{{localize 'ConsumableDice'}}</span>
       </label>
     </div>
+    <div class="pb-2">
+      <label class="flex flex-ac">
+        <div class="checkmark-container">
+          <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' path '.settings.hasMultipleDice'}}" type="checkbox" {{checked (ne data.settings.hasMultipleDice false)}}>
+          <div class="checkmark-cpt"></div>
+        </div>
+        <span class="input-label-cpt mb-0 ml-2">{{localize 'HasMultipleDice'}}</span>
+      </label>
+    </div>
   {{/if}}
   <div>
     <span class="input-label-cpt">{{localize 'DefaultDice'}}</span>

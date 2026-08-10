@@ -17,6 +17,7 @@
                 consumable=../settings.subTraitsDiceConsumable
                 dice=subTrait.dice.value
                 minDice=0
+                maxDice=(ternary (eq ../settings.subTraitsHaveMultipleDice false) 1 -1)
                 label=subTrait.label
                 path=(concat ../path '.subTraits.' subTraitIndex '.dice')
               }}

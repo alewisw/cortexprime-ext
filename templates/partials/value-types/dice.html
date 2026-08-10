@@ -3,6 +3,7 @@
     addToPool=addToPool
     dice=data.dice.value
     minDice=0
+    maxDice=(ternary (eq data.settings.hasMultipleDice false) 1 -1)
     label=label
     path=path
   }}

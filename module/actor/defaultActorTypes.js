@@ -81,8 +81,10 @@ export default {
           hasSubTraits: false,
           subTraitsHaveDice: true,
           subTraitsDiceConsumable: false,
+          subTraitsHaveMultipleDice: true,
           limitOnePerDicePool: false,
           mutuallyExclusiveWith: null,
+          hasMultipleDice: true,
         }
       },
       1: {
@@ -100,8 +102,10 @@ export default {
           hasSubTraits: false,
           subTraitsHaveDice: false,
           subTraitsDiceConsumable: false,
+          subTraitsHaveMultipleDice: true,
           limitOnePerDicePool: false,
           mutuallyExclusiveWith: null,
+          hasMultipleDice: true,
         },
         traits: {}
       }
@@ -131,6 +135,7 @@ export default {
         settings: {
           diceConsumable: false,
           editable: true,
+          hasMultipleDice: true,
           valueType: 'dice'
         }
       }
@@ -152,8 +157,10 @@ export default {
           hasSubTraits: false,
           subTraitsHaveDice: true,
           subTraitsDiceConsumable: false,
+          subTraitsHaveMultipleDice: true,
           limitOnePerDicePool: false,
-          mutuallyExclusiveWith: null
+          mutuallyExclusiveWith: null,
+          hasMultipleDice: true
         }
       },
       1: {
@@ -172,8 +179,10 @@ export default {
           hasSubTraits: true,
           subTraitsHaveDice: true,
           subTraitsDiceConsumable: false,
+          subTraitsHaveMultipleDice: true,
           limitOnePerDicePool: false,
-          mutuallyExclusiveWith: null
+          mutuallyExclusiveWith: null,
+          hasMultipleDice: true
         }
       },
       2: {
@@ -192,8 +201,10 @@ export default {
           hasSubTraits: true,
           subTraitsHaveDice: true,
           subTraitsDiceConsumable: false,
+          subTraitsHaveMultipleDice: true,
           limitOnePerDicePool: false,
-          mutuallyExclusiveWith: null
+          mutuallyExclusiveWith: null,
+          hasMultipleDice: true
         }
       },
       3: {
@@ -212,8 +223,10 @@ export default {
           hasSubTraits: true,
           subTraitsHaveDice: true,
           subTraitsDiceConsumable: false,
+          subTraitsHaveMultipleDice: true,
           limitOnePerDicePool: false,
-          mutuallyExclusiveWith: null
+          mutuallyExclusiveWith: null,
+          hasMultipleDice: true
         }
       }
     }
