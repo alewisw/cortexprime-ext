@@ -36,6 +36,7 @@
                 path=(concat actorTypeIndex '.traitSets')
                 traitSet=traitSet
                 traitSetIndex=traitSetIndex
+                traitSets=actorType.traitSets
               }}
               {{#each traitSet.traits as |trait traitIndex|}}
                 {{> "systems/cortexprime/templates/partials/settings/trait.html"

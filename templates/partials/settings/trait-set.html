@@ -92,6 +92,29 @@
               <span class="input-label-cpt mb-0 ml-2">{{localize 'HasSfx'}}</span>
             </label>
           </div>
+          <div class="flex-col col-6">
+            <label class="flex flex-ac">
+              <div class="checkmark-container">
+                <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' path '.' traitSetIndex '.settings.limitOnePerDicePool'}}" type="checkbox" {{checked
+                  traitSet.settings.limitOnePerDicePool}}>
+                <div class="checkmark-cpt"></div>
+              </div>
+              <span class="input-label-cpt mb-0 ml-2">{{localize 'LimitOnePerDicePool'}}</span>
+            </label>
+          </div>
+          <div class="flex-col col-6">
+            <label>
+              <span class="input-label-cpt mb-0 mr-1">{{localize 'MutuallyExclusiveWith'}}</span>
+              <select class="input-cpt" name="{{concat 'actorTypes.' path '.' traitSetIndex '.settings.mutuallyExclusiveWith'}}">
+                <option value=""{{ternary (not traitSet.settings.mutuallyExclusiveWith) ' selected' ''}}>{{localize 'None'}}</option>
+                {{#each traitSets as |otherTraitSet otherTraitSetIndex|}}
+                  {{#unless (eq otherTraitSetIndex ../traitSetIndex)}}
+                    <option value="{{otherTraitSet.id}}"{{ternary (eq otherTraitSet.id ../traitSet.settings.mutuallyExclusiveWith) ' selected' ''}}>{{otherTraitSet.label}}</option>
+                  {{/unless}}
+                {{/each}}
+              </select>
+            </label>
+          </div>
         </div>
       </div>
       <div class="flex">

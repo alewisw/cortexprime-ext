@@ -81,6 +81,8 @@ export default {
           hasSubTraits: false,
           subTraitsHaveDice: true,
           subTraitsDiceConsumable: false,
+          limitOnePerDicePool: false,
+          mutuallyExclusiveWith: null,
         }
       },
       1: {
@@ -98,6 +100,8 @@ export default {
           hasSubTraits: false,
           subTraitsHaveDice: false,
           subTraitsDiceConsumable: false,
+          limitOnePerDicePool: false,
+          mutuallyExclusiveWith: null,
         },
         traits: {}
       }
@@ -147,7 +151,9 @@ export default {
           hasSfx: false,
           hasSubTraits: false,
           subTraitsHaveDice: true,
-          subTraitsDiceConsumable: false
+          subTraitsDiceConsumable: false,
+          limitOnePerDicePool: false,
+          mutuallyExclusiveWith: null
         }
       },
       1: {
@@ -165,7 +171,9 @@ export default {
           hasSfx: false,
           hasSubTraits: true,
           subTraitsHaveDice: true,
-          subTraitsDiceConsumable: false
+          subTraitsDiceConsumable: false,
+          limitOnePerDicePool: false,
+          mutuallyExclusiveWith: null
         }
       },
       2: {
@@ -183,7 +191,9 @@ export default {
           hasSfx: false,
           hasSubTraits: true,
           subTraitsHaveDice: true,
-          subTraitsDiceConsumable: false
+          subTraitsDiceConsumable: false,
+          limitOnePerDicePool: false,
+          mutuallyExclusiveWith: null
         }
       },
       3: {
@@ -201,7 +211,9 @@ export default {
           hasSfx: true,
           hasSubTraits: true,
           subTraitsHaveDice: true,
-          subTraitsDiceConsumable: false
+          subTraitsDiceConsumable: false,
+          limitOnePerDicePool: false,
+          mutuallyExclusiveWith: null
         }
       }
     }
