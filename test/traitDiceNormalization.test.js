@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { computeTraitDiceNormalization } from '../module/scripts/traitDiceNormalization.js'
 
 const traitSet = (settings, traits = {}, customTraits = {}) => ({ settings, traits, customTraits })
-const trait = (values, subTraits) => ({ dice: { value: values }, ...(subTraits ? { subTraits } : {}) })
-const subTrait = (values) => ({ dice: { value: values } })
+const trait = (values, subTraits, temporaryValue) => ({ dice: { value: values, temporaryValue }, ...(subTraits ? { subTraits } : {}) })
+const subTrait = (values, temporaryValue) => ({ dice: { value: values, temporaryValue } })
 const simpleTrait = (settings, values) => ({ dice: { value: values }, settings })
+const asset = (values, temporaryValue) => ({ dice: { value: values, temporaryValue } })
 
 describe('computeTraitDiceNormalization', () => {
   it('returns null when there are no Trait Sets', () => {
@@ -152,6 +153,59 @@ describe('computeTraitDiceNormalization', () => {
     })
   })
 
+  describe('temporaryValue', () => {
+    it('trims temporaryValue in lockstep when the kept die (index 0) has a diverged value', () => {
+      const actorType = {
+        traitSets: {
+          0: traitSet({ hasMultipleDice: false }, { 0: trait({ 0: '8', 1: '6' }, undefined, { 0: '10' }) })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toEqual({
+        unset: {
+          'system.actorType.traitSets.0.traits.0.dice.-=value': null,
+          'system.actorType.traitSets.0.traits.0.dice.-=temporaryValue': null
+        },
+        set: {
+          'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' },
+          'system.actorType.traitSets.0.traits.0.dice.temporaryValue': { 0: '10' }
+        }
+      })
+    })
+
+    it('drops a diverged temporaryValue that belonged to a trimmed-away die', () => {
+      const actorType = {
+        traitSets: {
+          0: traitSet({ hasMultipleDice: false }, { 0: trait({ 0: '8', 1: '6' }, undefined, { 1: '10' }) })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toEqual({
+        unset: {
+          'system.actorType.traitSets.0.traits.0.dice.-=value': null,
+          'system.actorType.traitSets.0.traits.0.dice.-=temporaryValue': null
+        },
+        set: {
+          'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' },
+          'system.actorType.traitSets.0.traits.0.dice.temporaryValue': {}
+        }
+      })
+    })
+
+    it('does not touch temporaryValue when it was never populated', () => {
+      const actorType = {
+        traitSets: {
+          0: traitSet({ hasMultipleDice: false }, { 0: trait({ 0: '8', 1: '6' }) })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toEqual({
+        unset: { 'system.actorType.traitSets.0.traits.0.dice.-=value': null },
+        set: { 'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' } }
+      })
+    })
+  })
+
   describe('Simple Traits', () => {
     it('leaves an empty dice-type Simple Trait alone', () => {
       const actorType = {
@@ -196,6 +250,91 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toBeNull()
+    })
+  })
+
+  describe('Assets', () => {
+    it('leaves an empty Asset alone', () => {
+      const actorType = {
+        assetsHaveMultipleDice: false,
+        assets: {
+          0: asset({})
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toBeNull()
+    })
+
+    it('returns null when an Asset already has exactly one die', () => {
+      const actorType = {
+        assetsHaveMultipleDice: false,
+        assets: {
+          0: asset({ 0: '8' })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toBeNull()
+    })
+
+    it('trims a multi-die Asset down to just its first die', () => {
+      const actorType = {
+        assetsHaveMultipleDice: false,
+        assets: {
+          0: asset({ 0: '8', 1: '6' })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toEqual({
+        unset: { 'system.actorType.assets.0.dice.-=value': null },
+        set: { 'system.actorType.assets.0.dice.value': { 0: '8' } }
+      })
+    })
+
+    it('trims a diverged temporaryValue in lockstep', () => {
+      const actorType = {
+        assetsHaveMultipleDice: false,
+        assets: {
+          0: asset({ 0: '8', 1: '6' }, { 0: '10' })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toEqual({
+        unset: {
+          'system.actorType.assets.0.dice.-=value': null,
+          'system.actorType.assets.0.dice.-=temporaryValue': null
+        },
+        set: {
+          'system.actorType.assets.0.dice.value': { 0: '8' },
+          'system.actorType.assets.0.dice.temporaryValue': { 0: '10' }
+        }
+      })
+    })
+
+    it('leaves Assets alone when assetsHaveMultipleDice is true (or unset)', () => {
+      const actorType = {
+        assetsHaveMultipleDice: true,
+        assets: {
+          0: asset({ 0: '8', 1: '6' })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toBeNull()
+      expect(computeTraitDiceNormalization({ assets: { 0: asset({ 0: '8', 1: '6' }) } })).toBeNull()
+    })
+
+    it('fixes multiple over-full Assets in a single batched result', () => {
+      const actorType = {
+        assetsHaveMultipleDice: false,
+        assets: {
+          0: asset({}),
+          1: asset({ 0: '8', 1: '6' })
+        }
+      }
+
+      expect(computeTraitDiceNormalization(actorType)).toEqual({
+        unset: { 'system.actorType.assets.1.dice.-=value': null },
+        set: { 'system.actorType.assets.1.dice.value': { 0: '8' } }
+      })
     })
   })
 })

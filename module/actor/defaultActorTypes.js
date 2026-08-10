@@ -1,6 +1,7 @@
 export default {
   0: {
     defaultImage: 'icons/svg/mystery-man.svg',
+    assetsHaveMultipleDice: true,
     hasAssets: true,
     hasComplications: true,
     hasHidableTraits: false,
@@ -113,6 +114,7 @@ export default {
   },
   1: {
     defaultImage: 'icons/svg/house.svg',
+    assetsHaveMultipleDice: true,
     hasAssets: true,
     hasComplications: true,
     hasHidableTraits: true,

@@ -15,6 +15,7 @@ export const preloadHandlebarsTemplates = async function () {
     'dice/d12',
     'dice/select',
     'dice/select-options',
+    'dice/temporary-controls',
     'die-display',
     'floating-panel/crisis-pool',
     'floating-panel/spotlight',

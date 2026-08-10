@@ -58,6 +58,8 @@
                       maxDice=(ternary (eq ../settings.hasMultipleDice false) 1 -1)
                       label=(ternary (and ../settings.hasLabel trait.label) trait.label trait.name)
                       selectName=(concat ../path '.' ../target '.' traitIndex '.dice')
+                      showTemporary=(eq ../settings.hasMultipleDice false)
+                      temporaryValue=trait.dice.temporaryValue
                     }}
                   {{/if}}
                   <div>
@@ -125,6 +127,7 @@
               fieldPath=(concat ../path '.' ../target '.' traitIndex '.subTraits')
               path=(concat ../path '.' ../target '.' traitIndex)
               settings=../settings
+              showTemporary=(eq ../settings.subTraitsHaveMultipleDice false)
             }}
           </div>
         {{/if}}

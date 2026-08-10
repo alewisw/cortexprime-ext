@@ -22,6 +22,20 @@
       }}
       <div class="separator-cpt mt-2 mb-4"></div>
       {{> "systems/cortexprime/templates/partials/settings/theme/die-colors.html"
+        label=(localize 'Temporary')
+        fillDefault=themes.list.Default.temporaryFill
+        fillName='themes.currentSettings.temporaryFill'
+        fillValue=(?? themes.currentSettings.temporaryFill themes.list.Default.temporaryFill)
+        strokeDefault=themes.list.Default.temporaryStroke
+        strokeName='themes.currentSettings.temporaryStroke'
+        strokeValue=(?? themes.currentSettings.temporaryStroke themes.list.Default.temporaryStroke)
+        numberDefault=themes.list.Default.temporaryNumber
+        numberName='themes.currentSettings.temporaryNumber'
+        numberValue=(?? themes.currentSettings.temporaryNumber themes.list.Default.temporaryNumber)
+        type='temporary'
+      }}
+      <div class="separator-cpt mt-2 mb-4"></div>
+      {{> "systems/cortexprime/templates/partials/settings/theme/die-colors.html"
         label=(localize 'Hitch')
         fillDefault=themes.list.Default.hitchFill
         fillName='themes.currentSettings.hitchFill'

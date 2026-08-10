@@ -20,11 +20,18 @@
             {{#if (or (not ../owner) (or ../traitSetShutdown trait.shutdown))}}
               <div class="pl-0 flex-col flex-s-1">
                 <div class="flex flex-wrap flex-ac">
-                  {{#each trait.dice.value as |die|}}
+                  {{#each trait.dice.value as |die index|}}
                     {{> (concat "systems/cortexprime/templates/partials/dice/d" die ".html")
                       number=die
                       type='die-rating'
                     }}
+                    {{#if (eq ../../settings.hasMultipleDice false)}}
+                      {{> "systems/cortexprime/templates/partials/dice/temporary-controls.html"
+                        value=die
+                        temporary=(lookup trait.dice.temporaryValue index)
+                        interactive=false
+                      }}
+                    {{/if}}
                   {{/each}}
                 </div>
               </div>
@@ -38,6 +45,8 @@
                   maxDice=(ternary (eq ../settings.hasMultipleDice false) 1 -1)
                   label=(ternary (and ../settings.hasLabel trait.label) trait.label trait.name)
                   selectName=(concat ../path '.' ../target '.' traitIndex '.dice')
+                  showTemporary=(eq ../settings.hasMultipleDice false)
+                  temporaryValue=trait.dice.temporaryValue
                 }}
               </div>
             {{/if}}
@@ -90,11 +99,18 @@
                   {{#if (and ../../settings/subTraitsHaveDice (or (not ../../owner) (or ../../traitSetShutdown trait.shutdown)))}}
                   <div class="pl-0 flex-col flex-s-1">
                     <div class="flex flex-wrap flex-ac">
-                      {{#each subTrait.dice.value as |die|}}
+                      {{#each subTrait.dice.value as |die index|}}
                         {{> (concat "systems/cortexprime/templates/partials/dice/d" die ".html")
                           number=die
                           type='die-rating'
                         }}
+                        {{#if (eq ../../../settings.subTraitsHaveMultipleDice false)}}
+                          {{> "systems/cortexprime/templates/partials/dice/temporary-controls.html"
+                            value=die
+                            temporary=(lookup subTrait.dice.temporaryValue index)
+                            interactive=false
+                          }}
+                        {{/if}}
                       {{/each}}
                     </div>
                   </div>
@@ -108,6 +124,8 @@
                         maxDice=(ternary (eq ../../settings.subTraitsHaveMultipleDice false) 1 -1)
                         label=subTrait.label
                         selectName=(concat ../../path '.' ../../target '.' traitIndex '.subTraits.' subTraitIndex '.dice')
+                        showTemporary=(eq ../../settings.subTraitsHaveMultipleDice false)
+                        temporaryValue=subTrait.dice.temporaryValue
                       }}
                     </div>
                   {{/if}}

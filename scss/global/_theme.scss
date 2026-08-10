@@ -196,6 +196,20 @@
     }
   }
 
+  .temporary-cpt {
+    .fill {
+      fill: var(--cp-temporary-fill, #424c59);
+    }
+
+    .stroke {
+      fill: var(--cp-temporary-stroke, #424c59);
+    }
+
+    .number {
+      color: var(--cp-temporary-number, #ffffff);
+    }
+  }
+
   .effect-cpt {
     .fill {
       fill: var(--cp-effect-fill, #2d5931);

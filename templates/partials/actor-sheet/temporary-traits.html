@@ -71,18 +71,28 @@
                         addToPool=true
                         dice=asset.dice.value
                         minDice=0
+                        maxDice=(ternary (eq ../data.assetsHaveMultipleDice false) 1 -1)
                         label=asset.label
                         selectName=(concat ../path '.assets.' assetIndex '.dice')
+                        showTemporary=(eq ../data.assetsHaveMultipleDice false)
+                        temporaryValue=asset.dice.temporaryValue
                       }}
                     </div>
                   {{else}}
                     <div class="flex-col flex-s-1">
                       <div class="flex flex-wrap flex-ac">
-                        {{#each asset.dice.value as |die|}}
+                        {{#each asset.dice.value as |die index|}}
                           {{> (concat "systems/cortexprime/templates/partials/dice/d" die ".html")
                             number=die
                             type='die-rating'
                           }}
+                          {{#if (eq ../../data.assetsHaveMultipleDice false)}}
+                            {{> "systems/cortexprime/templates/partials/dice/temporary-controls.html"
+                              value=die
+                              temporary=(lookup asset.dice.temporaryValue index)
+                              interactive=false
+                            }}
+                          {{/if}}
                         {{/each}}
                       </div>
                     </div>

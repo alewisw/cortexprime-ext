@@ -59,6 +59,16 @@
             <span class="input-label-cpt mb-0 ml-2">{{localize 'HasAssets'}}</span>
           </label>
         </div>
+        <div class="{{ternary (not actorType.hasAssets) 'shutdown' ''}}">
+          <label class="flex flex-ac">
+            <div class="checkmark-container">
+              <input class="input-checkbox-cpt" name="actorTypes.{{actorTypeIndex}}.assetsHaveMultipleDice" type="checkbox"
+                {{checked (ne actorType.assetsHaveMultipleDice false)}}{{{ternary (not actorType.hasAssets) ' disabled="disabled"' ''}}}>
+              <div class="checkmark-cpt"></div>
+            </div>
+            <span class="input-label-cpt mb-0 ml-2">{{localize 'AssetsHaveMultipleDice'}}</span>
+          </label>
+        </div>
         <div>
           <label class="flex flex-ac">
             <div class="checkmark-container">

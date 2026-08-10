@@ -20,6 +20,8 @@
                 maxDice=(ternary (eq ../settings.subTraitsHaveMultipleDice false) 1 -1)
                 label=subTrait.label
                 path=(concat ../path '.subTraits.' subTraitIndex '.dice')
+                showTemporary=../showTemporary
+                temporaryValue=subTrait.dice.temporaryValue
               }}
             {{/if}}
             <div class="flex-col">

@@ -2,10 +2,11 @@
  * Extend the basic ActorSheet with some very simple modifications
  * @extends {foundry.appv1.sheets.ActorSheet}
  */
-import { getLength, objectMapValues, objectReindexFilter, objectFindValue, objectSome } from '../../lib/helpers.js'
+import { getLength, objectMapValues, objectFindValue, objectSome } from '../../lib/helpers.js'
 import { localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
+import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, reindexDiceAfterRemoval, stepFaceDown, stepFaceUp } from '../scripts/traitDiceTemporary.js'
 import {
   removeItems,
   toggleItems
@@ -71,6 +72,8 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.new-die').click(this._newDie.bind(this))
     html.find('.pp-number-field').change(this._ppNumberChange.bind(this))
     html.find('.spend-pp').click(this._spendPp.bind(this))
+    html.find('.step-die-down').click(this._stepDieDown.bind(this))
+    html.find('.step-die-up').click(this._stepDieUp.bind(this))
     html.find('.trait-set-edit').click(this._traitSetEdit.bind(this))
     removeItems.call(this, html)
     toggleItems.call(this, html)
@@ -200,18 +203,29 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     if (!this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return
 
     const { consumable, path, label } = event.currentTarget.dataset
-    let value = foundry.utils.getProperty(this.actor, `${path}.value`)
+    const currentDiceData = foundry.utils.getProperty(this.actor, path)
+    let value = currentDiceData.value
 
     if (consumable) {
-      const selectedDice = await this._getConsumableDiceSelection(value, label)
+      const effectiveValue = getEffectiveDiceMap(value, currentDiceData.temporaryValue)
+      const selectedDice = await this._getConsumableDiceSelection(effectiveValue, label)
 
       if (selectedDice.remove?.length) {
-        const newValue = objectReindexFilter(value, (_, key) => !selectedDice.remove.map(x => parseInt(x, 10)).includes(parseInt(key, 10)))
+        const removeKeys = selectedDice.remove.map(x => parseInt(x, 10))
+        const { value: newValue, temporaryValue: newTemporaryValue } = reindexDiceAfterRemoval(
+          value,
+          currentDiceData.temporaryValue,
+          key => !removeKeys.includes(parseInt(key, 10))
+        )
 
-        await this._resetDataPoint(path, 'value', newValue)
+        await this._resetDataPoints(path, getLength(currentDiceData.temporaryValue ?? {})
+          ? { value: newValue, temporaryValue: newTemporaryValue }
+          : { value: newValue })
       }
 
       value = selectedDice.value
+    } else {
+      value = getEffectiveDiceMap(value, currentDiceData.temporaryValue)
     }
 
     if (getLength(value)) {
@@ -354,10 +368,47 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
       if (getLength(currentValue) <= min) return
 
-      const newValue = objectReindexFilter(currentValue, (_, key) => parseInt(key, 10) !== parseInt(targetKey))
+      const { value: newValue, temporaryValue: newTemporaryValue } = reindexDiceAfterRemoval(
+        currentValue,
+        currentDiceData.temporaryValue,
+        key => parseInt(key, 10) !== parseInt(targetKey, 10)
+      )
 
-      await this._resetDataPoint(target, 'value', newValue)
+      await this._resetDataPoints(target, getLength(currentDiceData.temporaryValue ?? {})
+        ? { value: newValue, temporaryValue: newTemporaryValue }
+        : { value: newValue })
     }
+  }
+
+  async _stepDieUp (event) {
+    await this._stepDie(event, 'up')
+  }
+
+  async _stepDieDown (event) {
+    await this._stepDie(event, 'down')
+  }
+
+  async _stepDie (event, direction) {
+    event.preventDefault()
+
+    const $target = $(event.currentTarget)
+    const target = $target.data('target')
+    const targetKey = $target.data('key')
+    const currentDiceData = foundry.utils.getProperty(this.actor, target)
+    const value = currentDiceData.value ?? {}
+    const temporaryValue = currentDiceData.temporaryValue
+
+    // Already at the top/bottom of the ladder — stepFaceUp/Down clamp rather than wrap, so skip
+    // the write entirely instead of round-tripping an unchanged value (which would still trigger
+    // a re-render/flicker for no visible effect).
+    const current = getEffectiveValue(value, temporaryValue, targetKey)
+    const stepped = direction === 'up' ? stepFaceUp(current) : stepFaceDown(current)
+
+    if (stepped === current) return
+
+    const newTemporaryValue = computeSteppedTemporaryValue(value, temporaryValue, targetKey, direction)
+
+    await this._resetDataPoints(target, { temporaryValue: newTemporaryValue })
   }
 
   async _ppNumberChange (event) {
@@ -391,6 +442,24 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     await this.actor.update({
       [`${path}.${target}`]: value
     })
+  }
+
+  // Same unset-then-set semantics as _resetDataPoint (needed so a shrinking object, e.g. a
+  // temporaryValue losing an index, actually drops the removed key instead of Foundry's default
+  // update() merge silently leaving it in place), but for one or more targets under the same path.
+  // IMPORTANT: the unset and the set must remain two SEPARATE actor.update() calls — combining
+  // "path.-=X": null and "path.X": value into a single update() silently drops the set (Foundry
+  // applies the deletion after merging, wiping the just-written value along with it), which was
+  // observed as right-clicking one die in a multi-die pool deleting the entire pool instead of
+  // just that die. Still batches multiple targets (e.g. value + temporaryValue) into one unset
+  // call and one set call, instead of a separate unset/set pair per target.
+  async _resetDataPoints(path, entries) {
+    const targets = Object.keys(entries)
+    const unset = targets.reduce((acc, target) => ({ ...acc, [`${path}.-=${target}`]: null }), {})
+    const set = targets.reduce((acc, target) => ({ ...acc, [`${path}.${target}`]: entries[target] }), {})
+
+    await this.actor.update(unset)
+    await this.actor.update(set)
   }
 
   async _traitSetEdit(event) {
