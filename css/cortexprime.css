@@ -14,6 +14,9 @@
 .cortexprime.window-app .window-resizable-handle {
   z-index: 10;
 }
+.cortexprime.mage-settings.window-app .window-content {
+  background: #ffffff;
+}
 .cortexprime .dice-picker.window-app .window-content, .cortexprime .consumable-dice.window-app .window-content {
   background: none;
   padding: 0;

@@ -1,4 +1,5 @@
 import defaultActorTypes from "../actor/defaultActorTypes.js"
+import defaultMageSettings from "./defaultMageSettings.js"
 import defaultPlotPointUses from "../actor/defaultPlotPointUses.js"
 import { localizer, setCssVars } from "../scripts/foundryHelpers.js"
 
@@ -46,6 +47,8 @@ export default class ImportExportSettings extends FormApplication {
     const settings = {
       actorTypes: game.settings.get('cortexprime', 'actorTypes'),
       cortexPrimeVersion: game.system.version,
+      customRuleSet: game.settings.get('cortexprime', 'customRuleSet'),
+      mageSettings: game.settings.get('cortexprime', 'mageSettings'),
       plotPointUses: game.settings.get('cortexprime', 'plotPointUses'),
       theme: { current, custom }
     }
@@ -94,6 +97,8 @@ export default class ImportExportSettings extends FormApplication {
         if (confirmed) {
           await game.settings.set('cortexprime', 'importedSettings', { currentSetting: file.name })
           await game.settings.set('cortexprime', 'actorTypes', data.actorTypes)
+          await game.settings.set('cortexprime', 'customRuleSet', data.customRuleSet ?? 'none')
+          await game.settings.set('cortexprime', 'mageSettings', data.mageSettings ?? defaultMageSettings)
           await game.settings.set('cortexprime', 'plotPointUses', data.plotPointUses ?? defaultPlotPointUses)
 
           const themeSettings = await game.settings.get('cortexprime', 'themes')
@@ -135,6 +140,8 @@ export default class ImportExportSettings extends FormApplication {
     if (confirmed) {
       await game.settings.set('cortexprime', 'importedSettings', { currentSetting: localizer('Default') })
       await game.settings.set('cortexprime', 'actorTypes', defaultActorTypes)
+      await game.settings.set('cortexprime', 'customRuleSet', 'none')
+      await game.settings.set('cortexprime', 'mageSettings', defaultMageSettings)
       await game.settings.set('cortexprime', 'plotPointUses', defaultPlotPointUses)
       ui.notifications.info(localizer('ResetSuccessMessage'))
 
