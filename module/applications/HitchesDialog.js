@@ -51,6 +51,7 @@ export class HitchesDialog extends FormApplication {
       action: HITCH_ACTIONS.NONE,
       complicationName: '',
       complicationKey: '',
+      renameComplication: '',
       // The die-size list has no empty entry, so the row starts on the lowest size — "step up the
       // smallest die in the pool" — rather than on a value the select can't actually show.
       doomDieSize: DOOM_DIE_STEP_OPTIONS[0]
@@ -146,6 +147,8 @@ export class HitchesDialog extends FormApplication {
           ...option,
           selected: option.key === row.complicationKey
         })),
+        // Shown as the rename box's placeholder, so leaving it blank visibly means "keep this name".
+        complicationCurrentLabel: complicationOptions.find(option => option.key === row.complicationKey)?.label ?? '',
         doomDieOptions: DOOM_DIE_STEP_OPTIONS.map(size => ({ size, selected: size === row.doomDieSize })),
         actions: availableActions.map(action => ({
           value: action,
@@ -165,6 +168,7 @@ export class HitchesDialog extends FormApplication {
     // .change() fires on blur rather than per keystroke, so re-rendering here can never steal
     // focus mid-word — the same trade-off CrisisPoolDialog makes for its name field.
     html.find('.hitch-complication-name').change(this._onRowChange.bind(this, 'complicationName'))
+    html.find('.hitch-complication-rename').change(this._onRowChange.bind(this, 'renameComplication'))
     html.find('.hitches-confirm').click(this._onConfirm.bind(this))
 
     // Revealing a sub-field grows the form after Foundry has already measured this height:'auto'

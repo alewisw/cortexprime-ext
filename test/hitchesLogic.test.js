@@ -16,6 +16,7 @@ const row = overrides => ({
   action: HITCH_ACTIONS.NONE,
   complicationName: '',
   complicationKey: '',
+  renameComplication: '',
   doomDieSize: '',
   ...overrides
 })
@@ -170,6 +171,62 @@ describe('computeProjection', () => {
 
     expect(projection.complications[0].dice).toEqual(['8'])
     expect(projection.takenOut).toEqual([])
+  })
+
+  it('renames a complication as it steps it up', () => {
+    const projection = computeProjection({
+      rows: [row({
+        action: HITCH_ACTIONS.STEP_UP_COMPLICATION,
+        complicationKey: 'existing:0',
+        renameComplication: 'Badly Winded'
+      })],
+      complications: [{ label: 'Winded', dice: ['6'] }],
+      doomDice: []
+    })
+
+    expect(projection.complications[0]).toEqual({ label: 'Badly Winded', dice: ['8'], isSteppedUp: true })
+  })
+
+  it('keeps the existing name when the rename is left blank', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })],
+      complications: [{ label: 'Winded', dice: ['6'] }],
+      doomDice: []
+    })
+
+    expect(projection.complications[0].label).toBe('Winded')
+  })
+
+  it('renames a D12 complication even though it cannot step up, and reports the new name', () => {
+    const projection = computeProjection({
+      rows: [row({
+        action: HITCH_ACTIONS.STEP_UP_COMPLICATION,
+        complicationKey: 'existing:0',
+        renameComplication: 'Bleeding Out Badly'
+      })],
+      complications: [{ label: 'Bleeding Out', dice: ['12'] }],
+      doomDice: []
+    })
+
+    expect(projection.complications[0].label).toBe('Bleeding Out Badly')
+    expect(projection.takenOut).toEqual(['Bleeding Out Badly'])
+  })
+
+  it('can rename a complication introduced by an earlier row', () => {
+    const projection = computeProjection({
+      rows: [
+        row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+        row({
+          action: HITCH_ACTIONS.STEP_UP_COMPLICATION,
+          complicationKey: 'pending:0',
+          renameComplication: 'Well Alight'
+        })
+      ],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(projection.complications[0].label).toBe('Well Alight')
   })
 
   it('reports only the complications this roll actually changed', () => {

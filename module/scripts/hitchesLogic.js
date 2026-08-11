@@ -170,7 +170,14 @@ export const computeProjection = ({ rows, complications, doomDice, defaultCompli
 
     if (index < 0 || !acc.complications[index]) return acc
 
-    const { complication, takenOut: wasTakenOut } = stepUpComplication(acc.complications[index])
+    // An optional rename rides along with the step up. It's applied even when the die itself
+    // can't grow (a D12), since renaming is independent of the step — the taken-out report below
+    // then names it by its new label.
+    const target = row.renameComplication
+      ? { ...acc.complications[index], label: row.renameComplication }
+      : acc.complications[index]
+
+    const { complication, takenOut: wasTakenOut } = stepUpComplication(target)
 
     return {
       complications: acc.complications.map((entry, entryIndex) => entryIndex === index ? complication : entry),

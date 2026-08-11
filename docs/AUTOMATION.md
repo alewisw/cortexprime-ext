@@ -200,7 +200,9 @@ that hitched get a dropdown offering:
 - **Do not activate** — leave this hitch alone (the default).
 - **Introduce a D6 complication** — reveals a box for the complication's name.
 - **Step up a complication** — reveals a list of the player's existing complications, plus any
-  complication another row in this same dialog is about to introduce.
+  complication another row in this same dialog is about to introduce, and a **Rename Complication**
+  box. Leave the box empty (it shows the current name as its placeholder) to keep the name as it
+  is; type in it to rename the complication as it steps up.
 - **Add to the &lt;Doom Pool&gt;** — adds a die of the hitched die's own size. Only shown once a
   Doom Pool Actor and Doom Pool Trait are configured in System Configuration; the option is named
   after whatever that trait is called.
