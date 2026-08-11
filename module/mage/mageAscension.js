@@ -84,7 +84,8 @@ const injectChallengeBox = async (app, html) => {
 }
 
 // ---- Any client: additively disable roll buttons + show a message when the current user is a
-// current roller whose pool breaks the "no Powers trait on a non-magical roll" rule ----
+// current roller whose pool breaks the Powers-trait rule — no Powers trait allowed when Magick is
+// None, and a Powers trait required whenever it's anything else ----
 
 const injectPoolValidation = (app, html) => {
   const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')

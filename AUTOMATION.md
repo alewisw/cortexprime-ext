@@ -56,15 +56,23 @@ Test/Contest/Group/Clear Challenge buttons with two choices:
 These reset to their defaults with each new world (they're not tied to a specific Challenge, so
 switching Challenge type doesn't clear a choice already made for the current scene).
 
-### Non-Magical rolls can't include a Power
+### Powers traits and Magick must agree
 
-Whenever Magick is **None**, the Dice Pool of whichever Player currently has a usable "Roll to
-Beat" (the current Test/Contest responder(s) once the initiator has rolled, or the current Group
-Initiative/duel participant — never every connected player) is invalid if it contains any Trait
-from the Player Character's configured Powers Trait Set. Their roll buttons are disabled and a
-message is shown:
+Whichever Player currently has a usable "Roll to Beat" (the current Test/Contest responder(s) once
+the initiator has rolled, or the current Group Initiative/duel participant — never every connected
+player) has their Dice Pool validated against the current Magick choice:
 
-> Non-Magical rolls cannot include a Power trait; the GM must mark this as a magical roll.
+- Magick **None** — the pool is invalid if it contains any Trait from the Player Character's
+  configured Powers Trait Set:
+
+  > Non-Magical rolls cannot include a Power trait; the GM must mark this as a magical roll.
+
+- Magick **anything else** — the pool is invalid unless it contains a Trait from the configured
+  Powers Trait Set:
+
+  > Magical rolls must include a Power trait; the GM marked this as a magical roll.
+
+Either way, their roll buttons are disabled and the message is shown until the pool is corrected.
 
 ### Reality Reinforcement automatically moves between pools
 

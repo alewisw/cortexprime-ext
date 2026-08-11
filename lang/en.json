@@ -183,6 +183,7 @@
   "MageMagickNone": "None",
   "MageMagickVulgar": "Vulgar",
   "MageMagickVulgarWitnessed": "Vulgar Witnessed",
+  "MageMagicalPowerTraitRequired": "Magical rolls must include a Power trait; the GM marked this as a magical roll.",
   "MageNonMagicalPowerTraitInvalid": "Non-Magical rolls cannot include a Power trait; the GM must mark this as a magical roll.",
   "MageRealityReinforcement": "Reality Reinforcement",
   "MageRealityReinforcementIndifferent": "Indifferent",

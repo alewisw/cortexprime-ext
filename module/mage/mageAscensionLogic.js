@@ -49,13 +49,16 @@ export const getCurrentRollerIds = (challenge, targets, initiatorHasRolled) => {
 
 // Pure. poolEntries: the current roller's flattened Dice Pool entries (same {traitSetId, ...}
 // shape already established by dicePoolValidation.js / traitDiceTemporary.js). Magick 'none'
-// forbids any entry sourced from the configured Powers Trait Set. Returns a lang key or null.
+// forbids any entry sourced from the configured Powers Trait Set; any other Magick value requires
+// one. Returns a lang key or null.
 export const computeMagePoolInvalidReason = (magick, poolEntries, powersTraitSetId) => {
-  if (magick !== 'none' || !powersTraitSetId) return null
+  if (!powersTraitSetId) return null
 
-  return poolEntries.some(entry => entry.traitSetId === powersTraitSetId)
-    ? 'MageNonMagicalPowerTraitInvalid'
-    : null
+  const hasPowerTrait = poolEntries.some(entry => entry.traitSetId === powersTraitSetId)
+
+  if (magick === 'none') return hasPowerTrait ? 'MageNonMagicalPowerTraitInvalid' : null
+
+  return hasPowerTrait ? null : 'MageMagicalPowerTraitRequired'
 }
 
 // Pure decision table for where the Reality Reinforcement trait's die should live right now.
