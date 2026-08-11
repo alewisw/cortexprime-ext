@@ -4,6 +4,7 @@ import {
   computeMagePoolInvalidReason,
   computeRealityReinforcementSync,
   getCurrentRollerIds,
+  getMagickLabelKey,
   isMageRuleSetActive,
   shouldShowChallengeBox
 } from '../module/mage/mageAscensionLogic.js'
@@ -109,6 +110,21 @@ describe('computeMagePoolInvalidReason', () => {
     expect(computeMagePoolInvalidReason('none', poolEntries, undefined)).toBeNull()
     expect(computeMagePoolInvalidReason('vulgar', [], '')).toBeNull()
     expect(computeMagePoolInvalidReason('vulgar', [], undefined)).toBeNull()
+  })
+})
+
+describe('getMagickLabelKey', () => {
+  it('resolves each Magick value to its lang key', () => {
+    expect(getMagickLabelKey('coincidental')).toBe('MageMagickCoincidental')
+    expect(getMagickLabelKey('coincidental-witnessed')).toBe('MageMagickCoincidentalWitnessed')
+    expect(getMagickLabelKey('vulgar')).toBe('MageMagickVulgar')
+    expect(getMagickLabelKey('vulgar-witnessed')).toBe('MageMagickVulgarWitnessed')
+  })
+
+  it('is null for None or an unrecognized value', () => {
+    expect(getMagickLabelKey('none')).toBeNull()
+    expect(getMagickLabelKey(undefined)).toBeNull()
+    expect(getMagickLabelKey('')).toBeNull()
   })
 })
 

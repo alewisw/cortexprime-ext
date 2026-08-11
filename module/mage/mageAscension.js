@@ -13,11 +13,14 @@ import {
   computeMagePoolInvalidReason,
   computeRealityReinforcementSync,
   getCurrentRollerIds,
+  getMagickLabelKey,
   isMageRuleSetActive,
   shouldShowChallengeBox
 } from './mageAscensionLogic.js'
 
 const REALITY_REINFORCEMENT_SOURCE = 'Reality Reinforcement'
+
+const CHALLENGE_TYPE_LABEL_KEYS = { test: 'Test', contest: 'Contest', group: 'Group' }
 
 const getMageChallengeState = () => game.settings.get('cortexprime', 'mageChallengeState')
 
@@ -131,6 +134,45 @@ const injectPoolValidation = (app, html) => {
   resizeToFitContent(app)
 }
 
+// ---- Any client: add a line under the tray's "Test —"/"Contest —"/"Group —" status line naming
+// the active Magick, e.g. "Vulgar Witnessed Magick" under "Test — Roll Now: ..." ----
+
+const injectMagickChallengeLabel = (app, html) => {
+  const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')
+
+  if (!isMageRuleSetActive(customRuleSet)) return
+
+  const { magick } = getMageChallengeState()
+  const magickKey = getMagickLabelKey(magick)
+
+  if (!magickKey) return
+
+  const activeChallenge = getActiveChallenge()
+  const challengeTypeKey = CHALLENGE_TYPE_LABEL_KEYS[activeChallenge.type]
+
+  if (!challengeTypeKey) return
+
+  const element = html instanceof HTMLElement ? html : html[0]
+  const challengeLabel = localizer(challengeTypeKey)
+
+  // dice-pool.html has no class or data attribute unique to this specific line — several other
+  // .sub-trait-label-cpt elements exist elsewhere in the tray — so it's found by matching the same
+  // plain text every locale already renders for the current challenge type, trimmed to ignore the
+  // template's own indentation/whitespace.
+  const label = Array.from(element.querySelectorAll('.sub-trait-label-cpt'))
+    .find(node => node.textContent.trimStart().startsWith(challengeLabel))
+
+  if (!label) return
+
+  const magickLine = document.createElement('p')
+  magickLine.className = 'sub-trait-label-cpt mage-magick-label'
+  magickLine.textContent = `${localizer(magickKey)} ${localizer('MageMagick')}`
+
+  label.insertAdjacentElement('afterend', magickLine)
+
+  resizeToFitContent(app)
+}
+
 // ---- GM-only: keep the Reality Reinforcement trait's die in the right pool(s) ----
 
 const getLinkedLocationActor = () => {
@@ -230,6 +272,7 @@ export const registerMageAscension = () => {
   Hooks.on('renderUserDicePool', async (app, html) => {
     await injectChallengeBox(app, html)
     injectPoolValidation(app, html)
+    injectMagickChallengeLabel(app, html)
   })
 
   const settingKeys = [

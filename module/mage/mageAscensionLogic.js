@@ -8,6 +8,17 @@ import { stepFaceUp } from '../scripts/traitDiceTemporary.js'
 
 export const isMageRuleSetActive = customRuleSet => customRuleSet === 'mage'
 
+const MAGICK_LABEL_KEYS = {
+  coincidental: 'MageMagickCoincidental',
+  'coincidental-witnessed': 'MageMagickCoincidentalWitnessed',
+  vulgar: 'MageMagickVulgar',
+  'vulgar-witnessed': 'MageMagickVulgarWitnessed'
+}
+
+// The lang key for the current Magick value's own label, or null when there's nothing to prefix
+// the Dice Pool tray's Test/Contest/Group status line with — Magick is None, or nothing selected.
+export const getMagickLabelKey = magick => MAGICK_LABEL_KEYS[magick] ?? null
+
 // Whether the GM's Dice Pool tray should show the Magick/Reality Reinforcement box — Mage is the
 // active custom rule set, and a Challenge (Test/Contest/Group) is currently selected.
 export const shouldShowChallengeBox = (customRuleSet, activeChallenge) =>

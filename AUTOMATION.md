@@ -56,6 +56,15 @@ Test/Contest/Group/Clear Challenge buttons with two choices:
 These reset to their defaults with each new world (they're not tied to a specific Challenge, so
 switching Challenge type doesn't clear a choice already made for the current scene).
 
+Whenever Magick is anything other than None, every client's Dice Pool tray (GM and Players alike)
+gets an extra line under its Test/Contest/Group status line naming the current Magick, e.g.
+
+> Test — Roll Now: ...
+> Vulgar Witnessed Magick
+
+so it's obvious to everyone at the table that a roll is being made under the effects of magick, and
+which kind.
+
 ### Powers traits and Magick must agree
 
 Whichever Player currently has a usable "Roll to Beat" (the current Test/Contest responder(s) once
