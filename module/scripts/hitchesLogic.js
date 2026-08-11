@@ -128,7 +128,13 @@ const stepUpComplication = complication => {
 // row-relative key format (pending:<rowIndex> / existing:<index>) independently, so a character
 // row and a scene row that happen to carry the same key are NOT the same complication and must
 // both count.
+//
+// A BOTCH (every die came up 1) earns no Plot Points at all, no matter what the GM picks for each
+// hitch — the GM's choices still apply (complications/Doom Pool still change via computeProjection),
+// only the Plot Point award is zeroed.
 export const computePlotPoints = rows => {
+  if (isBotch(rows)) return 0
+
   const characterKeys = new Set()
   const sceneKeys = new Set()
 

@@ -132,9 +132,16 @@ describe('stepUpDoomDie', () => {
   })
 })
 
+// A non-hitch die included alongside the rows actually under test, purely so the set as a whole
+// isn't a botch (every row hitching) — computePlotPoints zeroes a botch outright regardless of
+// picks, which is covered in its own tests below, so the "normal counting" tests need at least one
+// die that beat a 1 to stay a meaningful, non-botch roll.
+const nonHitchRow = row({ result: 5, faces: 6 })
+
 describe('computePlotPoints', () => {
   it('counts one per Doom Pool add, Doom Pool step up and Paradox step up', () => {
     const rows = [
+      nonHitchRow,
       row({ action: HITCH_ACTIONS.ADD_DOOM_DIE }),
       row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '8' }),
       row({ action: HITCH_ACTIONS.STEP_UP_PARADOX })
@@ -144,11 +151,12 @@ describe('computePlotPoints', () => {
   })
 
   it('counts nothing for rows left on "do not activate"', () => {
-    expect(computePlotPoints([row(), row()])).toBe(0)
+    expect(computePlotPoints([nonHitchRow, row(), row()])).toBe(0)
   })
 
   it('counts each distinct complication once', () => {
     const rows = [
+      nonHitchRow,
       row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
       row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })
     ]
@@ -158,8 +166,10 @@ describe('computePlotPoints', () => {
 
   it('counts introducing a complication and then stepping that same one up as a single point', () => {
     const rows = [
+      nonHitchRow,
       row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
-      row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'pending:0' })
+      // Pending keys are row-relative, so this points at the row above (index 1).
+      row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'pending:1' })
     ]
 
     expect(computePlotPoints(rows)).toBe(1)
@@ -167,6 +177,7 @@ describe('computePlotPoints', () => {
 
   it('counts two step-up rows targeting the same complication once', () => {
     const rows = [
+      nonHitchRow,
       row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' }),
       row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })
     ]
@@ -176,6 +187,7 @@ describe('computePlotPoints', () => {
 
   it('counts scene complications independently of character complications', () => {
     const rows = [
+      nonHitchRow,
       row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
       row({ action: HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION, complicationName: 'Collapsing' })
     ]
@@ -187,10 +199,41 @@ describe('computePlotPoints', () => {
   // list, one against the scene's. They must NOT be treated as the same complication.
   it('does not let a character row and a scene row with the same key collapse into one point', () => {
     const rows = [
+      nonHitchRow,
       row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' }),
       row({ action: HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION, complicationKey: 'existing:0' })
     ]
 
+    expect(computePlotPoints(rows)).toBe(2)
+  })
+
+  // A BOTCH (every die came up 1) never earns Plot Points, no matter what the GM picks — this is
+  // a deliberate override, separate from and taking priority over the normal per-action counting
+  // above.
+  it('is 0 for a botch no matter what the GM picks', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+      row({ action: HITCH_ACTIONS.ADD_DOOM_DIE }),
+      row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '8' }),
+      row({ action: HITCH_ACTIONS.STEP_UP_PARADOX })
+    ]
+
+    expect(isBotch(rows)).toBe(true)
+    expect(computePlotPoints(rows)).toBe(0)
+  })
+
+  it('is 0 for a single-die botch', () => {
+    expect(computePlotPoints([row({ action: HITCH_ACTIONS.ADD_DOOM_DIE })])).toBe(0)
+  })
+
+  it('is non-zero for the same picks once at least one die beats a 1', () => {
+    const rows = [
+      nonHitchRow,
+      row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+      row({ action: HITCH_ACTIONS.ADD_DOOM_DIE })
+    ]
+
+    expect(isBotch(rows)).toBe(false)
     expect(computePlotPoints(rows)).toBe(2)
   })
 })

@@ -225,8 +225,9 @@ Complications. Only the complications this roll actually changes are listed — 
 left out of both the preview and the chat post — alongside the Doom Pool's resulting dice. Plot
 Points are counted as one per unique complication touched, character and scene counted separately
 (introducing a complication and then stepping that same one up costs one point, not two), plus one
-per Doom Pool add, per Doom Pool step up, and per Paradox step
-up.
+per Doom Pool add, per Doom Pool step up, and per Paradox step up — **except on a BOTCH**, where the
+Plot Points total is always 0 regardless of what the GM picks. The GM's choices still apply as
+normal (complications and the Doom Pool still change), only the Plot Point award is withheld.
 
 A complication that is already at **d12** cannot be stepped up any further. It stays at d12 and is
 called out as **TAKEN OUT** in the preview and the chat post — the complication on the player's
