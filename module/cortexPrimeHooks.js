@@ -6,6 +6,7 @@ import { registerCrisisPool } from './scripts/crisisPoolPanel.js'
 import { registerDoomPool } from './scripts/doomPool.js'
 import { registerHitches } from './scripts/hitches.js'
 import { registerMageAscension } from './mage/mageAscension.js'
+import { registerParadox } from './mage/paradox.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
@@ -19,6 +20,9 @@ export default () => {
   // lastRoll write, and rollToBeat's handler can clear the active challenge that this one needs
   // to read to know the roll happened during a Test/Contest/Group.
   registerHitches()
+  // Same reason as registerHitches() above — it reads the active challenge and the opposition's
+  // recorded effect dice on the updateActor hook, both of which rollToBeat's handler advances.
+  registerParadox()
   registerMageAscension()
   registerMyCharacter()
   registerRollToBeat()

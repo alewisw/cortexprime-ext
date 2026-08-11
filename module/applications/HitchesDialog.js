@@ -37,12 +37,14 @@ const getActionLabel = (action, doomPoolLabel) => DOOM_POOL_ACTIONS.includes(act
   : localizer(ACTION_LABEL_KEYS[action])
 
 export class HitchesDialog extends FormApplication {
-  constructor ({ actor, sceneActor, challengeType, dice, isMage, magick }) {
+  constructor ({ actor, sceneActor, challengeType, dice, isMage, magick, canStepUpParadox = true, rolledAt = 0 }) {
     // Scoped per actor so that two players hitching at once during a Group Challenge get two
     // separate windows instead of colliding on a single shared application id.
     super({}, { id: `hitches-dialog-${actor.id}` })
 
     this.actor = actor
+    this.canStepUpParadox = canStepUpParadox
+    this.rolledAt = rolledAt
     // If the Scene happens to be linked to the very actor that's rolling, the character and scene
     // complication pipelines would both write system.actorType.complications on that same
     // document from two independent pre-dialog snapshots — the second write would silently
@@ -139,7 +141,8 @@ export class HitchesDialog extends FormApplication {
       hasDoomPool: !!doomPool,
       hasSceneActor: !!this.sceneActor,
       isMage: this.isMage,
-      magick: this.magick
+      magick: this.magick,
+      canStepUpParadox: this.canStepUpParadox
     })
     const complicationOptions = getComplicationOptions(
       complications, this.rows, defaultComplicationLabel, HITCH_ACTIONS.INTRODUCE_COMPLICATION
@@ -213,6 +216,28 @@ export class HitchesDialog extends FormApplication {
     }
   }
 
+  // Announces how many hitches the GM spent on "Step up Paradox", exactly once per dialog, so the
+  // Mage Paradox flow (module/mage/paradox.js) knows the count and can proceed. Fired on close as
+  // well as on Confirm — a GM who dismisses this dialog hasn't cancelled the Paradox, which the
+  // rules say happens with or without hitches, so it resolves with zero steps instead of hanging.
+  _resolveHitches (paradoxSteps) {
+    if (this._resolved) return
+
+    this._resolved = true
+
+    Hooks.callAll('cortexprimeHitchesResolved', {
+      actorId: this.actor.id,
+      rolledAt: this.rolledAt,
+      paradoxSteps
+    })
+  }
+
+  async close (options) {
+    this._resolveHitches(0)
+
+    return super.close(options)
+  }
+
   _onRowChange (field, event) {
     event.preventDefault()
 
@@ -252,6 +277,9 @@ export class HitchesDialog extends FormApplication {
       )
 
       await applyHitchOutcomes({ actor: this.actor, sceneActor: this.sceneActor, projection, plotPoints, summaryHtml })
+
+      // Before close(), so the real step count is what gets announced rather than close()'s zero.
+      this._resolveHitches(projection.paradoxSteps)
 
       this.close()
     } catch (error) {

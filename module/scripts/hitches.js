@@ -5,6 +5,7 @@
 import { getLength } from '../../lib/helpers.js'
 import { localizer, showPlotPointAnimation } from './foundryHelpers.js'
 import { getActiveChallenge } from './rollToBeat.js'
+import { canHitchesStepUpParadox, getParadoxOutcome } from '../mage/paradoxLogic.js'
 
 const CHALLENGE_TYPES = ['test', 'contest', 'group']
 
@@ -131,13 +132,19 @@ const openHitchesDialog = async (actor, record, challenge) => {
     ? game.settings.get('cortexprime', 'mageChallengeState')?.magick
     : null
 
+  // Coincidental magick only turns hitches into Paradox on a botch, so outside that the option is
+  // hidden rather than letting the GM spend a Plot Point on something that can't do anything.
+  const canStepUpParadox = canHitchesStepUpParadox(magick, getParadoxOutcome(record.won, record.dice ?? []))
+
   new HitchesDialog({
     actor,
     sceneActor: getSceneActor(),
     challengeType: challenge.type,
     dice: record.dice,
     isMage: customRuleSet === 'mage',
-    magick
+    magick,
+    canStepUpParadox,
+    rolledAt: record.rolledAt
   }).render(true)
 }
 

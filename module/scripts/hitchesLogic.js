@@ -33,14 +33,16 @@ export const isBotch = dice => dice.length > 0 && dice.every(isHitch)
 // Which options a hitch row may offer. The two Doom Pool options are meaningless without a
 // configured Doom Pool Actor/Trait, the two Scene options need a linked Scene actor (distinct from
 // the roller — see getSceneActor in hitches.js), and Paradox only exists under the Mage rule set
-// once the GM has marked the roll as magical.
-export const getAvailableActions = ({ hasDoomPool, hasSceneActor, isMage, magick }) => [
+// once the GM has marked the roll as magical AND the Paradox rules can actually turn a hitch into
+// Paradox for this roll's outcome (canStepUpParadox — see canHitchesStepUpParadox in
+// module/mage/paradoxLogic.js), so a Plot Point is never spent on an inert choice.
+export const getAvailableActions = ({ hasDoomPool, hasSceneActor, isMage, magick, canStepUpParadox = true }) => [
   HITCH_ACTIONS.NONE,
   HITCH_ACTIONS.INTRODUCE_COMPLICATION,
   HITCH_ACTIONS.STEP_UP_COMPLICATION,
   ...(hasSceneActor ? [HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION, HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION] : []),
   ...(hasDoomPool ? [HITCH_ACTIONS.ADD_DOOM_DIE, HITCH_ACTIONS.STEP_UP_DOOM_DIE] : []),
-  ...(isMage && magick && magick !== 'none' ? [HITCH_ACTIONS.STEP_UP_PARADOX] : [])
+  ...(isMage && magick && magick !== 'none' && canStepUpParadox ? [HITCH_ACTIONS.STEP_UP_PARADOX] : [])
 ]
 
 // A row's stable identity for whichever complication it refers to. An 'introduce' row is

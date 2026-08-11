@@ -39,10 +39,10 @@ dialog (also in System Configuration), which maps:
 - The Actor Type used for a **Player Character**, and which Simple Trait on it represents
   **Paradox** and **Trauma**, plus which Trait Set defines **Powers**.
 
-All of this feature's logic is isolated in `module/mage/` (`mageAscensionLogic.js` for pure
-decisions, `mageAscension.js` for the Foundry/hook integration) and never modifies the core Dice
-Pool, Challenge, or Actor Sheet code it builds on — it only reads their existing exported
-functions and reacts by injecting into the already-rendered Dice Pool tray.
+All of this feature's logic is isolated in `module/mage/` — `mageAscensionLogic.js` and
+`paradoxLogic.js` for the pure decisions, `mageAscension.js` and `paradox.js` for the Foundry/hook
+integration — and reads the core Dice Pool, Challenge, and Actor Sheet code rather than modifying
+it, reacting by injecting into the already-rendered Dice Pool tray.
 
 ### The Magick / Reality Reinforcement box
 
@@ -91,3 +91,107 @@ no trait value), the die is removed from both pools.
 Reinforcement is **Opposes**, every die added to the GM's pool by the rule above steps up one rung
 (capped at D12, never wrapping). This only affects the die going into the GM's pool — the roller's
 side is unaffected (moot for Opposes anyway, since the roller's side is always 'remove').
+
+### Paradox and Trauma
+
+Every roll a **Player** makes during a Test, Contest or Group Challenge while Magick is set to
+anything **other than None** can earn them a Paradox die — on each roll, not just the one that
+decides the challenge. A roll that wasn't scored against anyone (a Group Challenge's
+initiative-phase rolls, or a Player acting as the challenge initiator) has no opposition, and earns
+no Paradox at all. GM rolls never earn Paradox.
+
+Every die size below is capped at **D12** — nothing ever steps past it.
+
+#### 1. Base Paradox
+
+"Steps" below means hitches the GM resolved with **Step up Paradox** in the Hitches dialog. The
+Opposition's Effect Die is the largest effect die recorded by whoever the Player was rolling
+against, defaulting to **D4** if they have none recorded.
+
+| Magick | WON | LOST (not a BOTCH) | BOTCH |
+|---|---|---|---|
+| Coincidental / Coincidental Witnessed | none | none | **D6**, +1 step per hitch *beyond the first* |
+| Vulgar | none with no steps, else a **D4** stepped up once per hitch (1→D6, 2→D8, 3→D10, 4→D12) | Opposition's Effect Die, +1 step per hitch | as LOST |
+| Vulgar Witnessed | **D6**, +1 step per hitch | Opposition's Effect Die, +1 step per hitch | as LOST |
+
+Because Coincidental magick can only earn Paradox on a BOTCH, the **Step up Paradox** option is
+hidden from the Hitches dialog entirely for Coincidental rolls that aren't a BOTCH — the GM can't
+spend a Plot Point on a choice that would do nothing.
+
+Recorded in the log as `Base Paradox: <die>`. If there is no Base Paradox die, nothing further
+happens — no log, no dialog.
+
+#### 2. Shielding
+
+If the Scene's linked Location actor has a die on its configured **Shielding** trait, it can absorb
+or shrink the Paradox. Shielding applies only when there **is** a Paradox die and the Magick is
+**not** Coincidental Witnessed or Vulgar Witnessed — a witnessed act is too blatant to muffle.
+
+- Paradox **at or below** the Shielding die → the Paradox die is removed entirely.
+- Paradox **one rung** above Shielding → becomes **D6**.
+- Paradox **two rungs** above → becomes **D8**.
+- **Three or more rungs** above → becomes **D10**.
+
+Recorded as `Shielded Paradox: <die>`, or `Shielded Paradox: absorbed by Shielding`. If Shielding
+absorbed the Paradox completely there's no dialog, but the log is still posted to chat so the table
+can see the Shielding did its job.
+
+#### 3. Final Paradox
+
+The Paradox die is then measured against the Player's own **Paradox** Simple Trait:
+
+- No die on the trait → Final Paradox is the Paradox die.
+- Paradox die **larger** than the trait → Final Paradox is the Paradox die.
+- Paradox die **equal or smaller** → the trait itself steps up one rung (D4→D6, D6→D8, D8→D10,
+  D10→D12). A trait already at **D12** stays at D12 and triggers Trauma.
+
+#### 4. Final Trauma and QUIET
+
+Only calculated when the step above hit a D12 Paradox trait. Read the Player's **Trauma** Simple
+Trait:
+
+| Current Trauma | Final Trauma |
+|---|---|
+| none or D4 | D6 |
+| D6 | D8 |
+| D8 | D10 |
+| D10 | D12 |
+| D12 | D12, and **Descend into QUIET** |
+
+Recorded as `Final Paradox: <die>`, then `Final Trauma: <die>` and `Descend into QUIET` when they
+apply. Where the Player already carries a rating on the trait, the line reads as a transition
+instead — `Final Paradox: D6 → D8`, `Final Trauma: D8 → D10` — so it's clear what the trait is
+moving from as well as to.
+
+#### 5. The Player's dialog
+
+If there is a Final Paradox die, a dialog opens **on the Player's own client** (not the GM's)
+showing the whole log, plus exactly one of:
+
+- **Cannot Limit a Vulgar BOTCH** — when the Magick was Vulgar or Vulgar Witnessed and the roll was
+  a BOTCH.
+- **Paradox too large to Limit** — when the Final Paradox die is larger than every Powers Trait Set
+  die that was in the roll. A roll containing no Powers dice at all counts as too large, since
+  there's nothing to limit with.
+- otherwise a checkbox, **Apply Limit to avoid paradox**.
+
+A single **Confirm** button resolves it:
+
+- With the Limit checked, nothing is written to the sheet and chat just reads *"Limit applied to
+  avoid paradox"*.
+- Otherwise the Player's Paradox trait is set to the Final Paradox die, the Trauma trait is set to
+  the Final Trauma die if one was calculated, and the full log is posted to chat.
+
+This dialog is the only place Paradox and Trauma are ever written — nothing is applied until the
+Player confirms.
+
+#### How the two clients cooperate
+
+The GM's client is the only one that knows how many hitches were spent on Step up Paradox, and the
+only one that can safely snapshot the opposition's effect dice before the challenge advances, so it
+does all the calculation. It then hands the finished result to the Player on a
+`flags.cortexprime.pendingParadox` flag; the Player's client renders the dialog and applies the
+outcome to its own actor. The Hitches dialog announces its Paradox step count via a
+`cortexprimeHitchesResolved` hook when it's confirmed — and also when it's closed without
+confirming, with zero steps, so that dismissing it can't silently suppress a Paradox that the rules
+say happens regardless of hitches.

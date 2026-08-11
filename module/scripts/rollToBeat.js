@@ -5,13 +5,24 @@
 import { localizer } from './foundryHelpers.js'
 import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
 
-const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0, dice: [] }
+const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0, dice: [], poolEntries: [] }
 const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0, interference: null, group: null }
 
 // `dice` is every die this roll actually put on the table as [{ faces, result }] — kept alongside
 // the outcome so the GM's client can spot natural 1s (see hitches.js) without re-rolling anything.
-export const recordRollResult = async ({ total, effectDice, won, dice }) => {
-  const record = { total, effectDice, won: won ?? null, rolledAt: Date.now(), dice: dice ?? [] }
+// `poolEntries` is [{ traitSetId, faces }] for every pool entry that came from a Trait Set, kept
+// because the dice pool itself is cleared the moment a roll starts, so which Trait Sets contributed
+// can't be recovered afterwards (module/mage/paradox.js needs the Powers dice). Deliberately
+// generic — no rule set knows about it here.
+export const recordRollResult = async ({ total, effectDice, won, dice, poolEntries }) => {
+  const record = {
+    total,
+    effectDice,
+    won: won ?? null,
+    rolledAt: Date.now(),
+    dice: dice ?? [],
+    poolEntries: poolEntries ?? []
+  }
 
   if (game.user.isGM) {
     await game.settings.set('cortexprime', 'lastGmRoll', record)
@@ -52,7 +63,8 @@ const withRecord = record => ({
   effectDice: record?.effectDice ?? blankRecord.effectDice,
   won: record?.won ?? blankRecord.won,
   rolledAt: record?.rolledAt ?? blankRecord.rolledAt,
-  dice: record?.dice ?? blankRecord.dice
+  dice: record?.dice ?? blankRecord.dice,
+  poolEntries: record?.poolEntries ?? blankRecord.poolEntries
 })
 
 export const getRollToBeatTargets = () => {
@@ -348,6 +360,28 @@ export const getMyBeatTargetId = () => {
   }
 
   return (getMyResponderId() || getMyInterfererId()) ? challenge.initiatorId : null
+}
+
+// Pure, id-parameterized twin of getMyBeatTargetId: who the GIVEN roller was shooting at, for a
+// given challenge snapshot. The functions above all bottom out in getMyId() and so only ever
+// answer for the current user — a GM's client reacting to someone else's roll (see
+// module/mage/paradox.js) needs to ask about that roller instead. Each branch mirrors its
+// current-user counterpart exactly: responder/interferer -> the initiator, a group's
+// front-of-queue duelist -> the champion, and anything else (including the whole group
+// initiative phase) -> no target at all.
+export const getBeatTargetIdFor = (challenge, rollerId) => {
+  if (!challenge?.type || !rollerId) return null
+
+  if (challenge.type === 'group') {
+    return challenge.group?.phase === 'dueling' && challenge.group.queue?.[0] === rollerId
+      ? (challenge.group.championId ?? null)
+      : null
+  }
+
+  const isResponder = (challenge.responderIds ?? []).includes(rollerId)
+  const isInterferer = challenge.interference?.interfererId === rollerId
+
+  return (isResponder || isInterferer) ? challenge.initiatorId : null
 }
 
 // Whether a designated responder's "Roll To Beat" is actually usable right now — the

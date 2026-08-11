@@ -1,6 +1,7 @@
 import { objectReduce } from '../../lib/helpers.js'
 import { localizer, showPlotPointSpendAnimation } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
+import { flattenPoolEntries } from './dicePoolValidation.js'
 import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyBeatTargetId, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
 const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
@@ -417,6 +418,15 @@ const dicePicker = async rollResults => {
 }
 
 export default async function (pool, rollType, targetTotal, spendPlotPointForExtraDie) {
+  // Captured before _clearDicePool below wipes the tray: which Trait Set each pooled trait came
+  // from, and its faces. The roll record keeps this so rule sets can ask "was a die from Trait Set
+  // X in this roll?" after the fact (module/mage/paradox.js does, for the Powers Trait Set). The
+  // `pool` argument is a by-value snapshot that _clearDicePool doesn't mutate, so this stays valid
+  // for the whole function either way.
+  const poolEntries = flattenPoolEntries(pool)
+    .filter(entry => entry.traitSetId)
+    .map(entry => ({ traitSetId: entry.traitSetId, faces: Object.values(entry.value ?? {}).map(String) }))
+
   const rollResults = await getRollResults(pool)
   const themes = game.settings.get('cortexprime', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
@@ -514,6 +524,7 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     total: selectedDice.total,
     effectDice: finalEffectDice,
     won,
-    dice: [...rollResults.results, ...rollResults.hitches]
+    dice: [...rollResults.results, ...rollResults.hitches],
+    poolEntries
   })
 }

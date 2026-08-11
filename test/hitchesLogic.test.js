@@ -67,6 +67,13 @@ describe('getAvailableActions', () => {
     expect(actions).toContain(HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION)
   })
 
+  it('hides Paradox when the Paradox rules cannot turn a hitch into Paradox for this roll', () => {
+    expect(getAvailableActions({ hasDoomPool: false, isMage: true, magick: 'coincidental', canStepUpParadox: false }))
+      .not.toContain(HITCH_ACTIONS.STEP_UP_PARADOX)
+    expect(getAvailableActions({ hasDoomPool: false, isMage: true, magick: 'coincidental', canStepUpParadox: true }))
+      .toContain(HITCH_ACTIONS.STEP_UP_PARADOX)
+  })
+
   it('hides the scene complication options without a linked scene actor', () => {
     const actions = getAvailableActions({ hasDoomPool: false, hasSceneActor: false, isMage: false, magick: null })
 

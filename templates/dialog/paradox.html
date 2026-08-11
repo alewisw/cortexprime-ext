@@ -1,0 +1,44 @@
+<form class="cortexprime paradox-dialog sheet-cpt" autocomplete="off">
+  <div class="sheet-background"></div>
+  <div class="sheet-image"></div>
+  <div class="sheet-content pa-2">
+    <div class="section-cpt pa-2 mb-2">
+      <div class="section-image"></div>
+      <div class="section-background-alternate"></div>
+      <div class="section-content text-center">
+        <h3 class="section-primary-title-cpt">{{localize 'Paradox'}}</h3>
+      </div>
+    </div>
+
+    <div class="section-cpt pa-2 mb-2">
+      <div class="section-image"></div>
+      <div class="section-background"></div>
+      <div class="section-content">
+        {{#each lines as |line|}}
+          <p>{{line}}</p>
+        {{/each}}
+      </div>
+    </div>
+
+    <div class="section-cpt pa-2 mb-2">
+      <div class="section-image"></div>
+      <div class="section-background"></div>
+      <div class="section-content">
+        {{#if cannotLimitVulgarBotch}}
+          <p class="descriptor-label-cpt">{{localize 'ParadoxCannotLimitVulgarBotch'}}</p>
+        {{else if tooLargeToLimit}}
+          <p class="descriptor-label-cpt">{{localize 'ParadoxTooLargeToLimit'}}</p>
+        {{else}}
+          <label class="flex-row flex-ac">
+            <input class="paradox-limit-checkbox" type="checkbox">
+            <span class="pl-1">{{localize 'ParadoxApplyLimit'}}</span>
+          </label>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="flex flex-je">
+      <button class="paradox-confirm btn btn-primary-cpt" type="button">{{localize 'Confirm'}}</button>
+    </div>
+  </div>
+</form>
