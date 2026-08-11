@@ -2,7 +2,9 @@
 // automation (Magick / Reality Reinforcement). Kept free of any Foundry Application-extending
 // imports so it's unit-testable; only reads from rollToBeat.js's own exported pure functions —
 // never modifies that file. The impure Foundry-integration wrapper lives in mageAscension.js.
+import { objectMapValues } from '../../lib/helpers.js'
 import { getPendingGroupParticipants } from '../scripts/rollToBeat.js'
+import { stepFaceUp } from '../scripts/traitDiceTemporary.js'
 
 export const isMageRuleSetActive = customRuleSet => customRuleSet === 'mage'
 
@@ -69,4 +71,15 @@ export const computeRealityReinforcementSync = (realityReinforcement, applicable
     case 'indifferent': return { gm: 'remove', roller: 'remove' }
     default: return { gm: 'remove', roller: 'remove' }
   }
+}
+
+// A Vulgar Witnessed act of magick, opposed by the location, draws extra attention — every die in
+// the Reality Reinforcement trait's map added to the GM's pool steps up one rung, capped at D12
+// (stepFaceUp already clamps rather than wraps). The roller's side is never affected by this: with
+// Magick Opposes, the roller's action is always 'remove' anyway (see computeRealityReinforcementSync).
+export const computeGmRealityReinforcementDiceMap = (diceMap, magick, realityReinforcement) => {
+  if (!diceMap) return diceMap
+  if (magick !== 'vulgar-witnessed' || realityReinforcement !== 'opposes') return diceMap
+
+  return objectMapValues(diceMap, face => stepFaceUp(face))
 }

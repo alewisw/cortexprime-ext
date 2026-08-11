@@ -9,6 +9,7 @@ import { flattenPoolEntries } from '../scripts/dicePoolValidation.js'
 import { getEffectiveDiceMap } from '../scripts/traitDiceTemporary.js'
 import { getActiveChallenge, getRollToBeatTargets, hasInitiatorRolled } from '../scripts/rollToBeat.js'
 import {
+  computeGmRealityReinforcementDiceMap,
   computeMagePoolInvalidReason,
   computeRealityReinforcementSync,
   getCurrentRollerIds,
@@ -203,7 +204,12 @@ const syncRealityReinforcement = async () => {
 
   const { gm: gmAction, roller: rollerAction } = computeRealityReinforcementSync(realityReinforcement, applicable)
 
-  await syncPoolSource(game.user, gmAction, diceValue)
+  // Vulgar Witnessed + Opposes steps up the die going into the GM's pool specifically — the
+  // roller's side keeps the trait's plain value (moot here anyway, since Opposes always removes
+  // it from the roller's pool).
+  const gmDiceValue = computeGmRealityReinforcementDiceMap(diceValue, magick, realityReinforcement)
+
+  await syncPoolSource(game.user, gmAction, gmDiceValue)
 
   for (const rollerId of rollerIds) {
     const rollerUser = game.users.contents.find(user => user.character?.id === rollerId)

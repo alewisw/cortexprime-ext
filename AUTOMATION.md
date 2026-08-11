@@ -86,3 +86,8 @@ Challenge, the Magick/Reality Reinforcement choice, the linked Location Actor, o
 Reinforcement trait's value changes — including honoring a temporarily stepped-up/down value if
 one is active. If the Location conditions above stop being met (no linked actor, wrong Actor Type,
 no trait value), the die is removed from both pools.
+
+**Vulgar Witnessed drawing extra attention:** whenever Magick is **Vulgar Witnessed** and Reality
+Reinforcement is **Opposes**, every die added to the GM's pool by the rule above steps up one rung
+(capped at D12, never wrapping). This only affects the die going into the GM's pool — the roller's
+side is unaffected (moot for Opposes anyway, since the roller's side is always 'remove').

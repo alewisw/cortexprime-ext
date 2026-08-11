@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeGmRealityReinforcementDiceMap,
   computeMagePoolInvalidReason,
   computeRealityReinforcementSync,
   getCurrentRollerIds,
@@ -118,5 +119,39 @@ describe('computeRealityReinforcementSync', () => {
   it('removes from both pools whenever not applicable, regardless of the selected value', () => {
     expect(computeRealityReinforcementSync('opposes', false)).toEqual({ gm: 'remove', roller: 'remove' })
     expect(computeRealityReinforcementSync('reinforces', false)).toEqual({ gm: 'remove', roller: 'remove' })
+  })
+})
+
+describe('computeGmRealityReinforcementDiceMap', () => {
+  it('steps every die up one rung for Vulgar Witnessed + Opposes', () => {
+    expect(computeGmRealityReinforcementDiceMap({ 0: '8' }, 'vulgar-witnessed', 'opposes')).toEqual({ 0: '10' })
+    expect(computeGmRealityReinforcementDiceMap({ 0: '6', 1: '8' }, 'vulgar-witnessed', 'opposes'))
+      .toEqual({ 0: '8', 1: '10' })
+  })
+
+  it('caps a stepped-up die at D12 rather than wrapping', () => {
+    expect(computeGmRealityReinforcementDiceMap({ 0: '12' }, 'vulgar-witnessed', 'opposes')).toEqual({ 0: '12' })
+  })
+
+  it('leaves the map unchanged for any other Magick value', () => {
+    expect(computeGmRealityReinforcementDiceMap({ 0: '8' }, 'vulgar', 'opposes')).toEqual({ 0: '8' })
+    expect(computeGmRealityReinforcementDiceMap({ 0: '8' }, 'coincidental-witnessed', 'opposes')).toEqual({ 0: '8' })
+    expect(computeGmRealityReinforcementDiceMap({ 0: '8' }, 'none', 'opposes')).toEqual({ 0: '8' })
+  })
+
+  it('leaves the map unchanged for any Reality Reinforcement value other than Opposes', () => {
+    expect(computeGmRealityReinforcementDiceMap({ 0: '8' }, 'vulgar-witnessed', 'reinforces')).toEqual({ 0: '8' })
+    expect(computeGmRealityReinforcementDiceMap({ 0: '8' }, 'vulgar-witnessed', 'indifferent')).toEqual({ 0: '8' })
+  })
+
+  it('passes through a null/undefined map unchanged', () => {
+    expect(computeGmRealityReinforcementDiceMap(null, 'vulgar-witnessed', 'opposes')).toBeNull()
+    expect(computeGmRealityReinforcementDiceMap(undefined, 'vulgar-witnessed', 'opposes')).toBeUndefined()
+  })
+
+  it('does not mutate the map it was given', () => {
+    const diceMap = { 0: '8' }
+    computeGmRealityReinforcementDiceMap(diceMap, 'vulgar-witnessed', 'opposes')
+    expect(diceMap).toEqual({ 0: '8' })
   })
 })
