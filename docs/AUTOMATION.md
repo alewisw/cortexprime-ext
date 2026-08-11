@@ -198,11 +198,17 @@ Below it is one row per die the player rolled, showing the die and the face it l
 that hitched get a dropdown offering:
 
 - **Do not activate** — leave this hitch alone (the default).
-- **Introduce a D6 complication** — reveals a box for the complication's name.
-- **Step up a complication** — reveals a list of the player's existing complications, plus any
-  complication another row in this same dialog is about to introduce, and a **Rename Complication**
-  box. Leave the box empty (it shows the current name as its placeholder) to keep the name as it
-  is; type in it to rename the complication as it steps up.
+- **Introduce a D6 character complication** — reveals a box for the complication's name, added to
+  the rolling player's own sheet.
+- **Step up a character complication** — reveals a list of the player's existing complications,
+  plus any complication another row in this same dialog is about to introduce, and a **Rename
+  Complication** box. Leave the box empty (it shows the current name as its placeholder) to keep
+  the name as it is; type in it to rename the complication as it steps up.
+- **Introduce a D6 scene complication** / **Step up a scene complication** — identical to the two
+  options above, except they act on the actor sheet linked to the currently active Scene (the same
+  Scene ↔ Actor link used to open the Distinction Actor from the floating panel) instead of the
+  rolling player's sheet. Only shown when the active Scene is linked to an actor other than the one
+  rolling.
 - **Add to the &lt;Doom Pool&gt;** — adds a die of the hitched die's own size. Only shown once a
   Doom Pool Actor and Doom Pool Trait are configured in System Configuration; the option is named
   after whatever that trait is called.
@@ -214,10 +220,12 @@ that hitched get a dropdown offering:
   the Paradox trait itself.*
 
 At the bottom the dialog shows the **Plot Points** the player will receive and a live preview of
-the outcome. Only the complications this roll actually changes are listed — untouched ones are left
-out of both the preview and the chat post — alongside the Doom Pool's resulting dice. Plot Points are counted as
-one per unique complication touched (introducing a complication and then stepping that same one up
-costs one point, not two), plus one per Doom Pool add, per Doom Pool step up, and per Paradox step
+the outcome, split into Character Complications and (when a Scene actor is linked) Scene
+Complications. Only the complications this roll actually changes are listed — untouched ones are
+left out of both the preview and the chat post — alongside the Doom Pool's resulting dice. Plot
+Points are counted as one per unique complication touched, character and scene counted separately
+(introducing a complication and then stepping that same one up costs one point, not two), plus one
+per Doom Pool add, per Doom Pool step up, and per Paradox step
 up.
 
 A complication that is already at **d12** cannot be stepped up any further. It stays at d12 and is

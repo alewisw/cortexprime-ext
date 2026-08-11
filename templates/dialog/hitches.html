@@ -83,6 +83,35 @@
                     style="width: 100%"
                   >
                 </div>
+                <div class="mt-1{{ternary row.showSceneComplicationName '' ' hide'}}">
+                  <div class="input-label-cpt">{{localize 'HitchesComplicationName'}}</div>
+                  <input
+                    class="hitch-complication-name input-cpt"
+                    data-index="{{row.index}}"
+                    type="text"
+                    value="{{row.complicationName}}"
+                    placeholder="{{localize 'NewComplication'}}"
+                    style="width: 100%"
+                  >
+                </div>
+                <div class="mt-1{{ternary row.showSceneComplicationSelect '' ' hide'}}">
+                  <div class="input-label-cpt">{{localize 'HitchesComplication'}}</div>
+                  <select class="hitch-complication-select input-cpt" data-index="{{row.index}}" style="width: 100%">
+                    <option value="">{{localize 'None'}}</option>
+                    {{#each row.sceneComplicationOptions as |option|}}
+                      <option value="{{option.key}}"{{ternary option.selected ' selected' ''}}>{{option.label}}</option>
+                    {{/each}}
+                  </select>
+                  <div class="input-label-cpt mt-1">{{localize 'HitchesRenameComplication'}}</div>
+                  <input
+                    class="hitch-complication-rename input-cpt"
+                    data-index="{{row.index}}"
+                    type="text"
+                    value="{{row.renameComplication}}"
+                    placeholder="{{row.complicationCurrentLabel}}"
+                    style="width: 100%"
+                  >
+                </div>
                 <div class="mt-1{{ternary row.showDoomDieSelect '' ' hide'}}">
                   <div class="input-label-cpt">{{localize 'HitchesDoomDie'}}</div>
                   <select class="hitch-doom-select input-cpt" data-index="{{row.index}}" style="width: 100%">
@@ -105,7 +134,7 @@
       <div class="section-content">
         <h3 class="section-secondary-title-cpt">{{localize 'HitchesPlotPoints'}}: {{plotPoints}}</h3>
         <div class="separator-cpt my-2"></div>
-        <div class="input-label-cpt">{{localize 'Complications'}}</div>
+        <div class="input-label-cpt">{{localize 'HitchesCharacterComplications'}}</div>
         {{#if summary.complications.length}}
           {{#each summary.complications as |complication|}}
             <p>
@@ -123,6 +152,27 @@
             {{#each projection.takenOut as |label|}}{{label}} {{/each}}
           </p>
         {{/if}}
+        {{#if hasSceneActor}}
+          <div class="separator-cpt my-2"></div>
+          <div class="input-label-cpt">{{localize 'HitchesSceneComplications'}}</div>
+          {{#if summary.sceneComplications.length}}
+            {{#each summary.sceneComplications as |complication|}}
+              <p>
+                {{complication.label}}
+                {{#each complication.dice as |face|}}<b class="descriptor-label-cpt"> d{{face}}</b>{{/each}}
+                {{#if complication.note}} <i>({{complication.note}})</i>{{/if}}
+              </p>
+            {{/each}}
+          {{else}}
+            <p><i>{{localize 'HitchesNoComplicationChanges'}}</i></p>
+          {{/if}}
+          {{#if projection.sceneTakenOut.length}}
+            <p class="mt-1">
+              <b class="descriptor-label-cpt">{{localize 'HitchesTakenOut'}}:</b>
+              {{#each projection.sceneTakenOut as |label|}}{{label}} {{/each}}
+            </p>
+          {{/if}}
+        {{/if}}
         <div class="separator-cpt my-2"></div>
         <div class="input-label-cpt">{{doomPoolLabel}}</div>
         {{#if summary.doomDice.length}}
@@ -130,7 +180,7 @@
             <p><b class="descriptor-label-cpt">d{{die.face}}</b>{{#if die.note}} <i>({{die.note}})</i>{{/if}}</p>
           {{/each}}
         {{else}}
-          <p><i>{{localize 'None'}}</i></p>
+          <p><i>{{localize 'HitchesNoDoomDiceChanges'}}</i></p>
         {{/if}}
         {{#if projection.paradoxSteps}}
           <div class="separator-cpt my-2"></div>

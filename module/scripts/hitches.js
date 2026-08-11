@@ -33,6 +33,15 @@ export const getDoomPool = () => {
   }
 }
 
+// The actor linked to the currently active Scene — the same Scene <-> Actor link already used to
+// open the Distinction Actor from the floating panel (sceneDistinctionActor.js) and to resolve
+// Mage's Reality Reinforcement trait (mageAscension.js#getLinkedLocationActor).
+export const getSceneActor = () => {
+  const actorId = game.scenes?.active?.getFlag('cortexprime', 'linkedActorId')
+
+  return actorId ? game.actors.get(actorId) : null
+}
+
 // Foundry stores these as index-keyed objects ({ 0: '6', 1: '8' }); hitchesLogic.js works in plain
 // arrays. These two pairs of helpers are the only places that difference is dealt with.
 const toDiceArray = value => Object.values(value ?? {}).map(String)
@@ -67,7 +76,7 @@ const resetDataPoint = async (actor, path, target, value) => {
   await actor.update({ [`${path}.${target}`]: value })
 }
 
-export const applyHitchOutcomes = async ({ actor, projection, plotPoints, summaryHtml }) => {
+export const applyHitchOutcomes = async ({ actor, sceneActor, projection, plotPoints, summaryHtml }) => {
   if (summaryHtml) await ChatMessage.create({ content: summaryHtml })
 
   if (plotPoints > 0) {
@@ -96,6 +105,15 @@ export const applyHitchOutcomes = async ({ actor, projection, plotPoints, summar
     'complications',
     toComplicationsObject(actor, projection.complications)
   )
+
+  if (sceneActor) {
+    await resetDataPoint(
+      sceneActor,
+      'system.actorType',
+      'complications',
+      toComplicationsObject(sceneActor, projection.sceneComplications)
+    )
+  }
 }
 
 // Tracks the most recent roll already handled per actor, so the dialog opens exactly once per
@@ -115,6 +133,7 @@ const openHitchesDialog = async (actor, record, challenge) => {
 
   new HitchesDialog({
     actor,
+    sceneActor: getSceneActor(),
     challengeType: challenge.type,
     dice: record.dice,
     isMage: customRuleSet === 'mage',

@@ -59,6 +59,20 @@ describe('getAvailableActions', () => {
     expect(getAvailableActions({ hasDoomPool: false, isMage: false, magick: 'vulgar' }))
       .not.toContain(HITCH_ACTIONS.STEP_UP_PARADOX)
   })
+
+  it('adds the scene complication options once a scene actor is linked', () => {
+    const actions = getAvailableActions({ hasDoomPool: false, hasSceneActor: true, isMage: false, magick: null })
+
+    expect(actions).toContain(HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION)
+    expect(actions).toContain(HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION)
+  })
+
+  it('hides the scene complication options without a linked scene actor', () => {
+    const actions = getAvailableActions({ hasDoomPool: false, hasSceneActor: false, isMage: false, magick: null })
+
+    expect(actions).not.toContain(HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION)
+    expect(actions).not.toContain(HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION)
+  })
 })
 
 describe('getComplicationOptions', () => {
@@ -81,6 +95,16 @@ describe('getComplicationOptions', () => {
     expect(getComplicationOptions([], rows, 'New Complication')).toEqual([
       { key: 'pending:0', label: 'New Complication' }
     ])
+  })
+
+  it('only counts introduce rows of the matching type', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+      row({ action: HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION, complicationName: 'Collapsing' })
+    ]
+
+    expect(getComplicationOptions([], rows, 'Complication', HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION))
+      .toEqual([{ key: 'pending:1', label: 'Collapsing' }])
   })
 })
 
@@ -148,6 +172,26 @@ describe('computePlotPoints', () => {
     ]
 
     expect(computePlotPoints(rows)).toBe(1)
+  })
+
+  it('counts scene complications independently of character complications', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+      row({ action: HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION, complicationName: 'Collapsing' })
+    ]
+
+    expect(computePlotPoints(rows)).toBe(2)
+  })
+
+  // Both rows carry the row-relative key "existing:0" — one against the character's complication
+  // list, one against the scene's. They must NOT be treated as the same complication.
+  it('does not let a character row and a scene row with the same key collapse into one point', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' }),
+      row({ action: HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION, complicationKey: 'existing:0' })
+    ]
+
+    expect(computePlotPoints(rows)).toBe(2)
   })
 })
 
@@ -358,6 +402,42 @@ describe('computeProjection', () => {
     expect(projection.paradoxSteps).toBe(1)
     expect(projection.complications).toEqual([{ label: 'Winded', dice: ['6'] }])
     expect(projection.doomDice).toEqual(['8'])
+  })
+
+  it('projects scene complications independently of character complications, with identical mechanics', () => {
+    const projection = computeProjection({
+      rows: [
+        row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+        row({ action: HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION, complicationName: 'Collapsing' }),
+        row({ action: HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION, complicationKey: 'existing:0' })
+      ],
+      complications: [],
+      sceneComplications: [{ label: 'Unstable', dice: ['12'] }],
+      doomDice: []
+    })
+
+    expect(projection.complications).toEqual([{ label: 'On Fire', dice: ['6'], isNew: true }])
+    expect(projection.sceneComplications).toEqual([
+      { label: 'Unstable', dice: ['12'] },
+      { label: 'Collapsing', dice: ['6'], isNew: true }
+    ])
+    // The scene's own D12 complication took the same TAKEN OUT path character complications do.
+    expect(projection.sceneTakenOut).toEqual(['Unstable'])
+    expect(projection.changedSceneComplications).toEqual([{ label: 'Collapsing', dice: ['6'], isNew: true }])
+    // Untouched by anything scene-related.
+    expect(projection.takenOut).toEqual([])
+  })
+
+  it('defaults sceneComplications to empty when no scene actor is linked', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' })],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(projection.sceneComplications).toEqual([])
+    expect(projection.changedSceneComplications).toEqual([])
+    expect(projection.sceneTakenOut).toEqual([])
   })
 
   it('does not mutate the complications or Doom Pool it was given', () => {

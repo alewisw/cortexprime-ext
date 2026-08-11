@@ -3,7 +3,7 @@
   <p>{{localize 'HitchesPlotPoints'}}: <b>{{plotPoints}}</b></p>
   {{#if summary.complications.length}}
     <p>
-      <b>{{localize 'Complications'}}:</b>
+      <b>{{localize 'HitchesCharacterComplications'}}:</b>
       {{#each summary.complications as |complication|}}
         <br>{{complication.label}}{{#each complication.dice as |face|}} d{{face}}{{/each}}{{#if complication.note}} <i>({{complication.note}})</i>{{/if}}
       {{/each}}
@@ -12,16 +12,25 @@
   {{#if projection.takenOut.length}}
     <p><b>{{localize 'HitchesTakenOut'}}:</b> {{#each projection.takenOut as |label|}}{{label}} {{/each}}</p>
   {{/if}}
-  {{#if hasDoomPool}}
+  {{#if hasSceneActor}}
+    {{#if summary.sceneComplications.length}}
+      <p>
+        <b>{{localize 'HitchesSceneComplications'}}:</b>
+        {{#each summary.sceneComplications as |complication|}}
+          <br>{{complication.label}}{{#each complication.dice as |face|}} d{{face}}{{/each}}{{#if complication.note}} <i>({{complication.note}})</i>{{/if}}
+        {{/each}}
+      </p>
+    {{/if}}
+    {{#if projection.sceneTakenOut.length}}
+      <p><b>{{localize 'HitchesTakenOut'}}:</b> {{#each projection.sceneTakenOut as |label|}}{{label}} {{/each}}</p>
+    {{/if}}
+  {{/if}}
+  {{#if summary.doomDice.length}}
     <p>
       <b>{{doomPoolLabel}}:</b>
-      {{#if summary.doomDice.length}}
-        {{#each summary.doomDice as |die|}}
-          <br>d{{die.face}}{{#if die.note}} <i>({{die.note}})</i>{{/if}}
-        {{/each}}
-      {{else}}
-        <i>{{localize 'None'}}</i>
-      {{/if}}
+      {{#each summary.doomDice as |die|}}
+        <br>d{{die.face}}{{#if die.note}} <i>({{die.note}})</i>{{/if}}
+      {{/each}}
     </p>
   {{/if}}
   {{#if projection.paradoxSteps}}

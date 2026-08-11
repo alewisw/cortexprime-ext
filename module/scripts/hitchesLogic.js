@@ -13,6 +13,8 @@ export const HITCH_ACTIONS = {
   NONE: 'none',
   INTRODUCE_COMPLICATION: 'introduce-complication',
   STEP_UP_COMPLICATION: 'step-up-complication',
+  INTRODUCE_SCENE_COMPLICATION: 'introduce-scene-complication',
+  STEP_UP_SCENE_COMPLICATION: 'step-up-scene-complication',
   ADD_DOOM_DIE: 'add-doom-die',
   STEP_UP_DOOM_DIE: 'step-up-doom-die',
   STEP_UP_PARADOX: 'step-up-paradox'
@@ -29,31 +31,41 @@ export const isHitch = die => die.result === 1
 export const isBotch = dice => dice.length > 0 && dice.every(isHitch)
 
 // Which options a hitch row may offer. The two Doom Pool options are meaningless without a
-// configured Doom Pool Actor/Trait, and Paradox only exists under the Mage rule set once the GM
-// has marked the roll as magical.
-export const getAvailableActions = ({ hasDoomPool, isMage, magick }) => [
+// configured Doom Pool Actor/Trait, the two Scene options need a linked Scene actor (distinct from
+// the roller — see getSceneActor in hitches.js), and Paradox only exists under the Mage rule set
+// once the GM has marked the roll as magical.
+export const getAvailableActions = ({ hasDoomPool, hasSceneActor, isMage, magick }) => [
   HITCH_ACTIONS.NONE,
   HITCH_ACTIONS.INTRODUCE_COMPLICATION,
   HITCH_ACTIONS.STEP_UP_COMPLICATION,
+  ...(hasSceneActor ? [HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION, HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION] : []),
   ...(hasDoomPool ? [HITCH_ACTIONS.ADD_DOOM_DIE, HITCH_ACTIONS.STEP_UP_DOOM_DIE] : []),
   ...(isMage && magick && magick !== 'none' ? [HITCH_ACTIONS.STEP_UP_PARADOX] : [])
 ]
 
 // A row's stable identity for whichever complication it refers to. An 'introduce' row is
 // identified by its own row index (it is the thing that creates that complication); a 'step up'
-// row carries whichever key was picked from getComplicationOptions.
+// row carries whichever key was picked from getComplicationOptions. The same key format is reused
+// for both the character and the scene complication lists — that's safe because each is always
+// resolved against its own list (by whichever action a row has), never mixed.
 export const getPendingComplicationKey = rowIndex => `pending:${rowIndex}`
 export const getExistingComplicationKey = index => `existing:${index}`
 
-// Everything a 'step up a complication' row can target: what's already on the sheet, plus
-// anything an 'introduce' row in this same dialog is about to create.
-export const getComplicationOptions = (complications, rows, defaultLabel = 'Complication') => [
+// Everything a 'step up a [character|scene] complication' row can target: what's already on the
+// relevant sheet, plus anything an 'introduce' row of the matching type in this same dialog is
+// about to create. introduceAction selects which type of 'introduce' row counts.
+export const getComplicationOptions = (
+  complications,
+  rows,
+  defaultLabel = 'Complication',
+  introduceAction = HITCH_ACTIONS.INTRODUCE_COMPLICATION
+) => [
   ...complications.map((complication, index) => ({
     key: getExistingComplicationKey(index),
     label: complication.label
   })),
   ...rows.reduce((acc, row, rowIndex) => (
-    row.action === HITCH_ACTIONS.INTRODUCE_COMPLICATION
+    row.action === introduceAction
       ? [...acc, { key: getPendingComplicationKey(rowIndex), label: row.complicationName || defaultLabel }]
       : acc
   ), [])
@@ -112,17 +124,32 @@ const stepUpComplication = complication => {
 // +1 per UNIQUE complication referenced across the introduce/step-up rows — a row that introduces
 // a complication and another row that then steps that same new complication up together cost one
 // Plot Point, not two — plus one per Doom Pool add, per Doom Pool step up, and per Paradox step up.
+// Character and scene complications are tracked in separate Sets: the two pipelines reuse the same
+// row-relative key format (pending:<rowIndex> / existing:<index>) independently, so a character
+// row and a scene row that happen to carry the same key are NOT the same complication and must
+// both count.
 export const computePlotPoints = rows => {
-  const complicationKeys = new Set()
+  const characterKeys = new Set()
+  const sceneKeys = new Set()
 
   const counted = rows.reduce((acc, row, rowIndex) => {
     if (row.action === HITCH_ACTIONS.INTRODUCE_COMPLICATION) {
-      complicationKeys.add(getPendingComplicationKey(rowIndex))
+      characterKeys.add(getPendingComplicationKey(rowIndex))
       return acc
     }
 
     if (row.action === HITCH_ACTIONS.STEP_UP_COMPLICATION) {
-      if (row.complicationKey) complicationKeys.add(row.complicationKey)
+      if (row.complicationKey) characterKeys.add(row.complicationKey)
+      return acc
+    }
+
+    if (row.action === HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION) {
+      sceneKeys.add(getPendingComplicationKey(rowIndex))
+      return acc
+    }
+
+    if (row.action === HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION) {
+      if (row.complicationKey) sceneKeys.add(row.complicationKey)
       return acc
     }
 
@@ -132,23 +159,22 @@ export const computePlotPoints = rows => {
       : acc
   }, 0)
 
-  return counted + complicationKeys.size
+  return counted + characterKeys.size + sceneKeys.size
 }
 
-// Applies every row in the order the rules call for — introduce complications, step up
-// complications, add Doom Pool dice, step up Doom Pool dice — and reports the resulting state.
-// Complications already at D12 are left exactly as they are and reported in takenOut instead.
-// paradoxSteps is counted but deliberately applies no change to the Paradox trait yet.
-export const computeProjection = ({ rows, complications, doomDice, defaultComplicationLabel = 'Complication' }) => {
+// Runs the introduce/step-up pipeline against one complication list (a character's or a scene
+// actor's), reacting only to rows carrying the given pair of actions. Identical mechanics either
+// way — only which rows it looks at, and which list it starts from, differ.
+const projectComplications = (rows, complications, introduceAction, stepUpAction, defaultLabel) => {
   const pendingIndexes = {}
 
   // 1. Introduce
   const introduced = rows.reduce((acc, row, rowIndex) => {
-    if (row.action !== HITCH_ACTIONS.INTRODUCE_COMPLICATION) return acc
+    if (row.action !== introduceAction) return acc
 
     pendingIndexes[getPendingComplicationKey(rowIndex)] = acc.length
 
-    return [...acc, { label: row.complicationName || defaultComplicationLabel, dice: [NEW_COMPLICATION_DIE], isNew: true }]
+    return [...acc, { label: row.complicationName || defaultLabel, dice: [NEW_COMPLICATION_DIE], isNew: true }]
   }, complications.map(complication => ({ ...complication, dice: [...complication.dice] })))
 
   const resolveIndex = key => {
@@ -160,11 +186,11 @@ export const computeProjection = ({ rows, complications, doomDice, defaultCompli
     return match ? parseInt(match[1], 10) : -1
   }
 
-  // 2. Step up complications. `changed` collects the indexes this roll actually altered, so the
-  // summary can show just those rather than the player's whole complication list. A complication
-  // that was already at D12 isn't counted as changed — it is reported under takenOut instead.
-  const { complications: steppedComplications, takenOut, changed } = rows.reduce((acc, row) => {
-    if (row.action !== HITCH_ACTIONS.STEP_UP_COMPLICATION) return acc
+  // 2. Step up. `changed` collects the indexes this roll actually altered, so the summary can show
+  // just those rather than the whole complication list. A complication that was already at D12
+  // isn't counted as changed — it is reported under takenOut instead.
+  const { complications: stepped, takenOut, changed } = rows.reduce((acc, row) => {
+    if (row.action !== stepUpAction) return acc
 
     const index = resolveIndex(row.complicationKey)
 
@@ -187,6 +213,33 @@ export const computeProjection = ({ rows, complications, doomDice, defaultCompli
       changed: wasTakenOut || acc.changed.includes(index) ? acc.changed : [...acc.changed, index]
     }
   }, { complications: introduced, takenOut: [], changed: Object.values(pendingIndexes) })
+
+  return {
+    // The full list is what gets written back to the actor; changed is what the dialog preview
+    // and the chat summary show.
+    complications: stepped,
+    changedComplications: stepped.filter((_, index) => changed.includes(index)),
+    takenOut
+  }
+}
+
+// Applies every row in the order the rules call for — introduce complications, step up
+// complications (character, then scene), add Doom Pool dice, step up Doom Pool dice — and reports
+// the resulting state. paradoxSteps is counted but deliberately applies no change to the Paradox
+// trait yet.
+export const computeProjection = ({
+  rows,
+  complications,
+  sceneComplications = [],
+  doomDice,
+  defaultComplicationLabel = 'Complication'
+}) => {
+  const character = projectComplications(
+    rows, complications, HITCH_ACTIONS.INTRODUCE_COMPLICATION, HITCH_ACTIONS.STEP_UP_COMPLICATION, defaultComplicationLabel
+  )
+  const scene = projectComplications(
+    rows, sceneComplications, HITCH_ACTIONS.INTRODUCE_SCENE_COMPLICATION, HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION, defaultComplicationLabel
+  )
 
   // 3. Add Doom Pool dice. Tracked as entries rather than bare faces so the summary can say which
   // dice this roll put there and which it grew.
@@ -212,15 +265,16 @@ export const computeProjection = ({ rows, complications, doomDice, defaultCompli
   }, addedDoomDice)
 
   return {
-    // The full list is what gets written back to the actor; changedComplications is what the
-    // dialog preview and the chat summary show.
-    complications: steppedComplications,
-    changedComplications: steppedComplications.filter((_, index) => changed.includes(index)),
+    complications: character.complications,
+    changedComplications: character.changedComplications,
+    takenOut: character.takenOut,
+    sceneComplications: scene.complications,
+    changedSceneComplications: scene.changedComplications,
+    sceneTakenOut: scene.takenOut,
     // doomDice is the bare face list written back to the trait; doomDiceDetail carries the
     // new/stepped-up markers the summary shows.
     doomDice: projectedDoomDice.map(entry => entry.face),
     doomDiceDetail: projectedDoomDice,
-    takenOut,
     paradoxSteps: rows.filter(row => row.action === HITCH_ACTIONS.STEP_UP_PARADOX).length
   }
 }
