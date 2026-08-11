@@ -4,6 +4,7 @@ import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
 import { registerCrisisPool } from './scripts/crisisPoolPanel.js'
 import { registerDoomPool } from './scripts/doomPool.js'
+import { registerMageAscension } from './mage/mageAscension.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
@@ -13,6 +14,7 @@ import { registerSpotlight } from './scripts/spotlight.js'
 export default () => {
   registerCrisisPool()
   registerDoomPool()
+  registerMageAscension()
   registerMyCharacter()
   registerRollToBeat()
   registerSceneDistinctionActor()

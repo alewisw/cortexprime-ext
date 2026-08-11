@@ -1,0 +1,46 @@
+<div class="mt-1 mage-challenge-box">
+  <div class="flex-row flex-as flex-wrap">
+    <div class="flex-col col-6 pr-1 pb-1">
+      <span class="input-label-cpt">{{localize 'MageMagick'}}</span>
+      <div style="display: flex; flex-direction: column;">
+        <label class="flex-row flex-ac">
+          <input class="mage-magick-radio" type="radio" name="mage-magick" value="none" {{ternary (eq magick 'none') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageMagickNone'}}</span>
+        </label>
+        <label class="flex-row flex-ac">
+          <input class="mage-magick-radio" type="radio" name="mage-magick" value="coincidental" {{ternary (eq magick 'coincidental') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageMagickCoincidental'}}</span>
+        </label>
+        <label class="flex-row flex-ac">
+          <input class="mage-magick-radio" type="radio" name="mage-magick" value="coincidental-witnessed" {{ternary (eq magick 'coincidental-witnessed') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageMagickCoincidentalWitnessed'}}</span>
+        </label>
+        <label class="flex-row flex-ac">
+          <input class="mage-magick-radio" type="radio" name="mage-magick" value="vulgar" {{ternary (eq magick 'vulgar') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageMagickVulgar'}}</span>
+        </label>
+        <label class="flex-row flex-ac">
+          <input class="mage-magick-radio" type="radio" name="mage-magick" value="vulgar-witnessed" {{ternary (eq magick 'vulgar-witnessed') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageMagickVulgarWitnessed'}}</span>
+        </label>
+      </div>
+    </div>
+    <div class="flex-col col-6 pb-1">
+      <span class="input-label-cpt">{{localize 'MageRealityReinforcement'}}</span>
+      <div style="display: flex; flex-direction: column;">
+        <label class="flex-row flex-ac">
+          <input class="mage-reality-reinforcement-radio" type="radio" name="mage-reality-reinforcement" value="opposes" {{ternary (eq realityReinforcement 'opposes') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageRealityReinforcementOpposes'}}</span>
+        </label>
+        <label class="flex-row flex-ac">
+          <input class="mage-reality-reinforcement-radio" type="radio" name="mage-reality-reinforcement" value="indifferent" {{ternary (eq realityReinforcement 'indifferent') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageRealityReinforcementIndifferent'}}</span>
+        </label>
+        <label class="flex-row flex-ac">
+          <input class="mage-reality-reinforcement-radio" type="radio" name="mage-reality-reinforcement" value="reinforces" {{ternary (eq realityReinforcement 'reinforces') 'checked' ''}}>
+          <span class="pl-1">{{localize 'MageRealityReinforcementReinforces'}}</span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
