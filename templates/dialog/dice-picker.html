@@ -11,7 +11,7 @@
           <div class="flex flex-c flex-wrap dice-box">
             {{#each rollResults.results as |rollResult rollResultIndex|}}
               <div class="die-icon-wrapper my-1">
-                <div class="{{#if ../selectable}}cursor-pointer selectable{{/if}} result-die d{{rollResult.faces}} result{{#if rollResult.total}} chosen{{/if}}{{#if rollResult.effect}} effect{{/if}}" data-faces="{{rollResult.faces}}" data-key="{{rollResultIndex}}" data-result="{{rollResult.result}}">
+                <div class="{{#if ../selectable}}cursor-pointer selectable{{/if}}{{#if ../testModeSelectDiceValues}} die-value-target{{/if}} result-die d{{rollResult.faces}} result{{#if rollResult.total}} chosen{{/if}}{{#if rollResult.effect}} effect{{/if}}" data-source="results" data-faces="{{rollResult.faces}}" data-key="{{rollResultIndex}}" data-result="{{rollResult.result}}">
                   {{> (concat "systems/cortexprime/templates/partials/dice/d" rollResult.faces ".html")
                     number=rollResult.result
                     type=(ternary rollResult.total 'chosen' (ternary rollResult.effect 'effect' 'unchosen'))
@@ -20,9 +20,9 @@
                 <div class="descriptor-label-cpt">d{{rollResult.faces}}</div>
               </div>
             {{/each}}
-            {{#each rollResults.hitches as |rollResult|}}
+            {{#each rollResults.hitches as |rollResult rollResultIndex|}}
             <div class="die-icon-wrapper my-1">
-              <div class="d{{rollResult.faces}} hitch">
+              <div class="{{#if ../testModeSelectDiceValues}}die-value-target {{/if}}d{{rollResult.faces}} hitch" data-source="hitches" data-faces="{{rollResult.faces}}" data-key="{{rollResultIndex}}" data-result="{{rollResult.result}}">
                 {{> (concat "systems/cortexprime/templates/partials/dice/d" rollResult.faces ".html")
                   number=1
                   type='hitch'

@@ -310,6 +310,8 @@
   "TargetTotal": "Target",
   "Temporary": "Temporary",
   "Test": "Test",
+  "TestModeSelectDiceValues": "Select Dice Values (test mode only)",
+  "TestModeSelectDiceValuesHint": "When enabled, right-click a die in the Roll & Select dialog to override its rolled value — useful for testing specific outcomes (Hitches, Botches, exact Totals). Everything downstream (Total, Effect Dice, the chat card, and the recorded roll) uses the overridden value. Leave disabled for normal play.",
   "Text": "Text",
   "Themes": "Themes",
   "ThemeSettings": "Theme Settings",

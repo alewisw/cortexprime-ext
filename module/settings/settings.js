@@ -151,6 +151,15 @@ export const registerSettings = () => {
     config: true
   })
 
+  game.settings.register('cortexprime', 'testModeSelectDiceValues', {
+    name: localizer('TestModeSelectDiceValues'),
+    hint: localizer('TestModeSelectDiceValuesHint'),
+    scope: 'world',
+    default: false,
+    type: Boolean,
+    config: true
+  })
+
   game.settings.register('cortexprime', 'importedSettings', {
     name: localizer('ImportedSettings'),
     default: { currentSetting: localizer('Default') },

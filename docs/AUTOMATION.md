@@ -49,6 +49,14 @@ Once a pool has dice in it, four buttons roll it:
 Whichever button is used, the result posts to chat as a card showing the rolled dice, Total, and
 Effect die.
 
+**Testing:** the **Select Dice Values (test mode only)** checkbox in System Configuration, off by
+default, lets whoever is rolling right-click any die shown in the Roll & Select dialog and pick its
+value directly from a small popup, instead of leaving it to chance. The Total, Effect Dice, chosen
+selection, and even whether the roll counts as a Hitch/Botch all update to match — editing a die
+across the 1/2+ boundary can turn a Botch into a normal roll or vice versa. The overridden value is
+what gets posted to chat and recorded, exactly as if it had really been rolled. Meant for testing
+specific scenarios (a Hitch, a Botch, an exact Total), not for regular play.
+
 ## Running a Test
 
 A Test is a single roll where the GM (or optionally a player) rolls first, and one or more other

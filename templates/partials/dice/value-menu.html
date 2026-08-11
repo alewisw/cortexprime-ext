@@ -1,0 +1,5 @@
+<div class="die-value-menu">
+  {{#each values as |value|}}
+    <button type="button" class="die-value-option{{ternary (eq value current) ' current' ''}}" data-value="{{value}}">{{value}}</button>
+  {{/each}}
+</div>

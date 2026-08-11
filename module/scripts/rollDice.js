@@ -14,6 +14,20 @@ const getRollFormula = (pool) => {
   }, '')
 }
 
+// Shared by getRollResults and the test-mode value editor in dicePicker below, so a manually
+// edited roll ends up ordered exactly like a freshly rolled one.
+const sortHitches = (a, b) => b.faces - a.faces
+
+const sortResults = (a, b) => {
+  if (a.result !== b.result) {
+    return b.result - a.result
+  }
+
+  return b.faces - a.faces
+}
+
+const testModeSelectDiceValues = () => game.settings.get('cortexprime', 'testModeSelectDiceValues')
+
 const getRollResults = async pool => {
   const rollFormula = getRollFormula(pool)
 
@@ -35,17 +49,8 @@ const getRollResults = async pool => {
       return { ...acc, hitches: [...acc.hitches, result] }
     }, { hitches: [], results: [] })
 
-  rollResults.hitches.sort((a, b) => {
-    return b.faces - a.faces
-  })
-
-  rollResults.results.sort((a, b) => {
-    if (a.result !== b.result) {
-      return b.result - a.result
-    }
-
-    return b.faces - a.faces
-  })
+  rollResults.hitches.sort(sortHitches)
+  rollResults.results.sort(sortResults)
 
   return rollResults
 }
@@ -159,22 +164,34 @@ const getPickerCase = results => {
 const dicePicker = async rollResults => {
   const themes = game.settings.get('cortexprime', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
-  const pickerCase = getPickerCase(rollResults.results)
   const challengeTarget = getMyChallengeTarget()
   const availablePlotPoints = game.user.character?.system.pp.value ?? 0
 
-  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/dialog/dice-picker.html', {
-    rollResults: { hitches: rollResults.hitches, results: pickerCase.dice },
-    title: pickerCase.title,
-    selectable: pickerCase.selectable,
-    total: pickerCase.total,
-    effectDiceFaces: pickerCase.effectDice.length ? pickerCase.effectDice : [4],
-    theme,
-    isGM: game.user.isGM,
-    showChallengeTarget: !!challengeTarget,
-    challengeTargetTotal: challengeTarget?.total ?? 0,
-    challengeTargetEffectDice: challengeTarget?.effectDice ?? []
-  })
+  // Re-derives everything getPickerCase decides (Botch/FixedSelection/SelectEffect, Total, Effect
+  // Dice, selectability) from the CURRENT rollResults and renders it fresh — used for the initial
+  // render and, in test mode, again after every edited die, since editing a die's value can move
+  // it across the hitch/non-hitch boundary and change which case applies entirely.
+  const buildContent = async () => {
+    const pickerCase = getPickerCase(rollResults.results)
+
+    const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/dialog/dice-picker.html', {
+      rollResults: { hitches: rollResults.hitches, results: pickerCase.dice },
+      title: pickerCase.title,
+      selectable: pickerCase.selectable,
+      total: pickerCase.total,
+      effectDiceFaces: pickerCase.effectDice.length ? pickerCase.effectDice : [4],
+      theme,
+      isGM: game.user.isGM,
+      showChallengeTarget: !!challengeTarget,
+      challengeTargetTotal: challengeTarget?.total ?? 0,
+      challengeTargetEffectDice: challengeTarget?.effectDice ?? [],
+      testModeSelectDiceValues: testModeSelectDiceValues()
+    })
+
+    return { pickerCase, content }
+  }
+
+  const { pickerCase: initialPickerCase, content: initialContent } = await buildContent()
 
   return new Promise((resolve) => {
     const resolveFromDom = async html => {
@@ -215,9 +232,176 @@ const dicePicker = async rollResults => {
       resolve(values)
     }
 
+    // At most one value-picker popup is ever on screen — opening a new one, or a click anywhere
+    // else, always closes whatever's currently open.
+    const closeValueMenu = () => { $('.die-value-menu').remove() }
+
+    const openValueMenu = async (event, html) => {
+      event.preventDefault()
+      closeValueMenu()
+
+      const $target = $(event.currentTarget)
+      const source = $target.data('source')
+      const key = parseInt($target.data('key'), 10)
+      const faces = parseInt($target.data('faces'), 10)
+      const current = parseInt($target.data('result'), 10)
+
+      if (!faces || Number.isNaN(key)) return
+
+      const menuContent = await foundry.applications.handlebars.renderTemplate(
+        'systems/cortexprime/templates/partials/dice/value-menu.html',
+        { values: Array.from({ length: faces }, (_, index) => index + 1), current }
+      )
+
+      $(menuContent)
+        .css({ position: 'fixed', left: event.clientX, top: event.clientY, zIndex: 100000 })
+        .appendTo(document.body)
+        .on('click', '.die-value-option', async optionEvent => {
+          const value = parseInt($(optionEvent.currentTarget).data('value'), 10)
+
+          closeValueMenu()
+
+          const die = source === 'hitches' ? rollResults.hitches[key] : rollResults.results[key]
+
+          if (!die || value === die.result) return
+
+          die.result = value
+
+          // A die that crosses the hitch/non-hitch boundary moves to the other list entirely, so
+          // getPickerCase (which only ever looks at rollResults.results) reacts to it correctly.
+          const wasHitch = source === 'hitches'
+          const isHitchNow = value === 1
+
+          if (wasHitch !== isHitchNow) {
+            const fromList = wasHitch ? rollResults.hitches : rollResults.results
+            const toList = wasHitch ? rollResults.results : rollResults.hitches
+
+            fromList.splice(key, 1)
+            toList.push(die)
+          }
+
+          rollResults.hitches.sort(sortHitches)
+          rollResults.results.sort(sortResults)
+
+          const { pickerCase, content } = await buildContent()
+
+          html.find('.cortexprime.dice-picker').replaceWith(content)
+          bindInteractivity(html, pickerCase)
+        })
+
+      $(document).one('click', closeValueMenu)
+    }
+
+    const bindInteractivity = (html, pickerCase) => {
+      const $diceBox = html.find('.dice-box')
+      const $effectDiceContainer = html.find('.your-effect-dice')
+      const $totalValue = html.find('.total-value')
+      const $extraTotalCheckbox = html.find('.extra-total-die-checkbox')
+      const $extraEffectCheckbox = html.find('.extra-effect-die-checkbox')
+
+      const defaultIndex = pickerCase.dice.findIndex(die => die.effect)
+      const selectedEffectDice = defaultIndex !== -1 ? [rollResults.results[defaultIndex]] : []
+
+      const effectDiceCap = () => $extraEffectCheckbox.prop('checked') ? 2 : 1
+
+      // Each checkbox is disabled whenever it's currently unchecked AND either the Plot Point
+      // budget is already fully committed to the other box, or there simply aren't enough
+      // non-hitch dice for it to change anything — with 2 or fewer dice there's no baseline
+      // effect die to extend at all (both go straight to Total per the normal rules), and
+      // "extra total" specifically also goes stale the moment fewer than 3 dice remain once
+      // the currently-selected effect dice are set aside (e.g. after picking a 2nd effect die).
+      // A checkbox already checked is never disabled, so the player can always uncheck it.
+      const updateCheckboxAvailability = () => {
+        const checkedCount = (($extraTotalCheckbox.prop('checked') ? 1 : 0) + ($extraEffectCheckbox.prop('checked') ? 1 : 0))
+        const remainingForTotal = rollResults.results.length - selectedEffectDice.length
+
+        const extraTotalUseless = !pickerCase.selectable || remainingForTotal < 3
+        const extraEffectUseless = !pickerCase.selectable
+
+        $extraTotalCheckbox.prop('disabled', !$extraTotalCheckbox.prop('checked') && (extraTotalUseless || checkedCount >= availablePlotPoints))
+        $extraEffectCheckbox.prop('disabled', !$extraEffectCheckbox.prop('checked') && (extraEffectUseless || checkedCount >= availablePlotPoints))
+      }
+
+      const recompute = async () => {
+        while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
+
+        const n = $extraTotalCheckbox.prop('checked') ? 3 : 2
+        const totalDice = getBestNExcluding(rollResults.results, selectedEffectDice, n)
+        const totalDiceSet = new Set(totalDice)
+        const selectedSet = new Set(selectedEffectDice)
+        const total = totalDice.reduce((sum, die) => sum + die.result, 0)
+
+        $diceBox.find('.result-die').each(function (index) {
+          const $die = $(this)
+          const $dieCpt = $die.find('.die-cpt')
+          const die = rollResults.results[index]
+
+          $die.removeClass('chosen effect')
+          $dieCpt.removeClass('chosen-cpt effect-cpt unchosen-cpt')
+
+          if (selectedSet.has(die)) {
+            $die.addClass('effect')
+            $dieCpt.addClass('effect-cpt')
+          } else if (totalDiceSet.has(die)) {
+            $die.addClass('chosen')
+            $dieCpt.addClass('chosen-cpt')
+          } else {
+            $dieCpt.addClass('unchosen-cpt')
+          }
+        })
+
+        $totalValue.text(total)
+
+        $effectDiceContainer.find('.die-icon-wrapper').remove()
+
+        for (const die of selectedEffectDice) {
+          const dieContent = await getAppendDiceContent({ dieRating: die.faces, value: die.faces, type: 'effect' })
+          $effectDiceContainer.append(dieContent)
+        }
+      }
+
+      // Individual dice are only clickable when there were enough of them to need a choice in
+      // the first place (see getPickerCase) — with 2 or fewer, both checkboxes stay disabled
+      // above, so there's nothing for this handler to ever need to do.
+      if (pickerCase.selectable) {
+        $diceBox.on('click', '.selectable', async function () {
+          const $clicked = $(this)
+          const clickedKey = parseInt($clicked.data('key'), 10)
+          const clickedDie = rollResults.results[clickedKey]
+
+          const index = selectedEffectDice.indexOf(clickedDie)
+
+          if (index !== -1) {
+            if (selectedEffectDice.length > 1) selectedEffectDice.splice(index, 1)
+          } else {
+            selectedEffectDice.push(clickedDie)
+            while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
+          }
+
+          await recompute()
+        })
+      }
+
+      if (testModeSelectDiceValues()) {
+        $diceBox.on('contextmenu', '.die-value-target', event => openValueMenu(event, html))
+      }
+
+      $extraTotalCheckbox.on('change', async () => {
+        updateCheckboxAvailability()
+        await recompute()
+      })
+
+      $extraEffectCheckbox.on('change', async () => {
+        updateCheckboxAvailability()
+        await recompute()
+      })
+
+      updateCheckboxAvailability()
+    }
+
     new Dialog({
       title: "Select Your Dice",
-      content,
+      content: initialContent,
       buttons: {
         confirm: {
           icon: '<i class="fa-solid fa-check"></i>',
@@ -227,108 +411,7 @@ const dicePicker = async rollResults => {
       },
       default: 'confirm',
       close: resolveFromDom,
-      render (html) {
-        const $diceBox = html.find('.dice-box')
-        const $effectDiceContainer = html.find('.your-effect-dice')
-        const $totalValue = html.find('.total-value')
-        const $extraTotalCheckbox = html.find('.extra-total-die-checkbox')
-        const $extraEffectCheckbox = html.find('.extra-effect-die-checkbox')
-
-        const defaultIndex = pickerCase.dice.findIndex(die => die.effect)
-        const selectedEffectDice = defaultIndex !== -1 ? [rollResults.results[defaultIndex]] : []
-
-        const effectDiceCap = () => $extraEffectCheckbox.prop('checked') ? 2 : 1
-
-        // Each checkbox is disabled whenever it's currently unchecked AND either the Plot Point
-        // budget is already fully committed to the other box, or there simply aren't enough
-        // non-hitch dice for it to change anything — with 2 or fewer dice there's no baseline
-        // effect die to extend at all (both go straight to Total per the normal rules), and
-        // "extra total" specifically also goes stale the moment fewer than 3 dice remain once
-        // the currently-selected effect dice are set aside (e.g. after picking a 2nd effect die).
-        // A checkbox already checked is never disabled, so the player can always uncheck it.
-        const updateCheckboxAvailability = () => {
-          const checkedCount = (($extraTotalCheckbox.prop('checked') ? 1 : 0) + ($extraEffectCheckbox.prop('checked') ? 1 : 0))
-          const remainingForTotal = rollResults.results.length - selectedEffectDice.length
-
-          const extraTotalUseless = !pickerCase.selectable || remainingForTotal < 3
-          const extraEffectUseless = !pickerCase.selectable
-
-          $extraTotalCheckbox.prop('disabled', !$extraTotalCheckbox.prop('checked') && (extraTotalUseless || checkedCount >= availablePlotPoints))
-          $extraEffectCheckbox.prop('disabled', !$extraEffectCheckbox.prop('checked') && (extraEffectUseless || checkedCount >= availablePlotPoints))
-        }
-
-        const recompute = async () => {
-          while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
-
-          const n = $extraTotalCheckbox.prop('checked') ? 3 : 2
-          const totalDice = getBestNExcluding(rollResults.results, selectedEffectDice, n)
-          const totalDiceSet = new Set(totalDice)
-          const selectedSet = new Set(selectedEffectDice)
-          const total = totalDice.reduce((sum, die) => sum + die.result, 0)
-
-          $diceBox.find('.result-die').each(function (index) {
-            const $die = $(this)
-            const $dieCpt = $die.find('.die-cpt')
-            const die = rollResults.results[index]
-
-            $die.removeClass('chosen effect')
-            $dieCpt.removeClass('chosen-cpt effect-cpt unchosen-cpt')
-
-            if (selectedSet.has(die)) {
-              $die.addClass('effect')
-              $dieCpt.addClass('effect-cpt')
-            } else if (totalDiceSet.has(die)) {
-              $die.addClass('chosen')
-              $dieCpt.addClass('chosen-cpt')
-            } else {
-              $dieCpt.addClass('unchosen-cpt')
-            }
-          })
-
-          $totalValue.text(total)
-
-          $effectDiceContainer.find('.die-icon-wrapper').remove()
-
-          for (const die of selectedEffectDice) {
-            const dieContent = await getAppendDiceContent({ dieRating: die.faces, value: die.faces, type: 'effect' })
-            $effectDiceContainer.append(dieContent)
-          }
-        }
-
-        // Individual dice are only clickable when there were enough of them to need a choice in
-        // the first place (see getPickerCase) — with 2 or fewer, both checkboxes stay disabled
-        // above, so there's nothing for this handler to ever need to do.
-        if (pickerCase.selectable) {
-          $diceBox.on('click', '.selectable', async function () {
-            const $clicked = $(this)
-            const clickedKey = parseInt($clicked.data('key'), 10)
-            const clickedDie = rollResults.results[clickedKey]
-
-            const index = selectedEffectDice.indexOf(clickedDie)
-
-            if (index !== -1) {
-              if (selectedEffectDice.length > 1) selectedEffectDice.splice(index, 1)
-            } else {
-              selectedEffectDice.push(clickedDie)
-              while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
-            }
-
-            await recompute()
-          })
-        }
-
-        $extraTotalCheckbox.on('change', async () => {
-          updateCheckboxAvailability()
-          await recompute()
-        })
-
-        $extraEffectCheckbox.on('change', async () => {
-          updateCheckboxAvailability()
-          await recompute()
-        })
-
-        updateCheckboxAvailability()
-      }
+      render: html => bindInteractivity(html, initialPickerCase)
     }, { jQuery: true, classes: ['dialog', 'dice-picker', 'cortexprime'] }).render(true)
   })
 }

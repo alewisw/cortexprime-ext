@@ -1,0 +1,31 @@
+// The test-mode "override this die's value" popup opened from dice-picker.html — appended
+// directly to document.body (not nested inside .cortexprime), so it must be styled outside the
+// .cortexprime wrapper, the same way #cortexprime-floating-panel is.
+.die-value-menu {
+  background-color: rgba(0, 0, 0, 0.85);
+  border-radius: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: toRem(2px);
+  max-width: toRem(220px);
+  padding: toRem(4px);
+
+  .die-value-option {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 600;
+    min-width: toRem(28px);
+    padding: toRem(2px) toRem(6px);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+
+    &.current {
+      border-color: #c9a227;
+    }
+  }
+}
