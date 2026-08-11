@@ -21,7 +21,7 @@
           {{> "systems/cortexprime/templates/partials/pp.html" pp=pp }}
         {{/if}}
       </div>
-      {{#if actorType.simpleTraits}}
+      {{#if (and actorType.simpleTraits actorType.traitSets.[0])}}
         {{> "systems/cortexprime/templates/partials/actor-sheet/simple-traits.html"
           data=actorType
           simpleTraits=actorType.simpleTraits

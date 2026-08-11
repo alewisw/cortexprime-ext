@@ -5,11 +5,13 @@
 import { localizer } from './foundryHelpers.js'
 import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
 
-const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0 }
+const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0, dice: [] }
 const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0, interference: null, group: null }
 
-export const recordRollResult = async ({ total, effectDice, won }) => {
-  const record = { total, effectDice, won: won ?? null, rolledAt: Date.now() }
+// `dice` is every die this roll actually put on the table as [{ faces, result }] — kept alongside
+// the outcome so the GM's client can spot natural 1s (see hitches.js) without re-rolling anything.
+export const recordRollResult = async ({ total, effectDice, won, dice }) => {
+  const record = { total, effectDice, won: won ?? null, rolledAt: Date.now(), dice: dice ?? [] }
 
   if (game.user.isGM) {
     await game.settings.set('cortexprime', 'lastGmRoll', record)
@@ -49,7 +51,8 @@ const withRecord = record => ({
   total: record?.total ?? blankRecord.total,
   effectDice: record?.effectDice ?? blankRecord.effectDice,
   won: record?.won ?? blankRecord.won,
-  rolledAt: record?.rolledAt ?? blankRecord.rolledAt
+  rolledAt: record?.rolledAt ?? blankRecord.rolledAt,
+  dice: record?.dice ?? blankRecord.dice
 })
 
 export const getRollToBeatTargets = () => {

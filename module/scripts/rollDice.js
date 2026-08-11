@@ -425,5 +425,12 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
   // that follow-up message from racing ahead of it in the chat log.
   await ChatMessage.create({ content })
 
-  await recordRollResult({ total: selectedDice.total, effectDice: finalEffectDice, won })
+  // Every die that was actually rolled (not just the ones selected for the total) rides along on
+  // the record, so the GM's client can open the Hitches dialog for any natural 1s — see hitches.js.
+  await recordRollResult({
+    total: selectedDice.total,
+    effectDice: finalEffectDice,
+    won,
+    dice: [...rollResults.results, ...rollResults.hitches]
+  })
 }

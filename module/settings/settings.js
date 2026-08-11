@@ -54,6 +54,14 @@ export const registerSettings = () => {
     config: false,
   })
 
+  game.settings.register('cortexprime', 'doomPoolTraitId', {
+    name: localizer('DoomPoolTrait'),
+    default: '',
+    scope: 'world',
+    type: String,
+    config: false,
+  })
+
   game.settings.register('cortexprime', 'lastGmRoll', {
     name: localizer('LastGmRoll'),
     default: {},

@@ -1,0 +1,120 @@
+<form class="cortexprime hitches-dialog sheet-cpt" autocomplete="off">
+  <div class="sheet-background"></div>
+  <div class="sheet-image"></div>
+  <div class="sheet-content pa-2">
+    <div class="section-cpt pa-2 mb-2">
+      <div class="section-image"></div>
+      <div class="section-background-alternate"></div>
+      <div class="section-content text-center">
+        <h3 class="section-primary-title-cpt">{{localize (ternary isBotch 'Botch' 'Hitch')}}</h3>
+        <p class="descriptor-label-cpt">{{actorName}}</p>
+      </div>
+    </div>
+
+    <div class="section-cpt pa-2 mb-2">
+      <div class="section-image"></div>
+      <div class="section-background"></div>
+      <div class="section-content">
+        {{#each rows as |row|}}
+          <div class="hitch-row pa-2 mb-2">
+            <div class="flex-row flex-ac">
+            <div class="flex-col col-2">
+              <div class="die-icon-wrapper">
+                <div class="d{{row.faces}}{{ternary row.isHitch ' hitch' ''}}">
+                  {{> (concat "systems/cortexprime/templates/partials/dice/d" row.faces ".html")
+                    number=row.result
+                    type=(ternary row.isHitch 'hitch' 'unchosen')
+                  }}
+                </div>
+              </div>
+            </div>
+            <div class="flex-col col-10">
+              {{#if row.isHitch}}
+                <select class="hitch-action input-cpt" data-index="{{row.index}}" style="width: 100%">
+                  {{#each row.actions as |action|}}
+                    <option value="{{action.value}}"{{ternary action.selected ' selected' ''}}>{{action.label}}</option>
+                  {{/each}}
+                </select>
+                <div class="mt-1{{ternary row.showComplicationName '' ' hide'}}">
+                  <div class="input-label-cpt">{{localize 'HitchesComplicationName'}}</div>
+                  <input
+                    class="hitch-complication-name input-cpt"
+                    data-index="{{row.index}}"
+                    type="text"
+                    value="{{row.complicationName}}"
+                    placeholder="{{localize 'NewComplication'}}"
+                    style="width: 100%"
+                  >
+                </div>
+                <div class="mt-1{{ternary row.showComplicationSelect '' ' hide'}}">
+                  <div class="input-label-cpt">{{localize 'HitchesComplication'}}</div>
+                  <select class="hitch-complication-select input-cpt" data-index="{{row.index}}" style="width: 100%">
+                    <option value="">{{localize 'None'}}</option>
+                    {{#each row.complicationOptions as |option|}}
+                      <option value="{{option.key}}"{{ternary option.selected ' selected' ''}}>{{option.label}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+                <div class="mt-1{{ternary row.showDoomDieSelect '' ' hide'}}">
+                  <div class="input-label-cpt">{{localize 'HitchesDoomDie'}}</div>
+                  <select class="hitch-doom-select input-cpt" data-index="{{row.index}}" style="width: 100%">
+                    {{#each row.doomDieOptions as |option|}}
+                      <option value="{{option.size}}"{{ternary option.selected ' selected' ''}}>d{{option.size}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+              {{else}}
+                <p class="descriptor-label-cpt">{{localize 'HitchesNoHitch'}}</p>
+              {{/if}}
+            </div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    </div>
+
+    <div class="section-cpt pa-2 mb-2">
+      <div class="section-image"></div>
+      <div class="section-background"></div>
+      <div class="section-content">
+        <h3 class="section-secondary-title-cpt">{{localize 'HitchesPlotPoints'}}: {{plotPoints}}</h3>
+        <div class="separator-cpt my-2"></div>
+        <div class="input-label-cpt">{{localize 'Complications'}}</div>
+        {{#if summary.complications.length}}
+          {{#each summary.complications as |complication|}}
+            <p>
+              {{complication.label}}
+              {{#each complication.dice as |face|}}<b class="descriptor-label-cpt"> d{{face}}</b>{{/each}}
+              {{#if complication.note}} <i>({{complication.note}})</i>{{/if}}
+            </p>
+          {{/each}}
+        {{else}}
+          <p><i>{{localize 'HitchesNoComplicationChanges'}}</i></p>
+        {{/if}}
+        {{#if projection.takenOut.length}}
+          <p class="mt-1">
+            <b class="descriptor-label-cpt">{{localize 'HitchesTakenOut'}}:</b>
+            {{#each projection.takenOut as |label|}}{{label}} {{/each}}
+          </p>
+        {{/if}}
+        <div class="separator-cpt my-2"></div>
+        <div class="input-label-cpt">{{doomPoolLabel}}</div>
+        {{#if summary.doomDice.length}}
+          {{#each summary.doomDice as |die|}}
+            <p><b class="descriptor-label-cpt">d{{die.face}}</b>{{#if die.note}} <i>({{die.note}})</i>{{/if}}</p>
+          {{/each}}
+        {{else}}
+          <p><i>{{localize 'None'}}</i></p>
+        {{/if}}
+        {{#if projection.paradoxSteps}}
+          <div class="separator-cpt my-2"></div>
+          <p>{{localize 'HitchActionStepUpParadox'}} &times; {{projection.paradoxSteps}}</p>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="flex flex-je">
+      <button class="hitches-confirm btn btn-primary-cpt" type="button">{{localize 'Confirm'}}</button>
+    </div>
+  </div>
+</form>

@@ -4,6 +4,7 @@ import { localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
 import { registerCrisisPool } from './scripts/crisisPoolPanel.js'
 import { registerDoomPool } from './scripts/doomPool.js'
+import { registerHitches } from './scripts/hitches.js'
 import { registerMageAscension } from './mage/mageAscension.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
@@ -14,6 +15,10 @@ import { registerSpotlight } from './scripts/spotlight.js'
 export default () => {
   registerCrisisPool()
   registerDoomPool()
+  // Must be registered before registerRollToBeat() — both listen to updateActor for the same
+  // lastRoll write, and rollToBeat's handler can clear the active challenge that this one needs
+  // to read to know the roll happened during a Test/Contest/Group.
+  registerHitches()
   registerMageAscension()
   registerMyCharacter()
   registerRollToBeat()

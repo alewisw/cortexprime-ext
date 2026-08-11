@@ -1,12 +1,21 @@
-<form>
-  <div class="form-group">
-    <label>{{localize 'DoomPoolActor'}}</label>
-    <select name="doomPoolActorId">
+<form class="pa-2" autocomplete="off">
+  <div class="mb-2">
+    <div class="input-label-cpt">{{localize 'DoomPoolActor'}}</div>
+    <select class="input-cpt" name="doomPoolActorId" style="width: 100%">
       <option value="">{{localize 'None'}}</option>
       {{#each actors}}
         <option value="{{id}}"{{ternary (eq id ../doomPoolActorId) ' selected' ''}}>{{name}}</option>
       {{/each}}
     </select>
     <p class="hint">{{localize 'DoomPoolActorHint'}}</p>
+  </div>
+  <div class="mb-2">
+    <div class="input-label-cpt">{{localize 'DoomPoolTrait'}}</div>
+    <select class="input-cpt" name="doomPoolTraitId" style="width: 100%">
+      <option value="">{{localize 'None'}}</option>
+      {{#each doomPoolSimpleTraits}}
+        <option value="{{id}}"{{ternary (eq id ../doomPoolTraitId) ' selected' ''}}>{{label}}</option>
+      {{/each}}
+    </select>
   </div>
 </form>

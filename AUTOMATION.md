@@ -5,6 +5,29 @@ happen automatically in response to game state changing, as opposed to a GM or p
 clicking a button for that specific effect. It's organized by feature area, starting with
 rule-set-specific automation.
 
+## Hitches
+
+Whenever a player's roll is recorded (`recordRollResult` in `module/scripts/rollToBeat.js` writes
+`flags.cortexprime.lastRoll` on their character) during an active Test, Contest or Group Challenge,
+and any die in that roll came up 1, the **Hitches** dialog opens on the active GM's client.
+
+The individual die faces travel on the roll record itself — `rollDice.js` already separates natural
+1s from the rest when it builds the chat card, so it now passes every rolled die along as
+`{ faces, result }` entries. The GM's client picks this up through the same `updateActor` hook
+`rollToBeat.js` uses to advance challenges, gated on `game.users.activeGM` and de-duplicated on
+`rolledAt` so the dialog opens exactly once per roll. `registerHitches()` is deliberately
+registered *before* `registerRollToBeat()` in `module/cortexPrimeHooks.js`, because that handler
+can clear the active challenge that this one needs to read.
+
+Opening the dialog is the whole of the automation — it proposes nothing and changes nothing on its
+own. Every consequence (new/stepped-up complications, Doom Pool dice, Plot Points, the chat
+summary) is applied only when the GM clicks Confirm. See `docs/AUTOMATION.md` for the GM-facing
+description of the options and the Plot Point rules.
+
+The decision logic is pure and unit-tested in `module/scripts/hitchesLogic.js`;
+`module/scripts/hitches.js` holds the hook and the actor writes, and
+`module/applications/HitchesDialog.js` the dialog itself.
+
 ## Mage: The Ascension Engine
 
 Enabled via the **Custom Rule Set** dropdown in Foundry's System Configuration (Settings →

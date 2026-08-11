@@ -25,6 +25,13 @@
   }
 }
 
+// Same reasoning as Mage Settings above — Doom Pool Settings has no sheet-background overlay.
+&.doom-pool-settings.window-app {
+  .window-content {
+    background: #ffffff;
+  }
+}
+
 .dice-picker, .consumable-dice {
   &.window-app {
     .window-content {

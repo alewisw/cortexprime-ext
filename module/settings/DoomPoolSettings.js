@@ -1,36 +1,40 @@
 import { localizer } from '../scripts/foundryHelpers.js'
 
 export default class DoomPoolSettings extends FormApplication {
-  constructor() {
-    super()
-  }
-
+  constructor() { super() }
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'doom-pool-settings',
       template: 'systems/cortexprime/templates/settings/doom-pool.html',
       title: localizer('DoomPoolSettings'),
-      classes: ['doom-pool-settings'],
-      width: 400,
+      classes: ['cortexprime', 'doom-pool-settings'],
+      width: 500,
       height: 'auto',
       closeOnSubmit: false,
       submitOnClose: true,
       submitOnChange: true
     })
   }
-
   getData () {
     const visibleOwnershipLevels = [CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER]
+    const doomPoolActorId = game.settings.get('cortexprime', 'doomPoolActorId')
+    const doomPoolActor = doomPoolActorId ? game.actors.get(doomPoolActorId) : null
 
     return {
-      doomPoolActorId: game.settings.get('cortexprime', 'doomPoolActorId'),
+      doomPoolActorId,
+      doomPoolTraitId: game.settings.get('cortexprime', 'doomPoolTraitId'),
       actors: game.actors.contents
         .filter(actor => visibleOwnershipLevels.includes(actor.ownership.default))
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      doomPoolSimpleTraits: Object.values(doomPoolActor?.system.actorType?.simpleTraits ?? {})
     }
   }
-
   async _updateObject (event, formData) {
     await game.settings.set('cortexprime', 'doomPoolActorId', formData.doomPoolActorId || '')
+    await game.settings.set('cortexprime', 'doomPoolTraitId', formData.doomPoolTraitId || '')
+
+    // The Trait dropdown depends on whichever Actor was just picked, so the form needs a full
+    // re-render to repopulate it — submitOnChange alone doesn't do this.
+    this.render(true)
   }
 }

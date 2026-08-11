@@ -45,12 +45,25 @@
                 pp=data.system.pp
               }}
               <section class="flex-col col-9">
-                {{> "systems/cortexprime/templates/partials/actor-sheet/trait-sets.html"
-                  data=data.system.actorType
-                  traitSets=data.system.actorType.traitSets
-                  path="system.actorType.traitSets"
-                }}
-                {{#if (and data.system.actorType.traitSets.[0] (or data.system.actorType.hasAssets data.system.actorType.hasComplications))}}
+                {{#if data.system.actorType.traitSets.[0]}}
+                  {{> "systems/cortexprime/templates/partials/actor-sheet/trait-sets.html"
+                    data=data.system.actorType
+                    traitSets=data.system.actorType.traitSets
+                    path="system.actorType.traitSets"
+                  }}
+                {{else if data.system.actorType.simpleTraits}}
+                  <div class="section-cpt">
+                    <div class="section-image"></div>
+                    <div class="section-content">
+                      {{> "systems/cortexprime/templates/partials/actor-sheet/simple-traits.html"
+                        data=data.system.actorType
+                        simpleTraits=data.system.actorType.simpleTraits
+                        path="system.actorType.simpleTraits"
+                      }}
+                    </div>
+                  </div>
+                {{/if}}
+                {{#if (and (or data.system.actorType.traitSets.[0] data.system.actorType.simpleTraits) (or data.system.actorType.hasAssets data.system.actorType.hasComplications))}}
                   <div class="separator-cpt my-4"></div>
                 {{/if}}
                 {{#if (or data.system.actorType.hasAssets data.system.actorType.hasComplications)}}

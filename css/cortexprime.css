@@ -17,6 +17,9 @@
 .cortexprime.mage-settings.window-app .window-content {
   background: #ffffff;
 }
+.cortexprime.doom-pool-settings.window-app .window-content {
+  background: #ffffff;
+}
 .cortexprime .dice-picker.window-app .window-content, .cortexprime .consumable-dice.window-app .window-content {
   background: none;
   padding: 0;
@@ -45,6 +48,13 @@
 }
 .cortexprime .ba-2-primary {
   border: 2px solid #B30044;
+}
+.cortexprime .hitch-row {
+  border-color: var(--cp-section-border-color, #2d5931);
+  border-style: var(--cp-section-border-style, solid);
+  border-width: 2px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
 }
 .cortexprime .d-block {
   display: block;

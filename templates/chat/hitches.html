@@ -1,0 +1,30 @@
+<div>
+  <h3>{{localize (ternary isBotch 'Botch' 'Hitch')}} &mdash; {{actorName}}</h3>
+  <p>{{localize 'HitchesPlotPoints'}}: <b>{{plotPoints}}</b></p>
+  {{#if summary.complications.length}}
+    <p>
+      <b>{{localize 'Complications'}}:</b>
+      {{#each summary.complications as |complication|}}
+        <br>{{complication.label}}{{#each complication.dice as |face|}} d{{face}}{{/each}}{{#if complication.note}} <i>({{complication.note}})</i>{{/if}}
+      {{/each}}
+    </p>
+  {{/if}}
+  {{#if projection.takenOut.length}}
+    <p><b>{{localize 'HitchesTakenOut'}}:</b> {{#each projection.takenOut as |label|}}{{label}} {{/each}}</p>
+  {{/if}}
+  {{#if hasDoomPool}}
+    <p>
+      <b>{{doomPoolLabel}}:</b>
+      {{#if summary.doomDice.length}}
+        {{#each summary.doomDice as |die|}}
+          <br>d{{die.face}}{{#if die.note}} <i>({{die.note}})</i>{{/if}}
+        {{/each}}
+      {{else}}
+        <i>{{localize 'None'}}</i>
+      {{/if}}
+    </p>
+  {{/if}}
+  {{#if projection.paradoxSteps}}
+    <p>{{localize 'HitchActionStepUpParadox'}} &times; {{projection.paradoxSteps}}</p>
+  {{/if}}
+</div>

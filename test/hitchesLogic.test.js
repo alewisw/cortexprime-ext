@@ -1,0 +1,322 @@
+import { describe, expect, it } from 'vitest'
+import {
+  DOOM_DIE_STEP_OPTIONS,
+  HITCH_ACTIONS,
+  computePlotPoints,
+  computeProjection,
+  getAvailableActions,
+  getComplicationOptions,
+  isBotch,
+  stepUpDoomDie
+} from '../module/scripts/hitchesLogic.js'
+
+const row = overrides => ({
+  faces: 8,
+  result: 1,
+  action: HITCH_ACTIONS.NONE,
+  complicationName: '',
+  complicationKey: '',
+  doomDieSize: '',
+  ...overrides
+})
+
+describe('isBotch', () => {
+  it('is true when every rolled die came up 1', () => {
+    expect(isBotch([{ faces: 8, result: 1 }, { faces: 4, result: 1 }])).toBe(true)
+  })
+
+  it('is false when any die beat a 1', () => {
+    expect(isBotch([{ faces: 8, result: 1 }, { faces: 6, result: 5 }])).toBe(false)
+  })
+
+  it('is false for an empty roll', () => {
+    expect(isBotch([])).toBe(false)
+  })
+})
+
+describe('getAvailableActions', () => {
+  it('offers only the complication options when nothing else is configured', () => {
+    expect(getAvailableActions({ hasDoomPool: false, isMage: false, magick: null })).toEqual([
+      HITCH_ACTIONS.NONE,
+      HITCH_ACTIONS.INTRODUCE_COMPLICATION,
+      HITCH_ACTIONS.STEP_UP_COMPLICATION
+    ])
+  })
+
+  it('adds the Doom Pool options once a Doom Pool is configured', () => {
+    const actions = getAvailableActions({ hasDoomPool: true, isMage: false, magick: null })
+
+    expect(actions).toContain(HITCH_ACTIONS.ADD_DOOM_DIE)
+    expect(actions).toContain(HITCH_ACTIONS.STEP_UP_DOOM_DIE)
+  })
+
+  it('offers Paradox only under the Mage rule set with a magical roll', () => {
+    expect(getAvailableActions({ hasDoomPool: false, isMage: true, magick: 'vulgar' }))
+      .toContain(HITCH_ACTIONS.STEP_UP_PARADOX)
+    expect(getAvailableActions({ hasDoomPool: false, isMage: true, magick: 'none' }))
+      .not.toContain(HITCH_ACTIONS.STEP_UP_PARADOX)
+    expect(getAvailableActions({ hasDoomPool: false, isMage: false, magick: 'vulgar' }))
+      .not.toContain(HITCH_ACTIONS.STEP_UP_PARADOX)
+  })
+})
+
+describe('getComplicationOptions', () => {
+  it('lists the sheet complications plus any introduced in this dialog', () => {
+    const complications = [{ label: 'Winded', dice: ['6'] }]
+    const rows = [
+      row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+      row({ action: HITCH_ACTIONS.NONE })
+    ]
+
+    expect(getComplicationOptions(complications, rows)).toEqual([
+      { key: 'existing:0', label: 'Winded' },
+      { key: 'pending:0', label: 'On Fire' }
+    ])
+  })
+
+  it('falls back to the default label for an unnamed new complication', () => {
+    const rows = [row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION })]
+
+    expect(getComplicationOptions([], rows, 'New Complication')).toEqual([
+      { key: 'pending:0', label: 'New Complication' }
+    ])
+  })
+})
+
+describe('DOOM_DIE_STEP_OPTIONS', () => {
+  it('offers the whole ladder below D12, which has nowhere to step up to', () => {
+    expect(DOOM_DIE_STEP_OPTIONS).toEqual(['4', '6', '8', '10'])
+  })
+})
+
+describe('stepUpDoomDie', () => {
+  it('steps up the lowest die at or above the picked size', () => {
+    expect(stepUpDoomDie(['4', '8', '10'], '6')).toEqual(['4', '10', '10'])
+  })
+
+  it('steps up an exact match in preference to a larger die', () => {
+    expect(stepUpDoomDie(['6', '10'], '6')).toEqual(['8', '10'])
+  })
+
+  it('leaves the pool alone when no die is large enough', () => {
+    expect(stepUpDoomDie(['4', '6'], '10')).toEqual(['4', '6'])
+  })
+
+  it('clamps a D12 rather than wrapping it', () => {
+    expect(stepUpDoomDie(['12'], '12')).toEqual(['12'])
+  })
+})
+
+describe('computePlotPoints', () => {
+  it('counts one per Doom Pool add, Doom Pool step up and Paradox step up', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.ADD_DOOM_DIE }),
+      row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '8' }),
+      row({ action: HITCH_ACTIONS.STEP_UP_PARADOX })
+    ]
+
+    expect(computePlotPoints(rows)).toBe(3)
+  })
+
+  it('counts nothing for rows left on "do not activate"', () => {
+    expect(computePlotPoints([row(), row()])).toBe(0)
+  })
+
+  it('counts each distinct complication once', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+      row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })
+    ]
+
+    expect(computePlotPoints(rows)).toBe(2)
+  })
+
+  it('counts introducing a complication and then stepping that same one up as a single point', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+      row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'pending:0' })
+    ]
+
+    expect(computePlotPoints(rows)).toBe(1)
+  })
+
+  it('counts two step-up rows targeting the same complication once', () => {
+    const rows = [
+      row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' }),
+      row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })
+    ]
+
+    expect(computePlotPoints(rows)).toBe(1)
+  })
+})
+
+describe('computeProjection', () => {
+  it('introduces new complications at D6', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' })],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(projection.complications).toEqual([{ label: 'On Fire', dice: ['6'], isNew: true }])
+  })
+
+  it('steps up an existing complication', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })],
+      complications: [{ label: 'Winded', dice: ['6'] }],
+      doomDice: []
+    })
+
+    expect(projection.complications[0].dice).toEqual(['8'])
+    expect(projection.takenOut).toEqual([])
+  })
+
+  it('reports only the complications this roll actually changed', () => {
+    const projection = computeProjection({
+      rows: [
+        row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:1' }),
+        row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' })
+      ],
+      complications: [{ label: 'Untouched', dice: ['6'] }, { label: 'Winded', dice: ['6'] }],
+      doomDice: []
+    })
+
+    expect(projection.complications).toHaveLength(3)
+    expect(projection.changedComplications).toEqual([
+      { label: 'Winded', dice: ['8'], isSteppedUp: true },
+      { label: 'On Fire', dice: ['6'], isNew: true }
+    ])
+  })
+
+  it('reports nothing as changed when no row touches a complication', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.ADD_DOOM_DIE })],
+      complications: [{ label: 'Winded', dice: ['6'] }],
+      doomDice: []
+    })
+
+    expect(projection.changedComplications).toEqual([])
+  })
+
+  it('can step up a complication introduced by an earlier row', () => {
+    const projection = computeProjection({
+      rows: [
+        row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' }),
+        row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'pending:0' })
+      ],
+      complications: [],
+      doomDice: []
+    })
+
+    // Introduced and then stepped up by a later row, so it carries both markers.
+    expect(projection.complications).toEqual([{ label: 'On Fire', dice: ['8'], isNew: true, isSteppedUp: true }])
+  })
+
+  it('leaves a D12 complication at D12 and reports it as taken out', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })],
+      complications: [{ label: 'Bleeding Out', dice: ['12'] }],
+      doomDice: []
+    })
+
+    expect(projection.complications[0].dice).toEqual(['12'])
+    expect(projection.takenOut).toEqual(['Bleeding Out'])
+    // Reported as taken out rather than as a change — nothing about it actually moved.
+    expect(projection.changedComplications).toEqual([])
+  })
+
+  it('adds the hitched die size to the Doom Pool', () => {
+    const projection = computeProjection({
+      rows: [row({ faces: 10, action: HITCH_ACTIONS.ADD_DOOM_DIE })],
+      complications: [],
+      doomDice: ['6']
+    })
+
+    expect(projection.doomDice).toEqual(['6', '10'])
+  })
+
+  // The step up row is listed FIRST here, so it can only find a d6 to step up if every add has
+  // already been applied — which is the ordering the rules call for.
+  it('applies Doom Pool adds before step ups, so a queued die can be stepped up', () => {
+    const projection = computeProjection({
+      rows: [
+        row({ faces: 6, action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '6' }),
+        row({ faces: 6, action: HITCH_ACTIONS.ADD_DOOM_DIE })
+      ],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(projection.doomDice).toEqual(['8'])
+  })
+
+  it('marks which Doom Pool dice were added and which were stepped up', () => {
+    const projection = computeProjection({
+      rows: [
+        row({ faces: 6, action: HITCH_ACTIONS.ADD_DOOM_DIE }),
+        row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '10' })
+      ],
+      complications: [],
+      doomDice: ['10']
+    })
+
+    expect(projection.doomDice).toEqual(['12', '6'])
+    expect(projection.doomDiceDetail).toEqual([
+      { face: '12', isSteppedUp: true },
+      { face: '6', isNew: true }
+    ])
+  })
+
+  it('marks a die that was both added and then stepped up', () => {
+    const projection = computeProjection({
+      rows: [
+        row({ faces: 6, action: HITCH_ACTIONS.ADD_DOOM_DIE }),
+        row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '6' })
+      ],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(projection.doomDiceDetail).toEqual([{ face: '8', isNew: true, isSteppedUp: true }])
+  })
+
+  it('does not mark a D12 as stepped up, since it cannot grow', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '10' })],
+      complications: [],
+      doomDice: ['12']
+    })
+
+    expect(projection.doomDiceDetail).toEqual([{ face: '12' }])
+  })
+
+  it('counts Paradox steps without changing anything else', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_PARADOX })],
+      complications: [{ label: 'Winded', dice: ['6'] }],
+      doomDice: ['8']
+    })
+
+    expect(projection.paradoxSteps).toBe(1)
+    expect(projection.complications).toEqual([{ label: 'Winded', dice: ['6'] }])
+    expect(projection.doomDice).toEqual(['8'])
+  })
+
+  it('does not mutate the complications or Doom Pool it was given', () => {
+    const complications = [{ label: 'Winded', dice: ['6'] }]
+    const doomDice = ['8']
+
+    computeProjection({
+      rows: [
+        row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' }),
+        row({ faces: 6, action: HITCH_ACTIONS.ADD_DOOM_DIE })
+      ],
+      complications,
+      doomDice
+    })
+
+    expect(complications).toEqual([{ label: 'Winded', dice: ['6'] }])
+    expect(doomDice).toEqual(['8'])
+  })
+})

@@ -24,7 +24,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       classes: ['cortexprime', 'sheet', 'actor', 'actor-sheet'],
       template: "systems/cortexprime/templates/actor/actor-sheet.html",
       width: 960,
-      height: 900,
+      height: 'auto',
       tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "traits" }]
     })
   }
@@ -77,6 +77,28 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.trait-set-edit').click(this._traitSetEdit.bind(this))
     removeItems.call(this, html)
     toggleItems.call(this, html)
+
+    // The window uses height:'auto', so Foundry measures and fixes its height as part of this
+    // same render - before the profile image (whose height isn't known until it loads) has
+    // necessarily finished loading. If the sidebar column is taller than the main column, an
+    // image that finishes loading afterward can grow the sidebar past that fixed height, clipping
+    // content at the bottom of the window. Re-running the auto-height calculation now, and again
+    // once the image actually loads, keeps the window sized to what's really on screen.
+    html.find('.profile-image').on('load', () => this._resizeToFitContent())
+    this._resizeToFitContent()
+  }
+
+  // See the comment above the profile-image 'load' listener in activateListeners - guarded so a
+  // failure here can never take down the rest of listener setup. Width is passed explicitly
+  // (rather than left to whatever Foundry currently has cached) because re-triggering the 'auto'
+  // height calculation without it has been observed to also blow the window out to a much wider,
+  // unintended width.
+  _resizeToFitContent () {
+    try {
+      this.setPosition({ width: this.options.width, height: 'auto' })
+    } catch (error) {
+      console.warn('CP | Actor Sheet: could not resize to fit content', error)
+    }
   }
 
   /* -------------------------------------------- */

@@ -186,6 +186,45 @@ card also shows:
   Group Challenge duel never touches the Crisis Pool or blunts anyone's Effect die, even on a
   win or loss that would otherwise qualify.
 
+## Hitches
+
+Whenever a player rolls during a Test, Contest or Group Challenge and any die comes up **1**, a
+**Hitches** dialog opens on the GM's screen — on every roll, not just the one that decides the
+challenge. Nothing happens automatically: the dialog is a proposal the GM shapes and confirms.
+
+The header reads **HITCH**, or **BOTCH** if every single die came up 1.
+
+Below it is one row per die the player rolled, showing the die and the face it landed on. Rows
+that hitched get a dropdown offering:
+
+- **Do not activate** — leave this hitch alone (the default).
+- **Introduce a D6 complication** — reveals a box for the complication's name.
+- **Step up a complication** — reveals a list of the player's existing complications, plus any
+  complication another row in this same dialog is about to introduce.
+- **Add to the &lt;Doom Pool&gt;** — adds a die of the hitched die's own size. Only shown once a
+  Doom Pool Actor and Doom Pool Trait are configured in System Configuration; the option is named
+  after whatever that trait is called.
+- **Step up a die in the &lt;Doom Pool&gt;** — reveals a list of die sizes currently in the Doom
+  Pool plus any queued by an "Add to" row. On confirm, the lowest die at or above the size you
+  picked is the one that steps up.
+- **Step up Paradox** — only under the Mage rule set, and only when the GM has set Magick to
+  something other than None. *This option currently awards its Plot Point but does not yet change
+  the Paradox trait itself.*
+
+At the bottom the dialog shows the **Plot Points** the player will receive and a live preview of
+the outcome. Only the complications this roll actually changes are listed — untouched ones are left
+out of both the preview and the chat post — alongside the Doom Pool's resulting dice. Plot Points are counted as
+one per unique complication touched (introducing a complication and then stepping that same one up
+costs one point, not two), plus one per Doom Pool add, per Doom Pool step up, and per Paradox step
+up.
+
+A complication that is already at **d12** cannot be stepped up any further. It stays at d12 and is
+called out as **TAKEN OUT** in the preview and the chat post — the complication on the player's
+sheet is left untouched.
+
+**Confirm** posts the summary to chat, gives the player their Plot Points, and writes the new
+complications and Doom Pool. Closing the dialog without confirming changes nothing.
+
 ## Crisis Pool
 
 A Crisis Pool represents an escalating danger the GM tracks as a shared pool of dice — separate
