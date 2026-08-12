@@ -7,6 +7,7 @@ import { registerDoomPool } from './scripts/doomPool.js'
 import { registerHitches } from './scripts/hitches.js'
 import { registerMageAscension } from './mage/mageAscension.js'
 import { registerParadox } from './mage/paradox.js'
+import { registerMigrateNotesToTabs } from './scripts/migrateNotesToTabs.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
 import { registerRollUndo } from './scripts/rollUndo.js'
@@ -28,6 +29,7 @@ export default () => {
   // pre-roll state if it runs before rollToBeat's handler advances it.
   registerRollUndo()
   registerMageAscension()
+  registerMigrateNotesToTabs()
   registerMyCharacter()
   registerRollToBeat()
   registerSceneDistinctionActor()

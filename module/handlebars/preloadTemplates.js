@@ -1,5 +1,6 @@
 export const preloadHandlebarsTemplates = async function () {
   const templatePaths = [
+    'actor-sheet/additional-tab',
     'actor-sheet/sidebar',
     'actor-sheet/simple-traits',
     'actor-sheet/temporary-traits',

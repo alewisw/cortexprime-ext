@@ -48,6 +48,7 @@ export default class ActorSettings extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html)
     html.find('#add-new-actor-type').click(this._addNewActorType.bind(this))
+    html.find('.add-additional-tab').click(this._addAdditionalTab.bind(this))
     html.find('.add-descriptor').click(this._addDescriptor.bind(this))
     html.find('.add-simple-trait').click(this._addSimpleTrait.bind(this))
     html.find('.add-sfx').click(this._addSfx.bind(this))
@@ -73,7 +74,6 @@ export default class ActorSettings extends FormApplication {
 
     const newActorType = {
       [newKey]: {
-        hasNotesPage: true,
         id: `_${Date.now()}`,
         name: localizer('NewActorType'),
         showProfileImage: true
@@ -82,6 +82,29 @@ export default class ActorSettings extends FormApplication {
 
     await game.settings.set('cortexprime', 'actorTypes', foundry.utils.mergeObject(source, newActorType))
     await this.changeView(localizer('NewActorType'), `actorType-${newKey}`)
+    this.render(true)
+  }
+
+  // No drill-down edit page — unlike a Trait Set, a tab has nothing to configure beyond its name,
+  // which is edited inline in the list row itself.
+  async _addAdditionalTab (event) {
+    event.preventDefault()
+    const source = game.settings.get('cortexprime', 'actorTypes')
+    const actorTypeKey = $(event.currentTarget).data('actorType')
+    const newKey = getLength(source[actorTypeKey]?.additionalTabs || {})
+
+    const newAdditionalTab = {
+      [actorTypeKey]: {
+        additionalTabs: {
+          [newKey]: {
+            id: `_${Date.now()}`,
+            name: localizer('NewAdditionalTab')
+          }
+        }
+      }
+    }
+
+    await game.settings.set('cortexprime', 'actorTypes', foundry.utils.mergeObject(source, newAdditionalTab))
     this.render(true)
   }
 

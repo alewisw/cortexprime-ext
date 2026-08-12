@@ -1,11 +1,16 @@
 export default {
   0: {
     defaultImage: 'icons/svg/mystery-man.svg',
+    additionalTabs: {
+      0: {
+        id: '_13',
+        name: 'Notes'
+      }
+    },
     assetsHaveMultipleDice: true,
     hasAssets: true,
     hasComplications: true,
     hasHidableTraits: false,
-    hasNotesPage: true,
     hasPlotPoints: true,
     id: '_1',
     name: 'Character',
@@ -114,11 +119,16 @@ export default {
   },
   1: {
     defaultImage: 'icons/svg/house.svg',
+    additionalTabs: {
+      0: {
+        id: '_25',
+        name: 'Notes'
+      }
+    },
     assetsHaveMultipleDice: true,
     hasAssets: true,
     hasComplications: true,
     hasHidableTraits: true,
-    hasNotesPage: true,
     hasPlotPoints: true,
     id: '_2',
     name: 'Scene',

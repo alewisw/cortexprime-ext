@@ -177,9 +177,11 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
   async _addNote(event) {
     event.preventDefault()
-    const currentNotes = this.actor.system.actorType.notes ?? {}
+    const { tabIndex } = event.currentTarget.dataset
+    const path = `system.actorType.additionalTabs.${tabIndex}`
+    const currentNotes = foundry.utils.getProperty(this.actor, `${path}.notes`) ?? {}
 
-    await this._resetDataPoint('system.actorType', 'notes', {
+    await this._resetDataPoint(path, 'notes', {
       ...currentNotes,
       [getLength(currentNotes)]: {
         label: localizer('Notes'),
@@ -520,6 +522,19 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
               id,
               label,
               settings
+            }
+          })
+        }
+
+        if (key === 'additionalTabs') {
+          return objectMapValues(propValue, ({ id, name }) => {
+            const matchingSetting = objectFindValue((actorData.additionalTabs ?? {}), ({ id: matchId }) => matchId === id) ?? {}
+
+            return {
+              ...matchingSetting,
+              id,
+              name,
+              notes: matchingSetting.notes ?? {}
             }
           })
         }

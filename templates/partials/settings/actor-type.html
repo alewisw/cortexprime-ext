@@ -35,15 +35,6 @@
         <div>
           <label class="flex flex-ac">
             <div class="checkmark-container">
-              <input class="input-checkbox-cpt" name="actorTypes.{{actorTypeIndex}}.hasNotesPage" type="checkbox" {{checked actorType.hasNotesPage}}>
-              <div class="checkmark-cpt"></div>
-            </div>
-            <span class="input-label-cpt mb-0 ml-2">{{localize 'HasNotesPage'}}</span>
-          </label>
-        </div>
-        <div>
-          <label class="flex flex-ac">
-            <div class="checkmark-container">
               <input class="input-checkbox-cpt" name="actorTypes.{{actorTypeIndex}}.hasPlotPoints" type="checkbox" {{checked actorType.hasPlotPoints}}>
               <div class="checkmark-cpt"></div>
             </div>
@@ -189,6 +180,56 @@
                   <i class="fa fa-edit ma-0"></i>
                 </button>
               </div>
+            </div>
+          </li>
+        {{/each}}
+      </ul>
+    </section>
+    {{#if (listHasMore actorType.simpleTraits 0)}}
+      <div class="separator-cpt"></div>
+    {{/if}}
+    <section>
+      <header class="relative-section">
+        <div class="section-background-alternate"></div>
+        <div class="flex flex-ac flex-jsb py-1">
+          <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'AdditionalTabs'}}</h3>
+          <div class="flex-col">
+            <button class="btn btn-primary-cpt btn-icon add-additional-tab" data-actor-type="{{actorTypeIndex}}" type="button">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="separator-cpt"></div>
+        <div class="relative-section pa-2">
+          <div class="section-background-alternate"></div>
+          <p>{{localize 'AdditionalTabsDescription'}}</p>
+        </div>
+      </header>
+      {{#if (listHasMore actorType.additionalTabs 0)}}
+        <div class="separator-cpt"></div>
+      {{/if}}
+      <ul class="list-style-none px-0 my-0">
+        {{#each actorType.additionalTabs as |additionalTab tabIndex|}}
+          <li class="pa-1 flex flex-ac flex-jsb relative-section">
+            <div class="{{ternary (eq (mod tabIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
+            <div class="flex-col flex-row flex-ac">
+              {{> "systems/cortexprime/templates/partials/reorder.html"
+                class="flex-col pa-0"
+                path=(concat ../actorTypeIndex '.additionalTabs')
+                currentIndex=tabIndex
+                setting="actorTypes"
+              }}
+              <input class="input-cpt flex-col" type="text" name="actorTypes.{{../actorTypeIndex}}.additionalTabs.{{tabIndex}}.name" value="{{additionalTab.name}}">
+            </div>
+            <div class="flex-col px-0">
+              {{> "systems/cortexprime/templates/partials/remove-button.html"
+                group=(concat ../actorTypeIndex '.additionalTabs')
+                itemKey=tabIndex
+                itemName=additionalTab.name
+                setting="actorTypes"
+                stayOnPage=true
+                type="trash"
+              }}
             </div>
           </li>
         {{/each}}
