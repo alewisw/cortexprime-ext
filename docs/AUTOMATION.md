@@ -194,6 +194,36 @@ card also shows:
   Group Challenge duel never touches the Crisis Pool or blunts anyone's Effect die, even on a
   win or loss that would otherwise qualify.
 
+## Undoing a roll
+
+A player's roll card carries an **Undo Roll** button, visible only to the GM, that puts that player
+back in a position to roll again — for a mis-click, a wrong pool, or a roll made before the scene
+was properly set.
+
+**What it does:** it restores the challenge to how it stood just before the roll and clears the
+player's recorded result, then deletes the roll's chat card and posts a short notice saying whose
+roll was undone. In a Test the player goes back into Roll Next; in a Contest the previous
+initiator/responder roles come back; in a Group Challenge the initiative phase or the duelling queue
+and champion are restored.
+
+**What it deliberately does not do** — this is a reset, not a full rollback:
+
+- The player's **dice pool is not restored**; they rebuild it. (It's cleared the moment a roll
+  starts and is never saved anywhere.)
+- Anything you already confirmed in a dialog stays: **complications**, **Doom Pool** dice,
+  **Paradox/Trauma** traits, and any **Plot Points** spent or awarded.
+- The **Crisis Pool** reduction and the Contest **Effect die step-down** stay.
+
+Fix those by hand if they matter. A Hitches or Paradox dialog that's still *open* and unconfirmed is
+closed automatically, since nothing had been written yet.
+
+**When the button appears:** only while the roll is still that player's most recent, and only until
+the GM rolls. In a **Contest** or a **Group duel** it's further limited to the single latest roll,
+because those are answered in strict sequence and undoing an earlier one would silently throw away
+the rolls built on it. In a **Test** or during **Group initiative** every player rolls
+independently, so any player's most recent roll stays undoable — undoing one leaves the others
+alone.
+
 ## Hitches
 
 Whenever a player rolls during a Test, Contest or Group Challenge and any die comes up **1**, a

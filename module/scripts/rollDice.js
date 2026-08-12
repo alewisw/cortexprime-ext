@@ -418,6 +418,13 @@ const dicePicker = async rollResults => {
 }
 
 export default async function (pool, rollType, targetTotal, spendPlotPointForExtraDie) {
+  // Generated here rather than inside recordRollResult so the chat card below can be stamped with
+  // the same timestamp — the card is deliberately created BEFORE the record (see the comment down
+  // there), so this is the only way the two can share an identity. That pairing is what lets the
+  // GM's Undo control find the roll a given card belongs to (see rollUndo.js).
+  const rolledAt = Date.now()
+  const rollActorId = game.user.isGM ? 'gm' : game.user.character?.id ?? null
+
   // Captured before _clearDicePool below wipes the tray: which Trait Set each pooled trait came
   // from, and its faces. The roll record keeps this so rule sets can ask "was a die from Trait Set
   // X in this roll?" after the fact (module/mage/paradox.js does, for the Powers Trait Set). The
@@ -516,7 +523,12 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
   // rollToBeat.js) — those can post their own chat message (e.g. the Initiative results card)
   // as soon as this write lands, so recording the roll only after the card is created keeps
   // that follow-up message from racing ahead of it in the chat log.
-  await ChatMessage.create({ content })
+  await ChatMessage.create({
+    content,
+    // Identifies which roll this card belongs to, so the GM's Undo control can find it (and delete
+    // it) later — chat messages carry no other usable handle back to a roll.
+    flags: { cortexprime: { roll: { actorId: rollActorId, rolledAt } } }
+  })
 
   // Every die that was actually rolled (not just the ones selected for the total) rides along on
   // the record, so the GM's client can open the Hitches dialog for any natural 1s — see hitches.js.
@@ -525,6 +537,7 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     effectDice: finalEffectDice,
     won,
     dice: [...rollResults.results, ...rollResults.hitches],
-    poolEntries
+    poolEntries,
+    rolledAt
   })
 }

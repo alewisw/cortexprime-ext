@@ -8,18 +8,26 @@ import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
 const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0, dice: [], poolEntries: [] }
 const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0, interference: null, group: null }
 
+// A fresh copy of the "never rolled" record. Exported so an undo (rollUndo.js) can blank a roll
+// with exactly the shape the read path already defaults to — a rolledAt of 0 is what makes every
+// downstream reactor skip it.
+export const getBlankRecord = () => ({ ...blankRecord, effectDice: [], dice: [], poolEntries: [] })
+
 // `dice` is every die this roll actually put on the table as [{ faces, result }] — kept alongside
 // the outcome so the GM's client can spot natural 1s (see hitches.js) without re-rolling anything.
 // `poolEntries` is [{ traitSetId, faces }] for every pool entry that came from a Trait Set, kept
 // because the dice pool itself is cleared the moment a roll starts, so which Trait Sets contributed
 // can't be recovered afterwards (module/mage/paradox.js needs the Powers dice). Deliberately
 // generic — no rule set knows about it here.
-export const recordRollResult = async ({ total, effectDice, won, dice, poolEntries }) => {
+// `rolledAt` may be supplied by the caller so the roll's chat card can be stamped with the same
+// timestamp before this record exists (see rollDice.js) — that pairing is what lets a card be
+// matched back to its roll for the GM's Undo control.
+export const recordRollResult = async ({ total, effectDice, won, dice, poolEntries, rolledAt }) => {
   const record = {
     total,
     effectDice,
     won: won ?? null,
-    rolledAt: Date.now(),
+    rolledAt: rolledAt ?? Date.now(),
     dice: dice ?? [],
     poolEntries: poolEntries ?? []
   }

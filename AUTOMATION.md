@@ -5,6 +5,26 @@ happen automatically in response to game state changing, as opposed to a GM or p
 clicking a button for that specific effect. It's organized by feature area, starting with
 rule-set-specific automation.
 
+## Roll undo snapshots
+
+Every roll made during a Test, Contest or Group Challenge causes the challenge to advance
+immediately and destructively — a Test drops the responder, a Contest swaps roles or ends, a Group
+duel rotates the queue, and a completed initiative phase builds a randomly-ordered queue that can
+never be recomputed. To make the GM's **Undo Roll** control possible, `module/scripts/rollUndo.js`
+reacts to the same `flags.cortexprime.lastRoll` write every other reactor watches and stores the
+active challenge *as it stood immediately before that roll* in the `rollUndoSnapshots` world
+setting, keyed by actor. Like `registerHitches()` and `registerParadox()`, it is registered before
+`registerRollToBeat()` and reads `getActiveChallenge()` synchronously, because rollToBeat's own
+handler for that hook is what advances the thing being snapshotted.
+
+Each roll also stamps its chat card with `flags.cortexprime.roll = { actorId, rolledAt }`. Chat
+messages otherwise carry no handle back to a roll at all, and the card is deliberately created
+*before* the roll record exists, so `rollDice.js` generates the `rolledAt` up front and passes it to
+both.
+
+Snapshots are overwritten per roll and deleted once used — no history is kept. Everything the undo
+actually does is button-driven; see `docs/AUTOMATION.md`.
+
 ## Hitches
 
 Whenever a player's roll is recorded (`recordRollResult` in `module/scripts/rollToBeat.js` writes

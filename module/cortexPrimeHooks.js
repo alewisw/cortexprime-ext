@@ -9,6 +9,7 @@ import { registerMageAscension } from './mage/mageAscension.js'
 import { registerParadox } from './mage/paradox.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
+import { registerRollUndo } from './scripts/rollUndo.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
 import { registerSceneJournal } from './scripts/sceneJournal.js'
 import { registerSpotlight } from './scripts/spotlight.js'
@@ -23,6 +24,9 @@ export default () => {
   // Same reason as registerHitches() above — it reads the active challenge and the opposition's
   // recorded effect dice on the updateActor hook, both of which rollToBeat's handler advances.
   registerParadox()
+  // Same reason again — it snapshots the active challenge as each roll lands, which is only the
+  // pre-roll state if it runs before rollToBeat's handler advances it.
+  registerRollUndo()
   registerMageAscension()
   registerMyCharacter()
   registerRollToBeat()

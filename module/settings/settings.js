@@ -160,6 +160,16 @@ export const registerSettings = () => {
     config: true
   })
 
+  // Keyed by actor id: the active challenge as it stood immediately before that actor's most
+  // recent roll, so the GM can undo it. Overwritten per roll — no history is kept.
+  game.settings.register('cortexprime', 'rollUndoSnapshots', {
+    name: localizer('RollUndoSnapshots'),
+    default: {},
+    scope: 'world',
+    type: Object,
+    config: false,
+  })
+
   game.settings.register('cortexprime', 'importedSettings', {
     name: localizer('ImportedSettings'),
     default: { currentSetting: localizer('Default') },

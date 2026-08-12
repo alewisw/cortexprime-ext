@@ -199,6 +199,13 @@ const onRollRecorded = async (actor, data) => {
   await resolveParadox(context, 0)
 }
 
+// Drops a roll that was parked waiting on the Hitches dialog. Used when that roll is undone
+// (see rollUndo.js) — the entry is otherwise only ever removed on a matching resolution, so an
+// undone roll would leave it sitting there for the rest of the session.
+export const forgetPendingRoll = actorId => {
+  delete awaitingHitches[actorId]
+}
+
 const onHitchesResolved = async ({ actorId, rolledAt, paradoxSteps }) => {
   if (game.user !== game.users.activeGM) return
 
