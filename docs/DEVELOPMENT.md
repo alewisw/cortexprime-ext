@@ -140,18 +140,34 @@ setup screen.
 
 ## Releasing a new version
 
+Requires the [GitHub CLI](https://cli.github.com/) (`gh`), authenticated
+(`gh auth login`).
+
 1. Bump the version in both `package.json` and `system.json` (`version`
-   field), and update the `download` URL in `system.json` to point at the
-   matching Git tag.
-2. Run `npm run compile` and commit the resulting `css/cortexprime.css`
-   along with any source changes.
-3. Commit, tag the release (e.g. `v0.2.17`), and push the tag.
-4. Create a GitHub release for that tag; the `download` URL in
-   `system.json` must resolve to a zip of the repository at that tag so
-   Foundry's installer can fetch it.
-   Run `npm run package` if you also need a trimmed, runtime-only zip to
-   attach to the release or upload to a host such as The Forge (see
-   [Packaging a distributable zip](#packaging-a-distributable-zip)).
+   field).
+2. Update the `download` URL in `system.json` to
+   `https://github.com/<owner>/<repo>/releases/download/v<version>/<id>-<version>.zip`
+   for the new version (`tools/release.js` checks this and refuses to run
+   if it's stale).
+3. Commit the version bump.
+4. Run:
+
+   ```
+   npm run release
+   ```
+
+   This compiles Sass, builds `dist/<id>-<version>.zip` (see
+   [Packaging a distributable zip](#packaging-a-distributable-zip)), tags
+   the commit `v<version>`, pushes the current branch and tag, and creates
+   a GitHub release with the zip attached — matching the `download` URL
+   above so Foundry's installer (and hosts like The Forge, via a manifest
+   URL install rather than their Import Wizard) can fetch it directly.
+
+   The script refuses to run if the working tree is dirty, the tag already
+   exists, or `package.json`/`system.json` versions disagree.
 5. Confirm the `manifest` URL in `system.json` (raw URL to `system.json` on
-   the default branch) is correct — this is what Foundry uses to check for
-   and install updates.
+   the default branch) is correct once the version bump is merged there —
+   this is what Foundry uses to check for and install updates. For
+   installing a specific release before it reaches the default branch, use
+   `https://raw.githubusercontent.com/<owner>/<repo>/v<version>/system.json`
+   instead.

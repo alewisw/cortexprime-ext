@@ -6,6 +6,7 @@
     "build": "gulp",
     "compile": "gulp css",
     "package": "gulp package",
+    "release": "node tools/release.js",
     "watch": "gulp",
     "gulp": "gulp",
     "test": "vitest run",
