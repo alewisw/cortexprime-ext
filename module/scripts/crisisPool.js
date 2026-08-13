@@ -5,10 +5,10 @@
 const DIE_LADDER = [4, 6, 8, 10, 12]
 const ELIMINATION_ORDER = [12, 10, 8, 6] // largest first — a D4 can only be stepped to removed, never "eliminated"
 
-export const getCrisisPool = () => ({ active: false, name: '', dice: [], ...game.settings.get('cortexprime', 'crisisPool') })
+export const getCrisisPool = () => ({ active: false, name: '', dice: [], ...game.settings.get('cortexprime-ext', 'crisisPool') })
 
 const setCrisisPoolState = async pool => {
-  await game.settings.set('cortexprime', 'crisisPool', pool)
+  await game.settings.set('cortexprime-ext', 'crisisPool', pool)
 }
 
 export const startCrisis = async ({ name, dice }) => {

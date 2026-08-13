@@ -4,7 +4,7 @@ import { previewCrisisReduction } from './crisisPool.js'
 import { flattenPoolEntries } from './dicePoolValidation.js'
 import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyBeatTargetId, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
-const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/partials/die-display.html', data)
+const getAppendDiceContent = (data) => foundry.applications.handlebars.renderTemplate('systems/cortexprime-ext/templates/partials/die-display.html', data)
 
 const getRollFormula = (pool) => {
   return objectReduce(pool, (formula, traitGroup) => {
@@ -27,7 +27,7 @@ const sortResults = (a, b) => {
   return b.faces - a.faces
 }
 
-const testModeSelectDiceValues = () => game.settings.get('cortexprime', 'testModeSelectDiceValues')
+const testModeSelectDiceValues = () => game.settings.get('cortexprime-ext', 'testModeSelectDiceValues')
 
 const getRollResults = async pool => {
   const rollFormula = getRollFormula(pool)
@@ -163,7 +163,7 @@ const getPickerCase = results => {
 }
 
 const dicePicker = async rollResults => {
-  const themes = game.settings.get('cortexprime', 'themes')
+  const themes = game.settings.get('cortexprime-ext', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
   const challengeTarget = getMyChallengeTarget()
   const availablePlotPoints = game.user.character?.system.pp.value ?? 0
@@ -175,7 +175,7 @@ const dicePicker = async rollResults => {
   const buildContent = async () => {
     const pickerCase = getPickerCase(rollResults.results)
 
-    const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/dialog/dice-picker.html', {
+    const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime-ext/templates/dialog/dice-picker.html', {
       rollResults: { hitches: rollResults.hitches, results: pickerCase.dice },
       title: pickerCase.title,
       selectable: pickerCase.selectable,
@@ -250,7 +250,7 @@ const dicePicker = async rollResults => {
       if (!faces || Number.isNaN(key)) return
 
       const menuContent = await foundry.applications.handlebars.renderTemplate(
-        'systems/cortexprime/templates/partials/dice/value-menu.html',
+        'systems/cortexprime-ext/templates/partials/dice/value-menu.html',
         { values: Array.from({ length: faces }, (_, index) => index + 1), current }
       )
 
@@ -435,9 +435,9 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     .map(entry => ({ traitSetId: entry.traitSetId, faces: Object.values(entry.value ?? {}).map(String) }))
 
   const rollResults = await getRollResults(pool)
-  const themes = game.settings.get('cortexprime', 'themes')
+  const themes = game.settings.get('cortexprime-ext', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
-  const sourceDefaultCollapsed = game.settings.get('cortexprime', 'rollResultSourceCollapsed')
+  const sourceDefaultCollapsed = game.settings.get('cortexprime-ext', 'rollResultSourceCollapsed')
 
   if (spendPlotPointForExtraDie && game.user.character) {
     await game.user.character.changePpBy(-1, false, localizer('SpendPlotPointExtraDieCheckbox'))
@@ -500,7 +500,7 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     ? previewCrisisReduction(finalEffectDice)
     : null
 
-  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/roll-result.html', {
+  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime-ext/templates/chat/roll-result.html', {
     dicePool: pool,
     effectDice: finalEffectDice,
     rollResults: { hitches: rollResults.hitches, results: selectedDice.dice },
@@ -527,7 +527,7 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     content,
     // Identifies which roll this card belongs to, so the GM's Undo control can find it (and delete
     // it) later — chat messages carry no other usable handle back to a roll.
-    flags: { cortexprime: { roll: { actorId: rollActorId, rolledAt } } }
+    flags: { 'cortexprime-ext': { roll: { actorId: rollActorId, rolledAt } } }
   })
 
   // Every die that was actually rolled (not just the ones selected for the total) rides along on

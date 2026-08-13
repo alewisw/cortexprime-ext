@@ -13,8 +13,8 @@ const CHALLENGE_TYPES = ['test', 'contest', 'group']
 // way mageAscension.js resolves its own configured Simple Traits — by the trait's stable `id`,
 // so reordering traits on the Actor Type can't silently repoint it at a different trait.
 export const getDoomPool = () => {
-  const actorId = game.settings.get('cortexprime', 'doomPoolActorId')
-  const traitId = game.settings.get('cortexprime', 'doomPoolTraitId')
+  const actorId = game.settings.get('cortexprime-ext', 'doomPoolActorId')
+  const traitId = game.settings.get('cortexprime-ext', 'doomPoolTraitId')
 
   if (!actorId || !traitId) return null
 
@@ -38,7 +38,7 @@ export const getDoomPool = () => {
 // open the Distinction Actor from the floating panel (sceneDistinctionActor.js) and to resolve
 // Mage's Reality Reinforcement trait (mageAscension.js#getLinkedLocationActor).
 export const getSceneActor = () => {
-  const actorId = game.scenes?.active?.getFlag('cortexprime', 'linkedActorId')
+  const actorId = game.scenes?.active?.getFlag('cortexprime-ext', 'linkedActorId')
 
   return actorId ? game.actors.get(actorId) : null
 }
@@ -127,9 +127,9 @@ const openHitchesDialog = async (actor, record, challenge) => {
   // and it keeps `extends FormApplication` from being evaluated anywhere that global is absent.
   const { HitchesDialog } = await import('../applications/HitchesDialog.js')
 
-  const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')
+  const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
   const magick = customRuleSet === 'mage'
-    ? game.settings.get('cortexprime', 'mageChallengeState')?.magick
+    ? game.settings.get('cortexprime-ext', 'mageChallengeState')?.magick
     : null
 
   // Coincidental magick only turns hitches into Paradox on a botch, so outside that the option is
@@ -150,7 +150,7 @@ const openHitchesDialog = async (actor, record, challenge) => {
 
 export const registerHitches = () => {
   Hooks.on('updateActor', async (actor, data) => {
-    if (!foundry.utils.hasProperty(data, 'flags.cortexprime.lastRoll')) return
+    if (!foundry.utils.hasProperty(data, 'flags.cortexprime-ext.lastRoll')) return
     if (game.user !== game.users.activeGM) return
 
     // Read the challenge synchronously, before rollToBeat.js's own handler for this same hook gets
@@ -160,7 +160,7 @@ export const registerHitches = () => {
 
     if (!CHALLENGE_TYPES.includes(challenge.type)) return
 
-    const record = foundry.utils.getProperty(data, 'flags.cortexprime.lastRoll')
+    const record = foundry.utils.getProperty(data, 'flags.cortexprime-ext.lastRoll')
 
     if (!record?.rolledAt || handledRolls[actor.id] === record.rolledAt) return
 

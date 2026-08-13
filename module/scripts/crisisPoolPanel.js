@@ -9,7 +9,7 @@ import { getCrisisPool } from './crisisPool.js'
 export const registerCrisisPool = () => {
   FloatingPanel.registerWidget({
     id: 'crisis-pool',
-    template: 'systems/cortexprime/templates/partials/floating-panel/crisis-pool.html',
+    template: 'systems/cortexprime-ext/templates/partials/floating-panel/crisis-pool.html',
     getContext: () => {
       const pool = getCrisisPool()
 
@@ -31,7 +31,7 @@ export const registerCrisisPool = () => {
   })
 
   Hooks.on('updateSetting', async setting => {
-    if (setting.key === 'cortexprime.crisisPool') {
+    if (setting.key === 'cortexprime-ext.crisisPool') {
       game.cortexprime.FloatingPanel?.refresh()
       await game.cortexprime.UserDicePool?.refreshCrisisPool()
     }

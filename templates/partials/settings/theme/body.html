@@ -6,18 +6,18 @@
     <div class="separator-cpt mt-2 mb-4"></div>
     <h3 class="section-secondary-title-cpt">{{localize 'Font'}}</h3>
     <div class="flex-row my-2">
-      {{> "systems/cortexprime/templates/partials/settings/theme/color.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/color.html"
         default=themes.list.Default.bodyFontColor
         label=(localize 'Color')
         name='themes.currentSettings.bodyFontColor'
         value=themes.currentSettings.bodyFontColor
       }}
-      {{> "systems/cortexprime/templates/partials/settings/theme/font-size.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/font-size.html"
         label=(localize 'Size')
         name='themes.currentSettings.bodyFontSize'
         value=themes.currentSettings.bodyFontSize
       }}
-      {{> "systems/cortexprime/templates/partials/settings/theme/font-weight.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/font-weight.html"
         label=(localize 'Weight')
         name='themes.currentSettings.bodyFontWeight'
         value=themes.currentSettings.bodyFontWeight
@@ -26,7 +26,7 @@
     <div class="separator-cpt my-4"></div>
     <h3 class="section-secondary-title-cpt">{{localize 'Background'}}</h3>
     <div class="flex-row my-2">
-      {{> "systems/cortexprime/templates/partials/settings/theme/color.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/color.html"
         default='transparent'
         label=(localize 'Color')
         name='themes.currentSettings.sheetBackgroundColor'
@@ -34,29 +34,29 @@
       }}
     </div>
     <div class="flex-row flex-ae my-2">
-      {{> "systems/cortexprime/templates/partials/settings/theme/image.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/image.html"
         label=(localize 'Image')
         targetSetting='sheetBackgroundImage'
         value=themes.currentSettings.sheetBackgroundImage
       }}
     </div>
     <div class="flex-row my-2">
-      {{> "systems/cortexprime/templates/partials/settings/theme/opacity.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/opacity.html"
         label=(localize 'Opacity')
         name='themes.currentSettings.sheetBackgroundImageOpacity'
         value=themes.currentSettings.sheetBackgroundImageOpacity
       }}
-      {{> "systems/cortexprime/templates/partials/settings/theme/background-position.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/background-position.html"
         label=(localize 'Position')
         name='themes.currentSettings.sheetBackgroundPosition'
         value=themes.currentSettings.sheetBackgroundPosition
       }}
-      {{> "systems/cortexprime/templates/partials/settings/theme/background-repeat.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/background-repeat.html"
         label=(localize 'Repeat')
         name='themes.currentSettings.sheetBackgroundRepeat'
         value=themes.currentSettings.sheetBackgroundRepeat
       }}
-      {{> "systems/cortexprime/templates/partials/settings/theme/background-size.html"
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/background-size.html"
         label=(localize 'Size')
         name='themes.currentSettings.sheetBackgroundSize'
         value=themes.currentSettings.sheetBackgroundSize

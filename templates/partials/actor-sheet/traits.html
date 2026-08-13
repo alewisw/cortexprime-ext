@@ -21,12 +21,12 @@
               <div class="pl-0 flex-col flex-s-1">
                 <div class="flex flex-wrap flex-ac">
                   {{#each trait.dice.value as |die index|}}
-                    {{> (concat "systems/cortexprime/templates/partials/dice/d" die ".html")
+                    {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" die ".html")
                       number=die
                       type='die-rating'
                     }}
                     {{#if (eq ../../settings.hasMultipleDice false)}}
-                      {{> "systems/cortexprime/templates/partials/dice/temporary-controls.html"
+                      {{> "systems/cortexprime-ext/templates/partials/dice/temporary-controls.html"
                         value=die
                         temporary=(lookup trait.dice.temporaryValue index)
                         interactive=false
@@ -37,7 +37,7 @@
               </div>
             {{else}}
               <div class="pl-0 flex-col flex-s-1">
-                {{> "systems/cortexprime/templates/partials/dice/select.html"
+                {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
                   addToPool=true
                   consumable=../settings.consumableDice
                   dice=trait.dice.value
@@ -100,12 +100,12 @@
                   <div class="pl-0 flex-col flex-s-1">
                     <div class="flex flex-wrap flex-ac">
                       {{#each subTrait.dice.value as |die index|}}
-                        {{> (concat "systems/cortexprime/templates/partials/dice/d" die ".html")
+                        {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" die ".html")
                           number=die
                           type='die-rating'
                         }}
                         {{#if (eq ../../../settings.subTraitsHaveMultipleDice false)}}
-                          {{> "systems/cortexprime/templates/partials/dice/temporary-controls.html"
+                          {{> "systems/cortexprime-ext/templates/partials/dice/temporary-controls.html"
                             value=die
                             temporary=(lookup subTrait.dice.temporaryValue index)
                             interactive=false
@@ -116,7 +116,7 @@
                   </div>
                   {{else if ../../settings/subTraitsHaveDice}}
                     <div class="pl-0 flex-col flex-s-1">
-                      {{> "systems/cortexprime/templates/partials/dice/select.html"
+                      {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
                         addToPool=true
                         consumable=../../settings.subTraitsDiceConsumable
                         dice=subTrait.dice.value

@@ -11,13 +11,13 @@ Every roll made during a Test, Contest or Group Challenge causes the challenge t
 immediately and destructively — a Test drops the responder, a Contest swaps roles or ends, a Group
 duel rotates the queue, and a completed initiative phase builds a randomly-ordered queue that can
 never be recomputed. To make the GM's **Undo Roll** control possible, `module/scripts/rollUndo.js`
-reacts to the same `flags.cortexprime.lastRoll` write every other reactor watches and stores the
+reacts to the same `flags.cortexprime-ext.lastRoll` write every other reactor watches and stores the
 active challenge *as it stood immediately before that roll* in the `rollUndoSnapshots` world
 setting, keyed by actor. Like `registerHitches()` and `registerParadox()`, it is registered before
 `registerRollToBeat()` and reads `getActiveChallenge()` synchronously, because rollToBeat's own
 handler for that hook is what advances the thing being snapshotted.
 
-Each roll also stamps its chat card with `flags.cortexprime.roll = { actorId, rolledAt }`. Chat
+Each roll also stamps its chat card with `flags.cortexprime-ext.roll = { actorId, rolledAt }`. Chat
 messages otherwise carry no handle back to a roll at all, and the card is deliberately created
 *before* the roll record exists, so `rollDice.js` generates the `rolledAt` up front and passes it to
 both.
@@ -28,7 +28,7 @@ actually does is button-driven; see `docs/AUTOMATION.md`.
 ## Hitches
 
 Whenever a player's roll is recorded (`recordRollResult` in `module/scripts/rollToBeat.js` writes
-`flags.cortexprime.lastRoll` on their character) during an active Test, Contest or Group Challenge,
+`flags.cortexprime-ext.lastRoll` on their character) during an active Test, Contest or Group Challenge,
 and any die in that roll came up 1, the **Hitches** dialog opens on the active GM's client.
 
 The individual die faces travel on the roll record itself — `rollDice.js` already separates natural
@@ -227,7 +227,7 @@ Player confirms.
 The GM's client is the only one that knows how many hitches were spent on Step up Paradox, and the
 only one that can safely snapshot the opposition's effect dice before the challenge advances, so it
 does all the calculation. It then hands the finished result to the Player on a
-`flags.cortexprime.pendingParadox` flag; the Player's client renders the dialog and applies the
+`flags.cortexprime-ext.pendingParadox` flag; the Player's client renders the dialog and applies the
 outcome to its own actor. The Hitches dialog announces its Paradox step count via a
 `cortexprimeHitchesResolved` hook when it's confirmed — and also when it's closed without
 confirming, with zero steps, so that dismissing it can't silently suppress a Paradox that the rules

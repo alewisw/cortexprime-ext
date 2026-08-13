@@ -1,6 +1,6 @@
 {{#with (?? temporary value) as |effective|}}
   {{#if (ne effective ../value)}}
-    {{> (concat "systems/cortexprime/templates/partials/dice/d" effective ".html")
+    {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" effective ".html")
       number=effective
       type='temporary'
     }}

@@ -22,7 +22,7 @@ const REALITY_REINFORCEMENT_SOURCE = 'Reality Reinforcement'
 
 const CHALLENGE_TYPE_LABEL_KEYS = { test: 'Test', contest: 'Contest', group: 'Group' }
 
-const getMageChallengeState = () => game.settings.get('cortexprime', 'mageChallengeState')
+const getMageChallengeState = () => game.settings.get('cortexprime-ext', 'mageChallengeState')
 
 const getMyId = () => game.user.isGM ? 'gm' : game.user.character?.id
 
@@ -52,7 +52,7 @@ const resizeToFitContent = app => {
 const injectChallengeBox = async (app, html) => {
   if (!game.user.isGM) return
 
-  const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')
+  const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
   const activeChallenge = getActiveChallenge()
 
   if (!shouldShowChallengeBox(customRuleSet, activeChallenge)) return
@@ -65,7 +65,7 @@ const injectChallengeBox = async (app, html) => {
   const { magick, realityReinforcement } = getMageChallengeState()
 
   const rendered = await foundry.applications.handlebars.renderTemplate(
-    'systems/cortexprime/templates/partials/mage/challenge-box.html',
+    'systems/cortexprime-ext/templates/partials/mage/challenge-box.html',
     { magick, realityReinforcement }
   )
 
@@ -75,12 +75,12 @@ const injectChallengeBox = async (app, html) => {
 
   $box.find('.mage-magick-radio').on('change', async event => {
     const state = getMageChallengeState()
-    await game.settings.set('cortexprime', 'mageChallengeState', { ...state, magick: event.currentTarget.value })
+    await game.settings.set('cortexprime-ext', 'mageChallengeState', { ...state, magick: event.currentTarget.value })
   })
 
   $box.find('.mage-reality-reinforcement-radio').on('change', async event => {
     const state = getMageChallengeState()
-    await game.settings.set('cortexprime', 'mageChallengeState', { ...state, realityReinforcement: event.currentTarget.value })
+    await game.settings.set('cortexprime-ext', 'mageChallengeState', { ...state, realityReinforcement: event.currentTarget.value })
   })
 
   resizeToFitContent(app)
@@ -91,7 +91,7 @@ const injectChallengeBox = async (app, html) => {
 // None, and a Powers trait required whenever it's anything else ----
 
 const injectPoolValidation = (app, html) => {
-  const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')
+  const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
 
   if (!isMageRuleSetActive(customRuleSet)) return
 
@@ -104,8 +104,8 @@ const injectPoolValidation = (app, html) => {
   if (!myId || !rollerIds.includes(myId)) return
 
   const { magick } = getMageChallengeState()
-  const mageSettings = game.settings.get('cortexprime', 'mageSettings')
-  const poolEntries = flattenPoolEntries(game.user.getFlag('cortexprime', 'dicePool')?.pool)
+  const mageSettings = game.settings.get('cortexprime-ext', 'mageSettings')
+  const poolEntries = flattenPoolEntries(game.user.getFlag('cortexprime-ext', 'dicePool')?.pool)
 
   const reasonKey = computeMagePoolInvalidReason(magick, poolEntries, mageSettings.powersTraitSetId)
 
@@ -138,7 +138,7 @@ const injectPoolValidation = (app, html) => {
 // the active Magick, e.g. "Vulgar Witnessed Magick" under "Test — Roll Now: ..." ----
 
 const injectMagickChallengeLabel = (app, html) => {
-  const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')
+  const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
 
   if (!isMageRuleSetActive(customRuleSet)) return
 
@@ -176,7 +176,7 @@ const injectMagickChallengeLabel = (app, html) => {
 // ---- GM-only: keep the Reality Reinforcement trait's die in the right pool(s) ----
 
 const getLinkedLocationActor = () => {
-  const actorId = game.scenes?.active?.getFlag('cortexprime', 'linkedActorId')
+  const actorId = game.scenes?.active?.getFlag('cortexprime-ext', 'linkedActorId')
 
   return actorId ? game.actors.get(actorId) : null
 }
@@ -205,7 +205,7 @@ const getRealityReinforcementDiceValue = mageSettings => {
 const syncPoolSource = async (user, action, diceValue) => {
   if (!user || action === 'none') return
 
-  const currentDice = user.getFlag('cortexprime', 'dicePool')
+  const currentDice = user.getFlag('cortexprime-ext', 'dicePool')
 
   if (!currentDice) return
 
@@ -225,18 +225,18 @@ const syncPoolSource = async (user, action, diceValue) => {
     })
   }
 
-  await user.setFlag('cortexprime', 'dicePool', null)
-  await user.setFlag('cortexprime', 'dicePool', currentDice)
+  await user.setFlag('cortexprime-ext', 'dicePool', null)
+  await user.setFlag('cortexprime-ext', 'dicePool', currentDice)
 }
 
 const syncRealityReinforcement = async () => {
   if (game.user !== game.users.activeGM) return
 
-  const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')
+  const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
 
   if (!isMageRuleSetActive(customRuleSet)) return
 
-  const mageSettings = game.settings.get('cortexprime', 'mageSettings')
+  const mageSettings = game.settings.get('cortexprime-ext', 'mageSettings')
   const activeChallenge = getActiveChallenge()
   const targets = getRollToBeatTargets()
   const rollerIds = getCurrentRollerIds(activeChallenge, targets, hasInitiatorRolled(activeChallenge))
@@ -262,7 +262,7 @@ const syncRealityReinforcement = async () => {
 }
 
 export const registerMageAscension = () => {
-  game.settings.register('cortexprime', 'mageChallengeState', {
+  game.settings.register('cortexprime-ext', 'mageChallengeState', {
     scope: 'world',
     config: false,
     type: Object,
@@ -276,10 +276,10 @@ export const registerMageAscension = () => {
   })
 
   const settingKeys = [
-    'cortexprime.activeChallenge',
-    'cortexprime.lastGmRoll',
-    'cortexprime.mageChallengeState',
-    'cortexprime.customRuleSet'
+    'cortexprime-ext.activeChallenge',
+    'cortexprime-ext.lastGmRoll',
+    'cortexprime-ext.mageChallengeState',
+    'cortexprime-ext.customRuleSet'
   ]
 
   Hooks.on('updateSetting', async setting => {
@@ -290,7 +290,7 @@ export const registerMageAscension = () => {
   })
 
   Hooks.on('updateActor', async (actor, data) => {
-    if (foundry.utils.hasProperty(data, 'flags.cortexprime.lastRoll') || actor.id === getLinkedLocationActor()?.id) {
+    if (foundry.utils.hasProperty(data, 'flags.cortexprime-ext.lastRoll') || actor.id === getLinkedLocationActor()?.id) {
       await syncRealityReinforcement()
       refreshDicePool()
     }
@@ -311,8 +311,8 @@ export const registerMageAscension = () => {
   // only refresh once the second call lands the real value.
   Hooks.on('updateUser', (user, data) => {
     if (user.id !== game.user.id) return
-    if (!foundry.utils.hasProperty(data, 'flags.cortexprime.dicePool')) return
-    if (foundry.utils.getProperty(data, 'flags.cortexprime.dicePool') === null) return
+    if (!foundry.utils.hasProperty(data, 'flags.cortexprime-ext.dicePool')) return
+    if (foundry.utils.getProperty(data, 'flags.cortexprime-ext.dicePool') === null) return
 
     refreshDicePool()
   })

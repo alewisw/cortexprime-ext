@@ -11,9 +11,9 @@
     "verified": "13.342"
   },
   "description": "Cortex Prime System WARNING: This is currently in Beta. Which means there is a risk of breaking changes with every update. More features are being planned and worked on. It is currently playable, however, expect bugs and you may need to use the features that currently exist in different ways to make up for a feature that is not yet released.",
-  "download": "https://github.com/Secular12/cortexprime/archive/refs/tags/v0.3.0.zip",
+  "download": "https://github.com/alewisw/cortexprime-ext/archive/refs/tags/v0.3.0.zip",
   "esmodules": ["cortexprime.js"],
-  "id": "cortexprime",
+  "id": "cortexprime-ext",
   "grid": {
     "distance": 5,
     "units": "ft"
@@ -25,11 +25,11 @@
       "path": "lang/en.json"
     }
   ],
-  "manifest": "https://raw.githubusercontent.com/Secular12/cortexprime/master/system.json",
+  "manifest": "https://raw.githubusercontent.com/alewisw/cortexprime-ext/main/system.json",
   "packs": [],
   "scripts": [],
   "styles": ["css/cortexprime.css"],
-  "title": "Cortex Prime",
-  "url": "https://github.com/Secular12/cortexprime",
+  "title": "Cortex Prime Extended",
+  "url": "https://github.com/alewisw/cortexprime-ext",
   "version": "0.3.0"
 }

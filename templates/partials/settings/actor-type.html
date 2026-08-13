@@ -5,7 +5,7 @@
       <input class="breadcrumb-name-change input-cpt" type="text" data-target="{{concat 'actorType-' actorTypeIndex}}" name="actorTypes.{{actorTypeIndex}}.name" value="{{actorType.name}}">
     </div>
     <div class="flex-col">
-      {{> "systems/cortexprime/templates/partials/remove-button.html"
+      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
         itemKey=actorTypeIndex
         itemName=actorType.name
         setting="actorTypes"
@@ -106,7 +106,7 @@
           <li class="pa-1 flex flex-ac flex-jsb relative-section">
             <div class="{{ternary (eq (mod traitSetIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
             <div class="flex-col flex-row flex-ac">
-              {{> "systems/cortexprime/templates/partials/reorder.html"
+              {{> "systems/cortexprime-ext/templates/partials/reorder.html"
                 class="flex-col pa-0"
                 path=(concat ../actorTypeIndex '.traitSets')
                 currentIndex=traitSetIndex
@@ -158,7 +158,7 @@
           <li class="pa-1 flex flex-ac flex-jsb relative-section">
             <div class="{{ternary (eq (mod simpleTraitIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
             <div class="flex-col flex-row flex-ac">
-              {{> "systems/cortexprime/templates/partials/reorder.html"
+              {{> "systems/cortexprime-ext/templates/partials/reorder.html"
                 class="flex-col pa-0"
                 path=(concat ../actorTypeIndex '.simpleTraits')
                 currentIndex=simpleTraitIndex
@@ -213,7 +213,7 @@
           <li class="pa-1 flex flex-ac flex-jsb relative-section">
             <div class="{{ternary (eq (mod tabIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
             <div class="flex-col flex-row flex-ac">
-              {{> "systems/cortexprime/templates/partials/reorder.html"
+              {{> "systems/cortexprime-ext/templates/partials/reorder.html"
                 class="flex-col pa-0"
                 path=(concat ../actorTypeIndex '.additionalTabs')
                 currentIndex=tabIndex
@@ -222,7 +222,7 @@
               <input class="input-cpt flex-col" type="text" name="actorTypes.{{../actorTypeIndex}}.additionalTabs.{{tabIndex}}.name" value="{{additionalTab.name}}">
             </div>
             <div class="flex-col px-0">
-              {{> "systems/cortexprime/templates/partials/remove-button.html"
+              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                 group=(concat ../actorTypeIndex '.additionalTabs')
                 itemKey=tabIndex
                 itemName=additionalTab.name

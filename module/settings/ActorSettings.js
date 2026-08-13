@@ -10,7 +10,7 @@ export default class ActorSettings extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'actor-settings',
-      template: 'systems/cortexprime/templates/actor/settings.html',
+      template: 'systems/cortexprime-ext/templates/actor/settings.html',
       title: localizer('ActorSettings'),
       classes: ['cortexprime', 'actor-settings'],
       width: 600,
@@ -25,10 +25,10 @@ export default class ActorSettings extends FormApplication {
   }
 
   getData() {
-    const breadcrumbs = game.settings.get('cortexprime', 'actorBreadcrumbs') ?? {}
+    const breadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs') ?? {}
 
     return {
-      actorTypes: game.settings.get('cortexprime', 'actorTypes'),
+      actorTypes: game.settings.get('cortexprime-ext', 'actorTypes'),
       breadcrumbs,
       goBack: breadcrumbs[getLength(breadcrumbs ?? {}) - 2]?.target ?? 0
     }
@@ -37,9 +37,9 @@ export default class ActorSettings extends FormApplication {
   async _updateObject(event, formData) {
     if (!$(event.currentTarget).hasClass('die-select')) {
       const expandedFormData = foundry.utils.expandObject(formData)
-      const currentActorTypes = game.settings.get('cortexprime', 'actorTypes') ?? {}
+      const currentActorTypes = game.settings.get('cortexprime-ext', 'actorTypes') ?? {}
 
-      await game.settings.set('cortexprime', 'actorTypes', foundry.utils.mergeObject(currentActorTypes, expandedFormData.actorTypes))
+      await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(currentActorTypes, expandedFormData.actorTypes))
 
       this.render(true)
     }
@@ -69,7 +69,7 @@ export default class ActorSettings extends FormApplication {
 
   async _addNewActorType(event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const newKey = getLength(source ?? {})
 
     const newActorType = {
@@ -80,7 +80,7 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime', 'actorTypes', foundry.utils.mergeObject(source, newActorType))
+    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newActorType))
     await this.changeView(localizer('NewActorType'), `actorType-${newKey}`)
     this.render(true)
   }
@@ -89,7 +89,7 @@ export default class ActorSettings extends FormApplication {
   // which is edited inline in the list row itself.
   async _addAdditionalTab (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const actorTypeKey = $(event.currentTarget).data('actorType')
     const newKey = getLength(source[actorTypeKey]?.additionalTabs || {})
 
@@ -104,7 +104,7 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime', 'actorTypes', foundry.utils.mergeObject(source, newAdditionalTab))
+    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newAdditionalTab))
     this.render(true)
   }
 
@@ -112,7 +112,7 @@ export default class ActorSettings extends FormApplication {
     event.preventDefault()
     const $addButton = $(event.currentTarget)
     const path = $addButton.data('path')
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentDescriptors = foundry.utils.getProperty(source, path) || {}
 
     foundry.utils.setProperty(source, path,
@@ -124,7 +124,7 @@ export default class ActorSettings extends FormApplication {
         }
       })
 
-    await game.settings.set('cortexprime', 'actorTypes', source)
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
     this.render(true)
   }
 
@@ -132,7 +132,7 @@ export default class ActorSettings extends FormApplication {
     event.preventDefault()
     const $addButton = $(event.currentTarget)
     const path = $addButton.data('path')
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentSfx = foundry.utils.getProperty(source, path) || {}
 
     foundry.utils.setProperty(source, path,
@@ -145,7 +145,7 @@ export default class ActorSettings extends FormApplication {
         }
       })
 
-    await game.settings.set('cortexprime', 'actorTypes', source)
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
     this.render(true)
   }
 
@@ -153,7 +153,7 @@ export default class ActorSettings extends FormApplication {
     event.preventDefault()
     const $addButton = $(event.currentTarget)
     const path = $addButton.data('path')
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentSubTraits = foundry.utils.getProperty(source, path) || {}
 
 
@@ -166,13 +166,13 @@ export default class ActorSettings extends FormApplication {
         }
       })
 
-    await game.settings.set('cortexprime', 'actorTypes', source)
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
     this.render(true)
   }
 
   async _addSimpleTrait (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const actorTypeKey = $(event.currentTarget).data('actorType')
     const newKey = getLength(source[actorTypeKey]?.simpleTraits || {})
 
@@ -196,14 +196,14 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime', 'actorTypes', foundry.utils.mergeObject(source, newSimpleTrait))
+    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newSimpleTrait))
     await this.changeView(localizer('NewSimpleTrait'), `simpleTrait-${actorTypeKey}-${newKey}`)
     this.render(true)
   }
 
   async _addTrait (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const { actorType, path, traitSet } = event.currentTarget.dataset
     const currentTraits = foundry.utils.getProperty(source, `${path}.${traitSet}.traits`)
     const newKey = getLength(currentTraits || {})
@@ -223,14 +223,14 @@ export default class ActorSettings extends FormApplication {
 
     foundry.utils.setProperty(source, `${path}.${traitSet}.traits`, newTraits)
 
-    await game.settings.set('cortexprime', 'actorTypes', source)
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
     await this.changeView(localizer('NewTrait'), `trait-${actorType}-${traitSet}-${newKey}`)
     this.render(true)
   }
 
   async _addTraitSet (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const actorTypeKey = $(event.currentTarget).data('actorType')
     const newKey = getLength(source[actorTypeKey]?.traitSets || {})
 
@@ -245,13 +245,13 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime', 'actorTypes', foundry.utils.mergeObject(source, newTraitSet))
+    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newTraitSet))
     await this.changeView(localizer('NewTraitSet'), `traitSet-${actorTypeKey}-${newKey}`)
     this.render(true)
   }
 
   async _breadcrumbChange (event) {
-    const currentBreadcrumbs = game.settings.get('cortexprime', 'actorBreadcrumbs')
+    const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
 
     const target = $(event.currentTarget).data('to')
 
@@ -268,7 +268,7 @@ export default class ActorSettings extends FormApplication {
       }
     }, {})
 
-    await game.settings.set('cortexprime', 'actorBreadcrumbs', value)
+    await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', value)
 
     await this._onSubmit(event)
     this.render(true)
@@ -277,9 +277,9 @@ export default class ActorSettings extends FormApplication {
   async _breadcrumbNameChange (event) {
     const $nameField = $(event.currentTarget)
     const target = $nameField.data('target')
-    const currentBreadcrumbs = game.settings.get('cortexprime', 'actorBreadcrumbs')
+    const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
 
-    await game.settings.set('cortexprime', 'actorBreadcrumbs', {
+    await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', {
       ...objectMapValues(currentBreadcrumbs, breadcrumb => {
         if (breadcrumb.target === target) {
           breadcrumb.name = $nameField.val()
@@ -293,7 +293,7 @@ export default class ActorSettings extends FormApplication {
   async _changeDefaultImage (event) {
     event.preventDefault()
     const { actorTypeIndex } = event.currentTarget.dataset
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentImage = source[actorTypeIndex]?.defaultImage || 'icons/svg/mystery-man.svg'
     const _this = this
 
@@ -303,7 +303,7 @@ export default class ActorSettings extends FormApplication {
       async callback (newImage) {
         source[actorTypeIndex].defaultImage = newImage
 
-        await game.settings.set('cortexprime', 'actorTypes', source)
+        await game.settings.set('cortexprime-ext', 'actorTypes', source)
 
         _this.render()
       }
@@ -313,9 +313,9 @@ export default class ActorSettings extends FormApplication {
   }
 
   async changeView (name, target) {
-    const currentBreadcrumbs = game.settings.get('cortexprime', 'actorBreadcrumbs')
+    const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
 
-    await game.settings.set('cortexprime', 'actorBreadcrumbs', {
+    await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', {
       ...objectMapValues(currentBreadcrumbs, breadcrumb => {
         breadcrumb.active = false
         return breadcrumb
@@ -334,7 +334,7 @@ export default class ActorSettings extends FormApplication {
   async _duplicateItem (event) {
     event.preventDefault()
     const { id, path } = event.currentTarget.dataset
-    let source = game.settings.get('cortexprime', 'actorTypes')
+    let source = game.settings.get('cortexprime-ext', 'actorTypes')
     const targetGroup = path ? foundry.utils.getProperty(source, path) : source
     const newKey = getLength(targetGroup ?? {})
     const target = objectFindValue(targetGroup, item => item.id === id)
@@ -353,13 +353,13 @@ export default class ActorSettings extends FormApplication {
       source = foundry.utils.mergeObject(source, newTarget)
     }
 
-    await game.settings.set('cortexprime', 'actorTypes', source)
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
     this.render(true)
   }
 
   async _newDie (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const { target: path } = event.currentTarget.dataset
     const currentDice = foundry.utils.getProperty(source, path) || {}
     const values = currentDice.value ?? {}
@@ -367,13 +367,13 @@ export default class ActorSettings extends FormApplication {
     const newValue = newKey > 0 ? values[newKey - 1] : '8'
 
     foundry.utils.setProperty(source, `${path}.value`, { ...values, [newKey]: newValue })
-    await game.settings.set('cortexprime', 'actorTypes', source)
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
     this.render(true)
   }
 
   async _onDieChange (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'actorTypes')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const $dieSelect = $(event.currentTarget)
     const target = $dieSelect.data('target')
     const targetKey = $dieSelect.data('key')
@@ -386,7 +386,7 @@ export default class ActorSettings extends FormApplication {
       foundry.utils.setProperty(source, `${target}.value`, objectMapValues(currentDiceValues, (value, index) => parseInt(index, 10) === parseInt(targetKey, 10) ? targetValue : value))
     }
 
-    await game.settings.set('cortexprime', 'actorTypes', source)
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
 
     await this.render(true)
   }
@@ -395,7 +395,7 @@ export default class ActorSettings extends FormApplication {
     event.preventDefault()
 
     if (event.button === 2) {
-      const source = game.settings.get('cortexprime', 'actorTypes')
+      const source = game.settings.get('cortexprime-ext', 'actorTypes')
       const $dieSelect = $(event.currentTarget)
       const target = $dieSelect.data('target')
       const targetKey = $dieSelect.data('key')
@@ -403,7 +403,7 @@ export default class ActorSettings extends FormApplication {
 
       foundry.utils.setProperty(source, `${target}.value`, objectReindexFilter(currentDiceValues, (_, index) => parseInt(index, 10) !== parseInt(targetKey, 10)))
 
-      await game.settings.set('cortexprime', 'actorTypes', source)
+      await game.settings.set('cortexprime-ext', 'actorTypes', source)
 
       await this.render(true)
     }
@@ -417,7 +417,7 @@ export default class ActorSettings extends FormApplication {
 
 Hooks.on('closeActorSettings', async () => {
   await game.settings.set(
-    'cortexprime',
+    'cortexprime-ext',
     'actorBreadcrumbs',
     {
       0: {

@@ -64,7 +64,7 @@ export const preloadHandlebarsTemplates = async function () {
     'value-types/sub-traits',
     'value-types/text',
   ]
-    .map(template => `systems/cortexprime/templates/partials/${template}.html`)
+    .map(template => `systems/cortexprime-ext/templates/partials/${template}.html`)
 
   return foundry.applications.handlebars.loadTemplates(templatePaths)
 }

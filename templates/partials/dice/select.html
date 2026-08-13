@@ -4,7 +4,7 @@
       <div class="flex flex-ac">
         <div class="dice-container">
           <div class="die-container">
-            {{> (concat "systems/cortexprime/templates/partials/dice/d" dieRating ".html")
+            {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" dieRating ".html")
               number=dieRating
               type='die-rating'
             }}
@@ -15,11 +15,11 @@
             data-min="{{?? ../minDice 0}}"
             data-target="{{or ../selectName ../path}}"
           >
-            {{> "systems/cortexprime/templates/partials/dice/select-options.html" max=(?? ../max 12) min=(?? ../min 0) selected=dieRating}}
+            {{> "systems/cortexprime-ext/templates/partials/dice/select-options.html" max=(?? ../max 12) min=(?? ../min 0) selected=dieRating}}
           </select>
         </div>
         {{#if ../showTemporary}}
-          {{> "systems/cortexprime/templates/partials/dice/temporary-controls.html"
+          {{> "systems/cortexprime-ext/templates/partials/dice/temporary-controls.html"
             value=dieRating
             temporary=(lookup ../temporaryValue index)
             target=(or ../selectName ../path)

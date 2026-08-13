@@ -19,7 +19,7 @@
           {{#each rows as |row|}}
             <div class="die-icon-wrapper mx-1 my-1">
               <div class="d{{row.faces}}{{ternary row.isHitch ' hitch' ''}}">
-                {{> (concat "systems/cortexprime/templates/partials/dice/d" row.faces ".html")
+                {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" row.faces ".html")
                   number=row.result
                   type=(ternary row.isHitch 'hitch' 'unchosen')
                 }}
@@ -41,7 +41,7 @@
               <div class="flex-col col-2">
                 <div class="die-icon-wrapper">
                   <div class="d{{row.faces}} hitch">
-                    {{> (concat "systems/cortexprime/templates/partials/dice/d" row.faces ".html")
+                    {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" row.faces ".html")
                       number=row.result
                       type='hitch'
                     }}

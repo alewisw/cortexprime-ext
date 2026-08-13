@@ -11,7 +11,7 @@ export default class PlotPointUsesSettings extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'plot-point-uses-settings',
-      template: 'systems/cortexprime/templates/settings/plot-point-uses.html',
+      template: 'systems/cortexprime-ext/templates/settings/plot-point-uses.html',
       title: localizer('PlotPointUsesSettings'),
       classes: ['cortexprime', 'plot-point-uses-settings'],
       width: 500,
@@ -24,7 +24,7 @@ export default class PlotPointUsesSettings extends FormApplication {
   }
 
   getData () {
-    const plotPointUses = game.settings.get('cortexprime', 'plotPointUses') ?? {}
+    const plotPointUses = game.settings.get('cortexprime-ext', 'plotPointUses') ?? {}
 
     return {
       general: plotPointUses.general ?? {},
@@ -34,9 +34,9 @@ export default class PlotPointUsesSettings extends FormApplication {
 
   async _updateObject (event, formData) {
     const expanded = foundry.utils.expandObject(formData)
-    const current = game.settings.get('cortexprime', 'plotPointUses') ?? {}
+    const current = game.settings.get('cortexprime-ext', 'plotPointUses') ?? {}
 
-    await game.settings.set('cortexprime', 'plotPointUses', foundry.utils.mergeObject(current, expanded))
+    await game.settings.set('cortexprime-ext', 'plotPointUses', foundry.utils.mergeObject(current, expanded))
 
     this.render(true)
   }
@@ -53,11 +53,11 @@ export default class PlotPointUsesSettings extends FormApplication {
     event.preventDefault()
 
     const { group } = event.currentTarget.dataset
-    const current = game.settings.get('cortexprime', 'plotPointUses') ?? {}
+    const current = game.settings.get('cortexprime-ext', 'plotPointUses') ?? {}
     const currentGroup = current[group] ?? {}
     const newKey = getLength(currentGroup)
 
-    await game.settings.set('cortexprime', 'plotPointUses', {
+    await game.settings.set('cortexprime-ext', 'plotPointUses', {
       ...current,
       [group]: {
         ...currentGroup,
@@ -82,7 +82,7 @@ export default class PlotPointUsesSettings extends FormApplication {
     })
 
     if (confirmed) {
-      await game.settings.set('cortexprime', 'plotPointUses', defaultPlotPointUses)
+      await game.settings.set('cortexprime-ext', 'plotPointUses', defaultPlotPointUses)
       this.render(true)
     }
   }

@@ -4,7 +4,7 @@ import { FloatingPanel } from '../applications/FloatingPanel.js'
 import { localizer } from './foundryHelpers.js'
 
 const getDoomPoolActor = () => {
-  const actorId = game.settings.get('cortexprime', 'doomPoolActorId')
+  const actorId = game.settings.get('cortexprime-ext', 'doomPoolActorId')
   return actorId ? game.actors.get(actorId) : null
 }
 
@@ -29,7 +29,7 @@ export const registerDoomPool = () => {
   })
 
   Hooks.on('updateSetting', setting => {
-    if (setting.key === 'cortexprime.doomPoolActorId') {
+    if (setting.key === 'cortexprime-ext.doomPoolActorId') {
       game.cortexprime.FloatingPanel?.refresh()
     }
   })

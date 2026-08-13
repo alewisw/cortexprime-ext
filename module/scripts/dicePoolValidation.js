@@ -11,7 +11,7 @@ export const flattenPoolEntries = pool =>
   Object.values(pool ?? {}).flatMap(sourceEntries => Object.values(sourceEntries ?? {}))
 
 export const getAllTraitSets = () =>
-  Object.values(game.settings.get('cortexprime', 'actorTypes'))
+  Object.values(game.settings.get('cortexprime-ext', 'actorTypes'))
     .flatMap(actorType => Object.values(actorType.traitSets ?? {}))
 
 const traitLabelsFor = (poolEntries, traitSetId) =>

@@ -20,7 +20,7 @@
       </div>
     {{else}}
       {{#if (and (or data.system.actorType.traitSetEdit (eq data.system.actorType.traitSetEdit 0)) owner)}}
-        {{> "systems/cortexprime/templates/partials/actor-sheet/trait-set-edit.html"
+        {{> "systems/cortexprime-ext/templates/partials/actor-sheet/trait-set-edit.html"
           data=data.system.actorType
           traitSet=(lookup data.system.actorType.traitSets data.system.actorType.traitSetEdit)
           traitSetIndex=data.system.actorType.traitSetEdit
@@ -38,14 +38,14 @@
         <div class="sheet-body">
           <article class="tab sets active" data-group="primary" data-tab="traits">
             <div class="flex-row">
-              {{> "systems/cortexprime/templates/partials/actor-sheet/sidebar.html"
+              {{> "systems/cortexprime-ext/templates/partials/actor-sheet/sidebar.html"
                 actor=actor
                 actorType=data.system.actorType
                 pp=data.system.pp
               }}
               <section class="flex-col col-9">
                 {{#if data.system.actorType.traitSets.[0]}}
-                  {{> "systems/cortexprime/templates/partials/actor-sheet/trait-sets.html"
+                  {{> "systems/cortexprime-ext/templates/partials/actor-sheet/trait-sets.html"
                     data=data.system.actorType
                     traitSets=data.system.actorType.traitSets
                     path="system.actorType.traitSets"
@@ -54,7 +54,7 @@
                   <div class="section-cpt">
                     <div class="section-image"></div>
                     <div class="section-content">
-                      {{> "systems/cortexprime/templates/partials/actor-sheet/simple-traits.html"
+                      {{> "systems/cortexprime-ext/templates/partials/actor-sheet/simple-traits.html"
                         data=data.system.actorType
                         simpleTraits=data.system.actorType.simpleTraits
                         path="system.actorType.simpleTraits"
@@ -66,7 +66,7 @@
                   <div class="separator-cpt my-4"></div>
                 {{/if}}
                 {{#if (or data.system.actorType.hasAssets data.system.actorType.hasComplications)}}
-                  {{> "systems/cortexprime/templates/partials/actor-sheet/temporary-traits.html"
+                  {{> "systems/cortexprime-ext/templates/partials/actor-sheet/temporary-traits.html"
                     data=data.system.actorType
                     path="system.actorType"
                   }}
@@ -75,7 +75,7 @@
             </div>
           </article>
           {{#each data.system.actorType.additionalTabs as |additionalTab tabIndex|}}
-            {{> "systems/cortexprime/templates/partials/actor-sheet/additional-tab.html"
+            {{> "systems/cortexprime-ext/templates/partials/actor-sheet/additional-tab.html"
               tab=additionalTab
               tabIndex=tabIndex
               owner=owner

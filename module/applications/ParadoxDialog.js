@@ -16,7 +16,7 @@ export class ParadoxDialog extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'paradox-dialog',
-      template: 'systems/cortexprime/templates/dialog/paradox.html',
+      template: 'systems/cortexprime-ext/templates/dialog/paradox.html',
       title: localizer('Paradox'),
       classes: ['cortexprime', 'paradox-dialog'],
       width: 460,
@@ -28,7 +28,7 @@ export class ParadoxDialog extends FormApplication {
   }
 
   async getData () {
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     return {

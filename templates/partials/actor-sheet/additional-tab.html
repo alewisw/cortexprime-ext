@@ -28,7 +28,7 @@
             <input class="input-cpt" type="text" name="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.label'}}" value="{{note.label}}">
           </div>
           <div class="flex-col">
-            {{> "systems/cortexprime/templates/partials/remove-button.html"
+            {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
               path=(concat 'system.actorType.additionalTabs.' ../tabIndex)
               target='notes'
               itemKey=noteIndex

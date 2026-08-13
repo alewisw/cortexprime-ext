@@ -5,7 +5,7 @@
       <input class="breadcrumb-name-change input-cpt" data-target="{{concat 'traitSet-' actorTypeIndex '-' traitSetIndex}}" name="{{concat 'actorTypes.' path '.' traitSetIndex '.label'}}" type="text" value="{{traitSet.label}}">
     </div>
     <div class="flex-col">
-      {{> "systems/cortexprime/templates/partials/remove-button.html"
+      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
         group=path
         itemKey=traitSetIndex
         itemName=traitSet.label
@@ -231,7 +231,7 @@
         <li class="pa-1 flex flex-ac flex-jsb relative-section">
           <div class="{{ternary (eq (mod traitIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
           <div class="flex-col flex-row flex-ac">
-            {{> "systems/cortexprime/templates/partials/reorder.html"
+            {{> "systems/cortexprime-ext/templates/partials/reorder.html"
               class="flex-col pa-0"
               path=(concat ../path '.' ../traitSetIndex '.traits')
               currentIndex=traitIndex

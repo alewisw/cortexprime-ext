@@ -25,14 +25,14 @@ import { isMageRuleSetActive } from './mageAscensionLogic.js'
 
 const CHALLENGE_TYPES = ['test', 'contest', 'group']
 
-const getMageSettings = () => game.settings.get('cortexprime', 'mageSettings')
+const getMageSettings = () => game.settings.get('cortexprime-ext', 'mageSettings')
 
 const getMagick = () => {
-  const customRuleSet = game.settings.get('cortexprime', 'customRuleSet')
+  const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
 
   if (!isMageRuleSetActive(customRuleSet)) return null
 
-  return game.settings.get('cortexprime', 'mageChallengeState')?.magick ?? null
+  return game.settings.get('cortexprime-ext', 'mageChallengeState')?.magick ?? null
 }
 
 // ---- Simple Trait resolution ----
@@ -58,7 +58,7 @@ const getSimpleTrait = (actor, traitId) => {
 }
 
 const getLinkedLocationActor = () => {
-  const actorId = game.scenes?.active?.getFlag('cortexprime', 'linkedActorId')
+  const actorId = game.scenes?.active?.getFlag('cortexprime-ext', 'linkedActorId')
 
   return actorId ? game.actors.get(actorId) : null
 }
@@ -149,13 +149,13 @@ const resolveParadox = async (context, paradoxSteps) => {
 
   // Two-step write: a plain merge would leave a previous roll's finalTrauma in place when this one
   // has none. The Player-side listener skips the transient null.
-  await actor.setFlag('cortexprime', 'pendingParadox', null)
-  await actor.setFlag('cortexprime', 'pendingParadox', pending)
+  await actor.setFlag('cortexprime-ext', 'pendingParadox', null)
+  await actor.setFlag('cortexprime-ext', 'pendingParadox', pending)
 }
 
 const onRollRecorded = async (actor, data) => {
   if (game.user !== game.users.activeGM) return
-  if (!foundry.utils.hasProperty(data, 'flags.cortexprime.lastRoll')) return
+  if (!foundry.utils.hasProperty(data, 'flags.cortexprime-ext.lastRoll')) return
 
   const magick = getMagick()
 
@@ -167,7 +167,7 @@ const onRollRecorded = async (actor, data) => {
 
   if (!CHALLENGE_TYPES.includes(challenge.type)) return
 
-  const record = foundry.utils.getProperty(data, 'flags.cortexprime.lastRoll')
+  const record = foundry.utils.getProperty(data, 'flags.cortexprime-ext.lastRoll')
 
   if (!record?.rolledAt || handledRolls[actor.id] === record.rolledAt) return
 
@@ -223,9 +223,9 @@ const onHitchesResolved = async ({ actorId, rolledAt, paradoxSteps }) => {
 const handledParadox = {}
 
 const onPendingParadox = async (actor, data) => {
-  if (!foundry.utils.hasProperty(data, 'flags.cortexprime.pendingParadox')) return
+  if (!foundry.utils.hasProperty(data, 'flags.cortexprime-ext.pendingParadox')) return
 
-  const pending = foundry.utils.getProperty(data, 'flags.cortexprime.pendingParadox')
+  const pending = foundry.utils.getProperty(data, 'flags.cortexprime-ext.pendingParadox')
 
   // The transient null half of the two-step write above, or the clear after applying.
   if (!pending) return
@@ -245,7 +245,7 @@ export const localizeParadoxLog = log => (log ?? []).map(line => game.i18n.forma
 
 const postParadoxLog = async log => {
   const content = await foundry.applications.handlebars.renderTemplate(
-    'systems/cortexprime/templates/chat/paradox.html',
+    'systems/cortexprime-ext/templates/chat/paradox.html',
     { lines: localizeParadoxLog(log) }
   )
 
@@ -280,7 +280,7 @@ export const applyParadoxOutcome = async ({ actor, pending, limitApplied }) => {
     await postParadoxLog(pending.log)
   }
 
-  await actor.setFlag('cortexprime', 'pendingParadox', null)
+  await actor.setFlag('cortexprime-ext', 'pendingParadox', null)
 }
 
 export const registerParadox = () => {

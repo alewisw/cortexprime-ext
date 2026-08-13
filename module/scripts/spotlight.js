@@ -10,13 +10,13 @@ const getConnectedPlayerActors = () => game.users.contents
 export const registerSpotlight = () => {
   FloatingPanel.registerWidget({
     id: 'spotlight',
-    template: 'systems/cortexprime/templates/partials/floating-panel/spotlight.html',
+    template: 'systems/cortexprime-ext/templates/partials/floating-panel/spotlight.html',
     getContext: () => {
-      if (!game.settings.get('cortexprime', 'spotlightEnabled')) {
+      if (!game.settings.get('cortexprime-ext', 'spotlightEnabled')) {
         return { enabled: false }
       }
 
-      const actorId = game.settings.get('cortexprime', 'spotlightActorId')
+      const actorId = game.settings.get('cortexprime-ext', 'spotlightActorId')
 
       return {
         enabled: true,
@@ -27,13 +27,13 @@ export const registerSpotlight = () => {
     },
     activateListeners: html => {
       html.find('.spotlight-select').on('change', async event => {
-        await game.settings.set('cortexprime', 'spotlightActorId', event.currentTarget.value)
+        await game.settings.set('cortexprime-ext', 'spotlightActorId', event.currentTarget.value)
       })
     }
   })
 
   Hooks.on('updateSetting', setting => {
-    if (setting.key === 'cortexprime.spotlightActorId' || setting.key === 'cortexprime.spotlightEnabled') {
+    if (setting.key === 'cortexprime-ext.spotlightActorId' || setting.key === 'cortexprime-ext.spotlightEnabled') {
       game.cortexprime.FloatingPanel?.refresh()
     }
   })

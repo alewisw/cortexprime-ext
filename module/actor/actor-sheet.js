@@ -22,7 +22,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ['cortexprime', 'sheet', 'actor', 'actor-sheet'],
-      template: "systems/cortexprime/templates/actor/actor-sheet.html",
+      template: "systems/cortexprime-ext/templates/actor/actor-sheet.html",
       width: 960,
       height: 'auto',
       tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "traits" }]
@@ -31,7 +31,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
   async getData (options) {
     const data = super.getData(options)
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     if (this.actor.isOwner) {
@@ -45,7 +45,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
     return {
       ...data,
-      actorTypeOptions: objectMapValues(game.settings.get('cortexprime', 'actorTypes'), val => val.name),
+      actorTypeOptions: objectMapValues(game.settings.get('cortexprime-ext', 'actorTypes'), val => val.name),
       canAddToPool: this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER),
       theme,
     }
@@ -111,7 +111,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
   async _actorTypeConfirm (event) {
     event.preventDefault()
-    const actorTypes = game.settings.get('cortexprime', 'actorTypes')
+    const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
     const actorTypeIndex = $('.actor-type-select').val()
 
     const actorType = actorTypes[actorTypeIndex]
@@ -287,7 +287,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   }
 
   async _getConsumableDiceSelection (options, label) {
-    const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/dialog/consumable-dice.html', {
+    const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime-ext/templates/dialog/consumable-dice.html', {
       options,
       isOwner: game.user.isOwner
     })
@@ -498,7 +498,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     event.preventDefault()
 
     const actorData = this.actor.system.actorType
-    const actorTypeSettings = objectFindValue(game.settings.get('cortexprime', 'actorTypes'), actorType => actorType.id === actorData.id)
+    const actorTypeSettings = objectFindValue(game.settings.get('cortexprime-ext', 'actorTypes'), actorType => actorType.id === actorData.id)
 
     if (!actorTypeSettings) {
       ui.notifications.error(localizer('MissingActorTypeMessage'))

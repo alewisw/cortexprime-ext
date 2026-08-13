@@ -50,7 +50,7 @@
               <div class="flex-col flex-s-1 px-0{{ternary (or ../custom ../settings.hasLabel) ' max-50' ''}}">
                 <div class="flex flex-ac">
                   {{#if ../settings.hasDice}}
-                    {{> "systems/cortexprime/templates/partials/dice/select.html"
+                    {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
                       addToPool=true
                       consumable=../settings.consumableDice
                       dice=trait.dice.value
@@ -70,7 +70,7 @@
                   </div>
                   {{#if ../custom}}
                     <div class="flex-col pa-0">
-                      {{> "systems/cortexprime/templates/partials/remove-button.html"
+                      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                         path=../path
                         target=../target
                         itemKey=traitIndex
@@ -121,7 +121,7 @@
                 </button>
               </div>
             </div>
-            {{> "systems/cortexprime/templates/partials/value-types/sub-traits.html"
+            {{> "systems/cortexprime-ext/templates/partials/value-types/sub-traits.html"
               borderClass=(concat "b" (?? ../theme.inputBorderPosition 'b') "-" (?? ../theme.inputBorderWidth '2'))
               data=trait
               fieldPath=(concat ../path '.' ../target '.' traitIndex '.subTraits')
@@ -144,7 +144,7 @@
                 </button>
               </div>
             </div>
-            {{> "systems/cortexprime/templates/partials/value-types/descriptors.html"
+            {{> "systems/cortexprime-ext/templates/partials/value-types/descriptors.html"
               borderClass=(concat "b" (?? ../theme.inputBorderPosition 'b') "-" (?? ../theme.inputBorderWidth '2'))
               data=trait
               fieldPath=(concat ../path '.' ../target '.' traitIndex '.descriptors')
@@ -164,7 +164,7 @@
                 </button>
               </div>
             </div>
-            {{> "systems/cortexprime/templates/partials/value-types/sfx.html"
+            {{> "systems/cortexprime-ext/templates/partials/value-types/sfx.html"
               borderClass=(concat "b" (?? ../theme.inputBorderPosition 'b') "-" (?? ../theme.inputBorderWidth '2'))
               data=trait
               fieldPath=(concat ../path '.' ../target '.' traitIndex '.sfx')

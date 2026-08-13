@@ -7,13 +7,13 @@ import { localizer } from './foundryHelpers.js'
 const OWNERSHIP = CONST.DOCUMENT_OWNERSHIP_LEVELS
 
 const getLinkedActor = () => {
-  const actorId = game.scenes?.active?.getFlag('cortexprime', 'linkedActorId')
+  const actorId = game.scenes?.active?.getFlag('cortexprime-ext', 'linkedActorId')
   return actorId ? game.actors.get(actorId) : null
 }
 
 const syncDistinctionActorPermissions = async scene => {
-  const previousActorId = game.settings.get('cortexprime', 'activeDistinctionActorId')
-  const newActorId = scene?.getFlag('cortexprime', 'linkedActorId') || ''
+  const previousActorId = game.settings.get('cortexprime-ext', 'activeDistinctionActorId')
+  const newActorId = scene?.getFlag('cortexprime-ext', 'linkedActorId') || ''
 
   if (previousActorId && previousActorId !== newActorId) {
     const previousActor = game.actors.get(previousActorId)
@@ -32,7 +32,7 @@ const syncDistinctionActorPermissions = async scene => {
   }
 
   if (newActorId !== previousActorId) {
-    await game.settings.set('cortexprime', 'activeDistinctionActorId', newActorId)
+    await game.settings.set('cortexprime-ext', 'activeDistinctionActorId', newActorId)
   }
 }
 
@@ -43,7 +43,7 @@ const injectLinkedActorField = (app, html) => {
 
   if (!tab) return
 
-  const currentActorId = app.document.getFlag('cortexprime', 'linkedActorId') || ''
+  const currentActorId = app.document.getFlag('cortexprime-ext', 'linkedActorId') || ''
   const actorOptions = game.actors.contents
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(actor => `<option value="${actor.id}" ${actor.id === currentActorId ? 'selected' : ''}>${actor.name}</option>`)
@@ -54,7 +54,7 @@ const injectLinkedActorField = (app, html) => {
   fieldGroup.innerHTML = `
     <label>${localizer('LinkedDistinctionActor')}</label>
     <div class="form-fields">
-      <select name="flags.cortexprime.linkedActorId">
+      <select name="flags.cortexprime-ext.linkedActorId">
         <option value="">${localizer('None')}</option>
         ${actorOptions}
       </select>

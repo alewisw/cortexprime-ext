@@ -33,13 +33,13 @@ export const recordRollResult = async ({ total, effectDice, won, dice, poolEntri
   }
 
   if (game.user.isGM) {
-    await game.settings.set('cortexprime', 'lastGmRoll', record)
+    await game.settings.set('cortexprime-ext', 'lastGmRoll', record)
     return
   }
 
   if (game.user.character) {
     try {
-      await game.user.character.setFlag('cortexprime', 'lastRoll', record)
+      await game.user.character.setFlag('cortexprime-ext', 'lastRoll', record)
     } catch (error) {
       console.warn('CP | Could not record last roll on character', error)
     }
@@ -53,8 +53,8 @@ export const recordRollResult = async ({ total, effectDice, won, dice, poolEntri
 // settings) can safely perform this.
 const updateRecordedEffectDice = async (targetId, effectDice) => {
   if (targetId === 'gm') {
-    const record = game.settings.get('cortexprime', 'lastGmRoll')
-    await game.settings.set('cortexprime', 'lastGmRoll', { ...record, effectDice })
+    const record = game.settings.get('cortexprime-ext', 'lastGmRoll')
+    await game.settings.set('cortexprime-ext', 'lastGmRoll', { ...record, effectDice })
     return
   }
 
@@ -62,8 +62,8 @@ const updateRecordedEffectDice = async (targetId, effectDice) => {
 
   if (!actor) return
 
-  const record = actor.getFlag('cortexprime', 'lastRoll')
-  await actor.setFlag('cortexprime', 'lastRoll', { ...record, effectDice })
+  const record = actor.getFlag('cortexprime-ext', 'lastRoll')
+  await actor.setFlag('cortexprime-ext', 'lastRoll', { ...record, effectDice })
 }
 
 const withRecord = record => ({
@@ -76,7 +76,7 @@ const withRecord = record => ({
 })
 
 export const getRollToBeatTargets = () => {
-  const gmEntry = { id: 'gm', name: localizer('GM'), ...withRecord(game.settings.get('cortexprime', 'lastGmRoll')) }
+  const gmEntry = { id: 'gm', name: localizer('GM'), ...withRecord(game.settings.get('cortexprime-ext', 'lastGmRoll')) }
 
   const playerEntries = game.users.contents
     .filter(user => user.active && !user.isGM && user.character)
@@ -84,7 +84,7 @@ export const getRollToBeatTargets = () => {
     .map(actor => ({
       id: actor.id,
       name: actor.name,
-      ...withRecord(actor.getFlag('cortexprime', 'lastRoll'))
+      ...withRecord(actor.getFlag('cortexprime-ext', 'lastRoll'))
     }))
     .sort((a, b) => a.name.localeCompare(b.name))
 
@@ -99,7 +99,7 @@ export const getTargetRecord = targetId => {
 export const getTargetTotal = targetId => getTargetRecord(targetId)?.total ?? 0
 
 export const getActiveChallenge = () => {
-  const challenge = game.settings.get('cortexprime', 'activeChallenge')
+  const challenge = game.settings.get('cortexprime-ext', 'activeChallenge')
 
   return {
     type: challenge?.type ?? blankChallenge.type,
@@ -112,7 +112,7 @@ export const getActiveChallenge = () => {
 }
 
 export const setActiveChallenge = async challenge => {
-  await game.settings.set('cortexprime', 'activeChallenge', challenge)
+  await game.settings.set('cortexprime-ext', 'activeChallenge', challenge)
 }
 
 export const clearActiveChallenge = async () => {
@@ -600,7 +600,7 @@ const announceGroupInitiative = async (order, targets) => {
   const championId = order.at(-1)
   const champion = targets.find(target => target.id === championId)
 
-  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/group-initiative.html', {
+  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime-ext/templates/chat/group-initiative.html', {
     championName: champion?.name ?? '',
     targetTotal: champion?.total ?? 0,
     targetEffectDice: champion?.effectDice ?? [],
@@ -622,7 +622,7 @@ const announceGroupInitiative = async (order, targets) => {
 const announceGroupWinner = async championId => {
   const winner = getRollToBeatTargets().find(target => target.id === championId)
 
-  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime/templates/chat/group-winner.html', {
+  const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime-ext/templates/chat/group-winner.html', {
     winnerName: winner?.name ?? '',
     total: winner?.total ?? 0,
     effectDice: winner?.effectDice ?? []
@@ -730,19 +730,19 @@ export const registerRollToBeat = () => {
   }
 
   Hooks.on('updateSetting', setting => {
-    if (setting.key === 'cortexprime.lastGmRoll') {
+    if (setting.key === 'cortexprime-ext.lastGmRoll') {
       processChallengeAdvancement()
       processGroupAdvancement()
       refreshDicePool()
     }
 
-    if (setting.key === 'cortexprime.activeChallenge') {
+    if (setting.key === 'cortexprime-ext.activeChallenge') {
       refreshDicePool()
     }
   })
 
   Hooks.on('updateActor', (actor, data) => {
-    if (foundry.utils.hasProperty(data, 'flags.cortexprime.lastRoll')) {
+    if (foundry.utils.hasProperty(data, 'flags.cortexprime-ext.lastRoll')) {
       processChallengeAdvancement()
       processGroupAdvancement()
       refreshDicePool()

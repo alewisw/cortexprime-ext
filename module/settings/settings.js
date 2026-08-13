@@ -12,7 +12,7 @@ import ThemeSettings from './ThemeSettings.js'
 import { localizer } from '../scripts/foundryHelpers.js'
 
 export const registerSettings = () => {
-  game.settings.registerMenu('cortexprime', 'ActorSettings', {
+  game.settings.registerMenu('cortexprime-ext', 'ActorSettings', {
     hint: localizer('ActorSettingsH'),
     icon: 'fa-solid fa-user-cog',
     label: localizer('ActorSettings'),
@@ -21,7 +21,7 @@ export const registerSettings = () => {
     type: ActorSettings
   })
 
-  game.settings.register('cortexprime', 'actorTypes', {
+  game.settings.register('cortexprime-ext', 'actorTypes', {
     name: localizer('ActorTypes'),
     default: defaultActorTypes,
     scope: 'world',
@@ -29,7 +29,7 @@ export const registerSettings = () => {
     config: false,  
   })
 
-  game.settings.register('cortexprime', 'actorBreadcrumbs', {
+  game.settings.register('cortexprime-ext', 'actorBreadcrumbs', {
     name: localizer('ActorBreadcrumbs'),
     default: { 0: { active: true, name: 'ActorTypes', localize: true, target: 'actorTypes' } },
     scope: 'world',
@@ -37,7 +37,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.registerMenu('cortexprime', 'DoomPoolSettings', {
+  game.settings.registerMenu('cortexprime-ext', 'DoomPoolSettings', {
     hint: localizer('DoomPoolSettingsH'),
     icon: 'fa-solid fa-skull',
     label: localizer('DoomPoolSettings'),
@@ -46,7 +46,7 @@ export const registerSettings = () => {
     type: DoomPoolSettings
   })
 
-  game.settings.register('cortexprime', 'doomPoolActorId', {
+  game.settings.register('cortexprime-ext', 'doomPoolActorId', {
     name: localizer('DoomPoolActor'),
     default: '',
     scope: 'world',
@@ -54,7 +54,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'doomPoolTraitId', {
+  game.settings.register('cortexprime-ext', 'doomPoolTraitId', {
     name: localizer('DoomPoolTrait'),
     default: '',
     scope: 'world',
@@ -62,7 +62,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'lastGmRoll', {
+  game.settings.register('cortexprime-ext', 'lastGmRoll', {
     name: localizer('LastGmRoll'),
     default: {},
     scope: 'world',
@@ -70,7 +70,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'activeChallenge', {
+  game.settings.register('cortexprime-ext', 'activeChallenge', {
     name: localizer('ActiveChallenge'),
     default: {},
     scope: 'world',
@@ -78,7 +78,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'crisisPool', {
+  game.settings.register('cortexprime-ext', 'crisisPool', {
     name: localizer('CrisisPool'),
     default: { active: false, name: '', dice: [] },
     scope: 'world',
@@ -86,7 +86,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.registerMenu('cortexprime', 'PlotPointUsesSettings', {
+  game.settings.registerMenu('cortexprime-ext', 'PlotPointUsesSettings', {
     hint: localizer('PlotPointUsesSettingsH'),
     icon: 'fa-solid fa-star',
     label: localizer('PlotPointUsesSettings'),
@@ -95,7 +95,7 @@ export const registerSettings = () => {
     type: PlotPointUsesSettings
   })
 
-  game.settings.register('cortexprime', 'plotPointUses', {
+  game.settings.register('cortexprime-ext', 'plotPointUses', {
     name: localizer('PlotPointUses'),
     default: defaultPlotPointUses,
     scope: 'world',
@@ -103,7 +103,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.registerMenu("cortexprime", "ImportExportSettings", {
+  game.settings.registerMenu("cortexprime-ext", "ImportExportSettings", {
     name: localizer('ImportExportSettings'),
     hint: localizer('ImportExportSettingsHint'),
     icon: 'fa-solid fa-file-import',
@@ -112,7 +112,7 @@ export const registerSettings = () => {
     type: ImportExportSettings
   })
 
-  game.settings.register('cortexprime', 'customRuleSet', {
+  game.settings.register('cortexprime-ext', 'customRuleSet', {
     name: localizer('CustomRuleSet'),
     hint: localizer('CustomRuleSetHint'),
     scope: 'world',
@@ -125,7 +125,7 @@ export const registerSettings = () => {
     default: 'none'
   })
 
-  game.settings.registerMenu('cortexprime', 'MageSettings', {
+  game.settings.registerMenu('cortexprime-ext', 'MageSettings', {
     hint: localizer('MageSettingsHint'),
     icon: 'fa-solid fa-hat-wizard',
     label: localizer('MageSettings'),
@@ -134,7 +134,7 @@ export const registerSettings = () => {
     type: MageSettings
   })
 
-  game.settings.register('cortexprime', 'mageSettings', {
+  game.settings.register('cortexprime-ext', 'mageSettings', {
     name: localizer('MageSettings'),
     default: defaultMageSettings,
     scope: 'world',
@@ -142,7 +142,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'rollResultSourceCollapsed', {
+  game.settings.register('cortexprime-ext', 'rollResultSourceCollapsed', {
     name: localizer('RollResultSourceCollapsed'),
     hint: localizer('RollResultSourceCollapsedHint'),
     label: localizer('RollResultSourceCollapsed'),
@@ -151,7 +151,7 @@ export const registerSettings = () => {
     config: true
   })
 
-  game.settings.register('cortexprime', 'testModeSelectDiceValues', {
+  game.settings.register('cortexprime-ext', 'testModeSelectDiceValues', {
     name: localizer('TestModeSelectDiceValues'),
     hint: localizer('TestModeSelectDiceValuesHint'),
     scope: 'world',
@@ -162,7 +162,7 @@ export const registerSettings = () => {
 
   // Keyed by actor id: the active challenge as it stood immediately before that actor's most
   // recent roll, so the GM can undo it. Overwritten per roll — no history is kept.
-  game.settings.register('cortexprime', 'rollUndoSnapshots', {
+  game.settings.register('cortexprime-ext', 'rollUndoSnapshots', {
     name: localizer('RollUndoSnapshots'),
     default: {},
     scope: 'world',
@@ -170,7 +170,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'importedSettings', {
+  game.settings.register('cortexprime-ext', 'importedSettings', {
     name: localizer('ImportedSettings'),
     default: { currentSetting: localizer('Default') },
     scope: 'world',
@@ -178,7 +178,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register("cortexprime", "WelcomeSeen", {
+  game.settings.register("cortexprime-ext", "WelcomeSeen", {
     name: localizer('WelcomeSeen'),
     hint: localizer('WelcomSeenHint'),
     scope: "world",
@@ -187,7 +187,7 @@ export const registerSettings = () => {
     default: false
   })
 
-  game.settings.register('cortexprime', 'activeDistinctionActorId', {
+  game.settings.register('cortexprime-ext', 'activeDistinctionActorId', {
     name: localizer('ActiveDistinctionActorId'),
     default: '',
     scope: 'world',
@@ -195,7 +195,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'spotlightActorId', {
+  game.settings.register('cortexprime-ext', 'spotlightActorId', {
     name: localizer('SpotlightActorId'),
     default: '',
     scope: 'world',
@@ -203,7 +203,7 @@ export const registerSettings = () => {
     config: false,
   })
 
-  game.settings.register('cortexprime', 'spotlightEnabled', {
+  game.settings.register('cortexprime-ext', 'spotlightEnabled', {
     name: localizer('SpotlightEnabled'),
     hint: localizer('SpotlightEnabledHint'),
     default: true,
@@ -212,7 +212,7 @@ export const registerSettings = () => {
     config: true,
   })
 
-  game.settings.registerMenu('cortexprime', 'ThemeSettings', {
+  game.settings.registerMenu('cortexprime-ext', 'ThemeSettings', {
     hint: localizer('ThemeSettingsH'),
     icon: 'fa-solid fa-user-cog',
     label: localizer('ThemeSettings'),
@@ -221,7 +221,7 @@ export const registerSettings = () => {
     type: ThemeSettings
   })
 
-  game.settings.register('cortexprime', 'themes', {
+  game.settings.register('cortexprime-ext', 'themes', {
     name: localizer('Themes'),
     default: defaultThemes,
     scope: 'world',

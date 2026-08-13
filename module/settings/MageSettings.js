@@ -8,7 +8,7 @@ export default class MageSettings extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'mage-settings',
-      template: 'systems/cortexprime/templates/settings/mage-settings.html',
+      template: 'systems/cortexprime-ext/templates/settings/mage-settings.html',
       title: localizer('MageSettings'),
       classes: ['cortexprime', 'mage-settings'],
       width: 500,
@@ -20,8 +20,8 @@ export default class MageSettings extends FormApplication {
   }
 
   getData () {
-    const mageSettings = game.settings.get('cortexprime', 'mageSettings')
-    const actorTypes = Object.values(game.settings.get('cortexprime', 'actorTypes'))
+    const mageSettings = game.settings.get('cortexprime-ext', 'mageSettings')
+    const actorTypes = Object.values(game.settings.get('cortexprime-ext', 'actorTypes'))
     const locationActorType = actorTypes.find(actorType => actorType.id === mageSettings.locationActorTypeId)
     const playerCharacterActorType = actorTypes.find(actorType => actorType.id === mageSettings.playerCharacterActorTypeId)
 
@@ -35,7 +35,7 @@ export default class MageSettings extends FormApplication {
   }
 
   async _updateObject (event, formData) {
-    await game.settings.set('cortexprime', 'mageSettings', foundry.utils.expandObject(formData))
+    await game.settings.set('cortexprime-ext', 'mageSettings', foundry.utils.expandObject(formData))
 
     // The Simple Trait/Trait Set dropdowns depend on whichever Actor Type was just picked, so the
     // form needs a full re-render to repopulate them — submitOnChange alone doesn't do this.

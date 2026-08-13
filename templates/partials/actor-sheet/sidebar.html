@@ -18,11 +18,11 @@
           {{/if}}
         </div>
         {{#if actorType.hasPlotPoints}}
-          {{> "systems/cortexprime/templates/partials/pp.html" pp=pp }}
+          {{> "systems/cortexprime-ext/templates/partials/pp.html" pp=pp }}
         {{/if}}
       </div>
       {{#if (and actorType.simpleTraits actorType.traitSets.[0])}}
-        {{> "systems/cortexprime/templates/partials/actor-sheet/simple-traits.html"
+        {{> "systems/cortexprime-ext/templates/partials/actor-sheet/simple-traits.html"
           data=actorType
           simpleTraits=actorType.simpleTraits
           path='system.actorType.simpleTraits'

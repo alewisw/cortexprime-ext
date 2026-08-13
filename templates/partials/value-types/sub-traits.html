@@ -12,7 +12,7 @@
         <div class="flex-col flex-s-1 max-50">
           <div class="flex-row flex-ac">
             {{#if ../settings.subTraitsHaveDice}}
-              {{> "systems/cortexprime/templates/partials/dice/select.html"
+              {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
                 addToPool=true
                 consumable=../settings.subTraitsDiceConsumable
                 dice=subTrait.dice.value
@@ -25,7 +25,7 @@
               }}
             {{/if}}
             <div class="flex-col">
-              {{> "systems/cortexprime/templates/partials/remove-button.html"
+              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                 group=(concat ../path '.subTraits')
                 itemKey=subTraitIndex
                 itemName=subTrait.label

@@ -56,7 +56,7 @@ export const removeItem = async function (html) {
 
     if (confirmed) {
       if (setting) {
-        let settings = game.settings.get('cortexprime', setting)
+        let settings = game.settings.get('cortexprime-ext', setting)
 
         const currentGroupSettings = group ? await foundry.utils.getProperty(settings, group) : settings
         const groupSettingValue = objectReindexFilter(currentGroupSettings, (_, key) => +key !== +itemKey)
@@ -66,10 +66,10 @@ export const removeItem = async function (html) {
         } else {
           settings = groupSettingValue
         }
-        await game.settings.set('cortexprime', setting, settings)
+        await game.settings.set('cortexprime-ext', setting, settings)
 
         if (setting === 'actorTypes' && !stayOnPage) {
-          const currentBreadcrumbs = game.settings.get('cortexprime', 'actorBreadcrumbs')
+          const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
 
           const breadcrumbsValue = objectReduce(currentBreadcrumbs, (acc, value, key, length) => {
             if (+key === length - 1) return acc
@@ -82,7 +82,7 @@ export const removeItem = async function (html) {
             }
           }, {})
 
-          await game.settings.set('cortexprime', 'actorBreadcrumbs', breadcrumbsValue)
+          await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', breadcrumbsValue)
         }
 
         this.render(true)
@@ -101,7 +101,7 @@ export const reorderItem = async function (html) {
       setting
     } = event.currentTarget.dataset
 
-    let settings = game.settings.get('cortexprime', setting)
+    let settings = game.settings.get('cortexprime-ext', setting)
     const targetObject = (path || parseInt(path, 10) === 0) ? foundry.utils.getProperty(settings, path) ?? {} : settings
     const maxKey = getLength(targetObject ?? {}) - 1
 
@@ -129,7 +129,7 @@ export const reorderItem = async function (html) {
       settings = value
     }
 
-    await game.settings.set('cortexprime', setting, settings)
+    await game.settings.set('cortexprime-ext', setting, settings)
     this.render(true)
   })
 }

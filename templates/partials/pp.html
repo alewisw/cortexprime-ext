@@ -3,7 +3,7 @@
   <div class="flex-col col-12">
     {{#if owner}}
       <button class="btn btn-pp spend-pp" type="button" {{ternary (lt pp.value 1) "disabled" ""}}>
-        {{> "systems/cortexprime/templates/partials/plot-point.html" size='lg' }}
+        {{> "systems/cortexprime-ext/templates/partials/plot-point.html" size='lg' }}
       </button>
     {{/if}}
   </div>

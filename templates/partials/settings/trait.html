@@ -5,7 +5,7 @@
       <input class="breadcrumb-name-change input-cpt" data-target="{{concat 'trait-' actorTypeIndex '-' traitSetIndex '-' traitIndex}}" name="{{concat 'actorTypes.' path '.' traitIndex '.name'}}" type="text" value="{{trait.name}}">
     </div>
     <div class="flex-col">
-      {{> "systems/cortexprime/templates/partials/remove-button.html"
+      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
         group=path
         itemKey=traitIndex
         itemName=trait.name
@@ -23,14 +23,14 @@
       </div>
     {{/if}}
     {{#if settings.hasDice}}
-      {{> (concat "systems/cortexprime/templates/partials/settings/value-types/dice.html")
+      {{> (concat "systems/cortexprime-ext/templates/partials/settings/value-types/dice.html")
         path=(concat path '.' traitIndex)
         data=trait
       }}
     {{/if}}
     {{#if settings.hasSubTraits}}
       <div class="separator-cpt"></div>
-      {{> (concat "systems/cortexprime/templates/partials/settings/value-types/sub-traits.html")
+      {{> (concat "systems/cortexprime-ext/templates/partials/settings/value-types/sub-traits.html")
         path=(concat path '.' traitIndex)
         data=trait
         settings=settings
@@ -38,14 +38,14 @@
     {{/if}}
     {{#if settings.hasDescriptors}}
       <div class="separator-cpt"></div>
-      {{> (concat "systems/cortexprime/templates/partials/settings/value-types/descriptors.html")
+      {{> (concat "systems/cortexprime-ext/templates/partials/settings/value-types/descriptors.html")
         path=(concat path '.' traitIndex)
         data=trait
       }}
     {{/if}}
     {{#if settings.hasSfx}}
       <div class="separator-cpt"></div>
-      {{> (concat "systems/cortexprime/templates/partials/settings/value-types/sfx.html")
+      {{> (concat "systems/cortexprime-ext/templates/partials/settings/value-types/sfx.html")
         path=(concat path '.' traitIndex)
         data=trait
       }}

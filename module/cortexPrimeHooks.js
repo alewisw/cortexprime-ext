@@ -38,7 +38,7 @@ export default () => {
 
   Hooks.once('diceSoNiceReady', dice3d => {
     dice3d.addSystem({ id: 'cp-pp', name: 'Cortex Prime Plot Point' }, false)
-    const ppLabel = 'systems/cortexprime/assets/plot-point/plot-point.png'
+    const ppLabel = 'systems/cortexprime-ext/assets/plot-point/plot-point.png'
     dice3d.addDicePreset({
       type: 'dp',
       labels: [ppLabel, ppLabel],
@@ -47,10 +47,10 @@ export default () => {
   })
 
   Hooks.once('ready', async () => {
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
     setCssVars(theme)
-    if (game.settings.get('cortexprime', 'WelcomeSeen') === false) {
+    if (game.settings.get('cortexprime-ext', 'WelcomeSeen') === false) {
       if (game.user.isGM) {
         const seeWelcome = await new Promise(resolve => {
           new Dialog(
@@ -74,7 +74,7 @@ export default () => {
         })
 
         if (seeWelcome) {
-          await game.settings.set('cortexprime', 'WelcomeSeen', true)
+          await game.settings.set('cortexprime-ext', 'WelcomeSeen', true)
         }
       }
     }
@@ -129,7 +129,7 @@ export default () => {
 
         const { dieRating, type, value: number } = data
 
-        const html = await foundry.applications.handlebars.renderTemplate(`systems/cortexprime/templates/partials/dice/d${dieRating}.html`, {
+        const html = await foundry.applications.handlebars.renderTemplate(`systems/cortexprime-ext/templates/partials/dice/d${dieRating}.html`, {
           type,
           number
         })

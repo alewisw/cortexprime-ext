@@ -5,16 +5,16 @@ import { localizer } from './foundryHelpers.js'
 // Point" button to commit the choice, resolving with the selected option's label, or null if
 // cancelled/closed without a choice.
 export const selectPlotPointUsage = async () => {
-  const plotPointUses = game.settings.get('cortexprime', 'plotPointUses') ?? {}
+  const plotPointUses = game.settings.get('cortexprime-ext', 'plotPointUses') ?? {}
   const groups = [
     { label: localizer('PlotPointUsesGeneral'), uses: Object.values(plotPointUses.general ?? {}) },
     { label: localizer('PlotPointUsesOpportunity'), uses: Object.values(plotPointUses.opportunity ?? {}) }
   ]
-  const themes = game.settings.get('cortexprime', 'themes')
+  const themes = game.settings.get('cortexprime-ext', 'themes')
   const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
   const content = await foundry.applications.handlebars.renderTemplate(
-    'systems/cortexprime/templates/dialog/plot-point-use.html', { groups, theme }
+    'systems/cortexprime-ext/templates/dialog/plot-point-use.html', { groups, theme }
   )
 
   return new Promise(resolve => {

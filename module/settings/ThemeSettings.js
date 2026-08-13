@@ -9,7 +9,7 @@ export default class ThemeSettings extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'theme-settings',
-      template: 'systems/cortexprime/templates/theme/settings.html',
+      template: 'systems/cortexprime-ext/templates/theme/settings.html',
       title: localizer('ThemeSettings'),
       classes: ['cortexprime', 'theme-settings'],
       width: 960,
@@ -24,7 +24,7 @@ export default class ThemeSettings extends FormApplication {
   }
 
   getData() {
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
 
     return {
       themes,
@@ -34,7 +34,7 @@ export default class ThemeSettings extends FormApplication {
 
   async _updateObject(event, formData) {
     const expandedFormData = foundry.utils.expandObject(formData)
-    const currentThemes = game.settings.get('cortexprime', 'themes') ?? {}
+    const currentThemes = game.settings.get('cortexprime-ext', 'themes') ?? {}
 
     expandedFormData.themes.currentSettings = currentThemes.current !== expandedFormData.themes.current
       ? expandedFormData.themes.current === 'custom'
@@ -42,9 +42,9 @@ export default class ThemeSettings extends FormApplication {
         : currentThemes.list[expandedFormData.themes.current]
       : expandedFormData.themes.currentSettings
 
-    await game.settings.set('cortexprime', 'themes', foundry.utils.mergeObject(currentThemes, expandedFormData.themes))
+    await game.settings.set('cortexprime-ext', 'themes', foundry.utils.mergeObject(currentThemes, expandedFormData.themes))
 
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     setCssVars(theme)
@@ -64,7 +64,7 @@ export default class ThemeSettings extends FormApplication {
   async _changeImage (event) {
     event.preventDefault()
     const { targetSetting } = event.currentTarget.dataset
-    const source = game.settings.get('cortexprime', 'themes')
+    const source = game.settings.get('cortexprime-ext', 'themes')
     const currentImage = source?.currentSettings?.[targetSetting] || null
     const _this = this
 
@@ -74,7 +74,7 @@ export default class ThemeSettings extends FormApplication {
       async callback (newImage) {
         source.currentSettings[targetSetting] = newImage
 
-        await game.settings.set('cortexprime', 'themes', source)
+        await game.settings.set('cortexprime-ext', 'themes', source)
 
         _this.render()
       }
@@ -86,24 +86,24 @@ export default class ThemeSettings extends FormApplication {
   async _removeImage (event) {
     event.preventDefault()
     const { targetSetting } = event.currentTarget.dataset
-    const source = game.settings.get('cortexprime', 'themes')
+    const source = game.settings.get('cortexprime-ext', 'themes')
     source.currentSettings[targetSetting] = null
 
-    await game.settings.set('cortexprime', 'themes', source)
+    await game.settings.set('cortexprime-ext', 'themes', source)
 
     this.render()
   }
 
   async _refreshPreset (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'themes')
+    const source = game.settings.get('cortexprime-ext', 'themes')
     source.currentSettings = source.current === 'custom'
       ? source.custom
       : source.list[source.current]
 
-    await game.settings.set('cortexprime', 'themes', source)
+    await game.settings.set('cortexprime-ext', 'themes', source)
 
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     setCssVars(theme)
@@ -113,13 +113,13 @@ export default class ThemeSettings extends FormApplication {
 
   async _saveAsCustomPreset (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'themes')
+    const source = game.settings.get('cortexprime-ext', 'themes')
     source.current = 'custom'
     source.custom = source.currentSettings
 
-    await game.settings.set('cortexprime', 'themes', source)
+    await game.settings.set('cortexprime-ext', 'themes', source)
 
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     setCssVars(theme)
@@ -129,7 +129,7 @@ export default class ThemeSettings extends FormApplication {
 
   async _updatePresets (event) {
     event.preventDefault()
-    const source = game.settings.get('cortexprime', 'themes')
+    const source = game.settings.get('cortexprime-ext', 'themes')
 
     source.current = source.current !== 'custom'
       ? source[source.current] || defaultThemes.current
@@ -140,9 +140,9 @@ export default class ThemeSettings extends FormApplication {
       ? source.custom
       : source.list[source.current]
 
-    await game.settings.set('cortexprime', 'themes', source)
+    await game.settings.set('cortexprime-ext', 'themes', source)
 
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     setCssVars(theme)

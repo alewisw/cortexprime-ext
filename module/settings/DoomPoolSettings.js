@@ -5,7 +5,7 @@ export default class DoomPoolSettings extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'doom-pool-settings',
-      template: 'systems/cortexprime/templates/settings/doom-pool.html',
+      template: 'systems/cortexprime-ext/templates/settings/doom-pool.html',
       title: localizer('DoomPoolSettings'),
       classes: ['cortexprime', 'doom-pool-settings'],
       width: 500,
@@ -17,12 +17,12 @@ export default class DoomPoolSettings extends FormApplication {
   }
   getData () {
     const visibleOwnershipLevels = [CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER]
-    const doomPoolActorId = game.settings.get('cortexprime', 'doomPoolActorId')
+    const doomPoolActorId = game.settings.get('cortexprime-ext', 'doomPoolActorId')
     const doomPoolActor = doomPoolActorId ? game.actors.get(doomPoolActorId) : null
 
     return {
       doomPoolActorId,
-      doomPoolTraitId: game.settings.get('cortexprime', 'doomPoolTraitId'),
+      doomPoolTraitId: game.settings.get('cortexprime-ext', 'doomPoolTraitId'),
       actors: game.actors.contents
         .filter(actor => visibleOwnershipLevels.includes(actor.ownership.default))
         .sort((a, b) => a.name.localeCompare(b.name)),
@@ -30,8 +30,8 @@ export default class DoomPoolSettings extends FormApplication {
     }
   }
   async _updateObject (event, formData) {
-    await game.settings.set('cortexprime', 'doomPoolActorId', formData.doomPoolActorId || '')
-    await game.settings.set('cortexprime', 'doomPoolTraitId', formData.doomPoolTraitId || '')
+    await game.settings.set('cortexprime-ext', 'doomPoolActorId', formData.doomPoolActorId || '')
+    await game.settings.set('cortexprime-ext', 'doomPoolTraitId', formData.doomPoolTraitId || '')
 
     // The Trait dropdown depends on whichever Actor was just picked, so the form needs a full
     // re-render to repopulate it — submitOnChange alone doesn't do this.

@@ -74,9 +74,10 @@ To produce the zip that gets uploaded to a host such as
 npm run package
 ```
 
-This compiles Sass first, then writes `dist/cortexprime-<version>.zip`, where
-`<version>` is read straight from `system.json` so the filename and the
-manifest inside the archive can never disagree.
+This compiles Sass first, then writes `dist/<id>-<version>.zip` (currently
+`dist/cortexprime-ext-0.3.0.zip`). Both `<id>` and `<version>` are read
+straight from `system.json`, so the filename and the manifest inside the
+archive can never disagree.
 
 The archive contains only what Foundry needs at runtime — `system.json`,
 `template.json`, `cortexprime.js`, `README.md`, and the `assets/`, `configs/`,

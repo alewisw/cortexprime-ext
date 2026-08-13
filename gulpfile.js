@@ -55,14 +55,15 @@ const PACKAGE_SOURCES = [
 ];
 const DIST = "./dist";
 
-// system.json is the single source of truth for the version, so the zip name
-// always matches the manifest Foundry will read out of it.
-function packageVersion() {
-  return JSON.parse(fs.readFileSync("./system.json", "utf8")).version;
+// system.json is the single source of truth for the package id and version, so
+// the zip name always matches the manifest Foundry will read out of it.
+function manifest() {
+  return JSON.parse(fs.readFileSync("./system.json", "utf8"));
 }
 
 function buildPackage() {
-  const filename = `cortexprime-${packageVersion()}.zip`;
+  const { id, version } = manifest();
+  const filename = `${id}-${version}.zip`;
 
   // system.json must sit at the root of the archive, so keep paths relative to
   // the project root rather than to each glob's own base.

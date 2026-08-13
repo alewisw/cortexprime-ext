@@ -14,11 +14,11 @@
           {{#each general as |use useIndex|}}
             <li class="flex flex-ac flex-wrap py-2 relative-section">
               <div class="{{ternary (eq (mod useIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
-              {{> "systems/cortexprime/templates/partials/reorder.html" path='general' currentIndex=useIndex setting="plotPointUses" }}
+              {{> "systems/cortexprime-ext/templates/partials/reorder.html" path='general' currentIndex=useIndex setting="plotPointUses" }}
               <div class="flex-col flex-g-1">
                 <input class="input-cpt" name="general.{{useIndex}}.label" type="text" value="{{use.label}}">
               </div>
-              {{> "systems/cortexprime/templates/partials/remove-button.html"
+              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                 group='general' itemKey=useIndex itemName=use.label path='general' setting='plotPointUses' stayOnPage=true type="trash" }}
             </li>
           {{/each}}
@@ -37,11 +37,11 @@
           {{#each opportunity as |use useIndex|}}
             <li class="flex flex-ac flex-wrap py-2 relative-section">
               <div class="{{ternary (eq (mod useIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
-              {{> "systems/cortexprime/templates/partials/reorder.html" path='opportunity' currentIndex=useIndex setting="plotPointUses" }}
+              {{> "systems/cortexprime-ext/templates/partials/reorder.html" path='opportunity' currentIndex=useIndex setting="plotPointUses" }}
               <div class="flex-col flex-g-1">
                 <input class="input-cpt" name="opportunity.{{useIndex}}.label" type="text" value="{{use.label}}">
               </div>
-              {{> "systems/cortexprime/templates/partials/remove-button.html"
+              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                 group='opportunity' itemKey=useIndex itemName=use.label path='opportunity' setting='plotPointUses' stayOnPage=true type="trash" }}
             </li>
           {{/each}}

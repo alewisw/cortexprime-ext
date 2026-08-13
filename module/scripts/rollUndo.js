@@ -18,10 +18,10 @@ import { canUndoRoll, computeUndoChallenge } from './rollUndoLogic.js'
 
 const CHALLENGE_TYPES = ['test', 'contest', 'group']
 
-const getSnapshots = () => game.settings.get('cortexprime', 'rollUndoSnapshots') ?? {}
+const getSnapshots = () => game.settings.get('cortexprime-ext', 'rollUndoSnapshots') ?? {}
 
 const findRollCard = (actorId, rolledAt) => game.messages.contents.find(message => {
-  const flag = message.getFlag('cortexprime', 'roll')
+  const flag = message.getFlag('cortexprime-ext', 'roll')
 
   return flag?.actorId === actorId && flag?.rolledAt === rolledAt
 })
@@ -52,7 +52,7 @@ const refreshUndoableCards = () => {
 
 const onRollRecorded = async (actor, data) => {
   if (game.user !== game.users.activeGM) return
-  if (!foundry.utils.hasProperty(data, 'flags.cortexprime.lastRoll')) return
+  if (!foundry.utils.hasProperty(data, 'flags.cortexprime-ext.lastRoll')) return
 
   // Read synchronously, before rollToBeat.js's handler for this same hook advances or clears the
   // challenge — capturing it afterwards would snapshot the post-roll state, which is useless.
@@ -60,7 +60,7 @@ const onRollRecorded = async (actor, data) => {
 
   if (!CHALLENGE_TYPES.includes(challenge.type)) return
 
-  const record = foundry.utils.getProperty(data, 'flags.cortexprime.lastRoll')
+  const record = foundry.utils.getProperty(data, 'flags.cortexprime-ext.lastRoll')
 
   if (!record?.rolledAt) return
 
@@ -68,7 +68,7 @@ const onRollRecorded = async (actor, data) => {
 
   if (snapshots[actor.id]?.rolledAt === record.rolledAt) return
 
-  await game.settings.set('cortexprime', 'rollUndoSnapshots', {
+  await game.settings.set('cortexprime-ext', 'rollUndoSnapshots', {
     ...snapshots,
     [actor.id]: { rolledAt: record.rolledAt, challenge }
   })
@@ -118,9 +118,9 @@ const closeHitchesDialog = actorId => {
 // An unconfirmed Paradox dialog is showing an outcome that was never written — cancelling it isn't
 // reversing a consequence, it's dropping something still in flight.
 const clearPendingParadox = async (actor, rolledAt) => {
-  const pending = actor.getFlag('cortexprime', 'pendingParadox')
+  const pending = actor.getFlag('cortexprime-ext', 'pendingParadox')
 
-  if (pending?.rolledAt === rolledAt) await actor.setFlag('cortexprime', 'pendingParadox', null)
+  if (pending?.rolledAt === rolledAt) await actor.setFlag('cortexprime-ext', 'pendingParadox', null)
 }
 
 export const undoRoll = async (actorId, rolledAt) => {
@@ -156,7 +156,7 @@ export const undoRoll = async (actorId, rolledAt) => {
   // rolledAt of 0 can't re-trigger anything. Restoring the challenge first would leave a live
   // record whose rolledAt beats the restored updatedAt, and processChallengeAdvancement would
   // immediately re-advance the very thing being undone.
-  await actor.setFlag('cortexprime', 'lastRoll', getBlankRecord())
+  await actor.setFlag('cortexprime-ext', 'lastRoll', getBlankRecord())
 
   const nextChallenge = computeUndoChallenge({
     snapshot: undoState.snapshot.challenge,
@@ -171,7 +171,7 @@ export const undoRoll = async (actorId, rolledAt) => {
 
   delete snapshots[actorId]
 
-  await game.settings.set('cortexprime', 'rollUndoSnapshots', snapshots)
+  await game.settings.set('cortexprime-ext', 'rollUndoSnapshots', snapshots)
 
   // Delete the roll's own card, so chat doesn't show a roll that no longer happened next to the
   // re-roll that replaces it, and say plainly what was undone.
@@ -189,7 +189,7 @@ export const undoRoll = async (actorId, rolledAt) => {
 // ---- Chat card injection ----
 
 const injectUndoButton = (message, html) => {
-  const rollFlag = message.getFlag('cortexprime', 'roll')
+  const rollFlag = message.getFlag('cortexprime-ext', 'roll')
 
   if (!getUndoState(rollFlag)) return
 
@@ -233,7 +233,7 @@ export const registerRollUndo = () => {
 
   // The GM rolling retires every outstanding undo, so the buttons have to actually go away.
   Hooks.on('updateSetting', setting => {
-    if (setting.key === 'cortexprime.lastGmRoll') refreshUndoableCards()
+    if (setting.key === 'cortexprime-ext.lastGmRoll') refreshUndoableCards()
   })
 
   Hooks.on('renderChatMessageHTML', (message, html) => {

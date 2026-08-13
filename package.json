@@ -1,5 +1,5 @@
 {
-  "name": "cortexprime",
+  "name": "cortexprime-ext",
   "version": "0.3.0",
   "description": "CSS compiler for the Cortex Prime system",
   "scripts": {

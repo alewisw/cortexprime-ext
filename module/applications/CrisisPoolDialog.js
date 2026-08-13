@@ -18,7 +18,7 @@ export class CrisisPoolDialog extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'crisis-pool-dialog',
-      template: 'systems/cortexprime/templates/dialog/crisis-pool.html',
+      template: 'systems/cortexprime-ext/templates/dialog/crisis-pool.html',
       title: localizer('StartCrisis'),
       classes: ['cortexprime', 'crisis-pool-dialog'],
       width: 420,
@@ -34,7 +34,7 @@ export class CrisisPoolDialog extends FormApplication {
   }
 
   async getData () {
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     return { name: this.name, dice: this.dice, isEditing: this.isEditing, theme }

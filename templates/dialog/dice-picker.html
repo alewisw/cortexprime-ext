@@ -12,7 +12,7 @@
             {{#each rollResults.results as |rollResult rollResultIndex|}}
               <div class="die-icon-wrapper my-1">
                 <div class="{{#if ../selectable}}cursor-pointer selectable{{/if}}{{#if ../testModeSelectDiceValues}} die-value-target{{/if}} result-die d{{rollResult.faces}} result{{#if rollResult.total}} chosen{{/if}}{{#if rollResult.effect}} effect{{/if}}" data-source="results" data-faces="{{rollResult.faces}}" data-key="{{rollResultIndex}}" data-result="{{rollResult.result}}">
-                  {{> (concat "systems/cortexprime/templates/partials/dice/d" rollResult.faces ".html")
+                  {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" rollResult.faces ".html")
                     number=rollResult.result
                     type=(ternary rollResult.total 'chosen' (ternary rollResult.effect 'effect' 'unchosen'))
                   }}
@@ -23,7 +23,7 @@
             {{#each rollResults.hitches as |rollResult rollResultIndex|}}
             <div class="die-icon-wrapper my-1">
               <div class="{{#if ../testModeSelectDiceValues}}die-value-target {{/if}}d{{rollResult.faces}} hitch" data-source="hitches" data-faces="{{rollResult.faces}}" data-key="{{rollResultIndex}}" data-result="{{rollResult.result}}">
-                {{> (concat "systems/cortexprime/templates/partials/dice/d" rollResult.faces ".html")
+                {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" rollResult.faces ".html")
                   number=1
                   type='hitch'
                 }}
@@ -54,7 +54,7 @@
               <div class="effect-dice your-effect-dice flex-row flex-c flex-wrap">
                 {{#each effectDiceFaces as |effectDie|}}
                   <div class="die-icon-wrapper my-1">
-                    {{> (concat "systems/cortexprime/templates/partials/dice/d" effectDie ".html")
+                    {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" effectDie ".html")
                       number=effectDie
                       type='effect'
                     }}
@@ -103,7 +103,7 @@
                 {{#if challengeTargetEffectDice}}
                   {{#each challengeTargetEffectDice as |effectDie|}}
                     <div class="die-icon-wrapper my-1">
-                      {{> (concat "systems/cortexprime/templates/partials/dice/d" effectDie ".html")
+                      {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" effectDie ".html")
                         number=effectDie
                         type='effect'
                       }}
@@ -111,7 +111,7 @@
                   {{/each}}
                 {{else}}
                   <div class="die-icon-wrapper my-1">
-                    {{> "systems/cortexprime/templates/partials/dice/d4.html"
+                    {{> "systems/cortexprime-ext/templates/partials/dice/d4.html"
                       number=4
                       type='effect'
                     }}

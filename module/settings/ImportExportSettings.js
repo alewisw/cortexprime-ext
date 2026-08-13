@@ -11,7 +11,7 @@ export default class ImportExportSettings extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'import-export-settings',
-      template: 'systems/cortexprime/templates/import-export-settings.html',
+      template: 'systems/cortexprime-ext/templates/import-export-settings.html',
       title: localizer('ImportExportSettings'),
       classes: ['cortexprime', 'import-export-settings'],
       width: 'auto',
@@ -26,7 +26,7 @@ export default class ImportExportSettings extends FormApplication {
   }
 
   getData() {
-    return game.settings.get('cortexprime', 'importedSettings')
+    return game.settings.get('cortexprime-ext', 'importedSettings')
   }
 
   async _updateObject(event, formData) {
@@ -42,14 +42,14 @@ export default class ImportExportSettings extends FormApplication {
   async _exportSettings(event) {
     event.preventDefault()
 
-    const { current, custom } = await game.settings.get('cortexprime', 'themes')
+    const { current, custom } = await game.settings.get('cortexprime-ext', 'themes')
 
     const settings = {
-      actorTypes: game.settings.get('cortexprime', 'actorTypes'),
+      actorTypes: game.settings.get('cortexprime-ext', 'actorTypes'),
       cortexPrimeVersion: game.system.version,
-      customRuleSet: game.settings.get('cortexprime', 'customRuleSet'),
-      mageSettings: game.settings.get('cortexprime', 'mageSettings'),
-      plotPointUses: game.settings.get('cortexprime', 'plotPointUses'),
+      customRuleSet: game.settings.get('cortexprime-ext', 'customRuleSet'),
+      mageSettings: game.settings.get('cortexprime-ext', 'mageSettings'),
+      plotPointUses: game.settings.get('cortexprime-ext', 'plotPointUses'),
       theme: { current, custom }
     }
 
@@ -95,20 +95,20 @@ export default class ImportExportSettings extends FormApplication {
         })
 
         if (confirmed) {
-          await game.settings.set('cortexprime', 'importedSettings', { currentSetting: file.name })
-          await game.settings.set('cortexprime', 'actorTypes', data.actorTypes)
-          await game.settings.set('cortexprime', 'customRuleSet', data.customRuleSet ?? 'none')
-          await game.settings.set('cortexprime', 'mageSettings', data.mageSettings ?? defaultMageSettings)
-          await game.settings.set('cortexprime', 'plotPointUses', data.plotPointUses ?? defaultPlotPointUses)
+          await game.settings.set('cortexprime-ext', 'importedSettings', { currentSetting: file.name })
+          await game.settings.set('cortexprime-ext', 'actorTypes', data.actorTypes)
+          await game.settings.set('cortexprime-ext', 'customRuleSet', data.customRuleSet ?? 'none')
+          await game.settings.set('cortexprime-ext', 'mageSettings', data.mageSettings ?? defaultMageSettings)
+          await game.settings.set('cortexprime-ext', 'plotPointUses', data.plotPointUses ?? defaultPlotPointUses)
 
-          const themeSettings = await game.settings.get('cortexprime', 'themes')
+          const themeSettings = await game.settings.get('cortexprime-ext', 'themes')
 
           const { current, custom } = data.theme ?? {}
 
           themeSettings.current = current ?? 'Default'
           themeSettings.custom = custom ?? themeSettings.custom
 
-          await game.settings.set('cortexprime', 'themes', themeSettings)
+          await game.settings.set('cortexprime-ext', 'themes', themeSettings)
 
           const theme = themeSettings.current === 'custom' ? themeSettings.custom : themeSettings.list[themeSettings.current]
 
@@ -138,11 +138,11 @@ export default class ImportExportSettings extends FormApplication {
     })
 
     if (confirmed) {
-      await game.settings.set('cortexprime', 'importedSettings', { currentSetting: localizer('Default') })
-      await game.settings.set('cortexprime', 'actorTypes', defaultActorTypes)
-      await game.settings.set('cortexprime', 'customRuleSet', 'none')
-      await game.settings.set('cortexprime', 'mageSettings', defaultMageSettings)
-      await game.settings.set('cortexprime', 'plotPointUses', defaultPlotPointUses)
+      await game.settings.set('cortexprime-ext', 'importedSettings', { currentSetting: localizer('Default') })
+      await game.settings.set('cortexprime-ext', 'actorTypes', defaultActorTypes)
+      await game.settings.set('cortexprime-ext', 'customRuleSet', 'none')
+      await game.settings.set('cortexprime-ext', 'mageSettings', defaultMageSettings)
+      await game.settings.set('cortexprime-ext', 'plotPointUses', defaultPlotPointUses)
       ui.notifications.info(localizer('ResetSuccessMessage'))
 
       this.render(true)

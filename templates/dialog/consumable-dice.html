@@ -11,7 +11,7 @@
           <div class="flex flex-wrap flex-c">
             {{#each options as |option optionIndex|}}
               <div class="die-select cursor-pointer result" data-key="{{optionIndex}}" data-value="{{option}}">
-                {{> (concat "systems/cortexprime/templates/partials/dice/d" option ".html")
+                {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" option ".html")
                   number=option
                   type='unchosen'
                 }}

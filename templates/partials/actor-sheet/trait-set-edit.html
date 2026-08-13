@@ -34,7 +34,7 @@
     {{/if}}
     <div class="flex-row flex-jc">
       {{#if traitSet.traits.[0]}}
-        {{> "systems/cortexprime/templates/partials/actor-sheet/traits-edit.html"
+        {{> "systems/cortexprime-ext/templates/partials/actor-sheet/traits-edit.html"
           data=data
           label=(localize 'PresetTraits')
           settings=traitSet.settings
@@ -43,7 +43,7 @@
           path=(concat path '.' traitSetIndex)
         }}
       {{/if}}
-      {{> "systems/cortexprime/templates/partials/actor-sheet/traits-edit.html"
+      {{> "systems/cortexprime-ext/templates/partials/actor-sheet/traits-edit.html"
         custom=true
         data=data
         label=(localize 'CustomTraits')

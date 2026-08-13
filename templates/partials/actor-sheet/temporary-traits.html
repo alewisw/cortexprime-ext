@@ -31,7 +31,7 @@
                   {{/if}}
                   {{#if (and ../owner asset.edit)}}
                     <div>
-                      {{> "systems/cortexprime/templates/partials/remove-button.html"
+                      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                       path=../path
                         target='assets'
                         itemKey=assetIndex
@@ -67,7 +67,7 @@
                   {{/if}}
                   {{#if ../owner}}
                     <div class="flex-col flex-s-1">
-                      {{> "systems/cortexprime/templates/partials/dice/select.html"
+                      {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
                         addToPool=true
                         dice=asset.dice.value
                         minDice=0
@@ -82,12 +82,12 @@
                     <div class="flex-col flex-s-1">
                       <div class="flex flex-wrap flex-ac">
                         {{#each asset.dice.value as |die index|}}
-                          {{> (concat "systems/cortexprime/templates/partials/dice/d" die ".html")
+                          {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" die ".html")
                             number=die
                             type='die-rating'
                           }}
                           {{#if (eq ../../data.assetsHaveMultipleDice false)}}
-                            {{> "systems/cortexprime/templates/partials/dice/temporary-controls.html"
+                            {{> "systems/cortexprime-ext/templates/partials/dice/temporary-controls.html"
                               value=die
                               temporary=(lookup asset.dice.temporaryValue index)
                               interactive=false
@@ -138,7 +138,7 @@
                   {{/if}}
                   {{#if (and ../owner complication.edit)}}
                     <div>
-                      {{> "systems/cortexprime/templates/partials/remove-button.html"
+                      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                       path=../path
                       target='complications'
                       itemKey=complicationIndex
@@ -175,7 +175,7 @@
                   {{/if}}
                   {{#if ../owner}}
                     <div class="flex-col flex-s-1">
-                      {{> "systems/cortexprime/templates/partials/dice/select.html"
+                      {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
                       addToPool=true
                       dice=complication.dice.value
                       minDice=0
@@ -187,7 +187,7 @@
                   <div class="flex-col flex-s-1">
                     <div class="flex flex-wrap flex-ac">
                       {{#each complication.dice.value as |die|}}
-                        {{> (concat "systems/cortexprime/templates/partials/dice/d" die ".html")
+                        {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" die ".html")
                           number=die
                           type='die-rating'
                         }}

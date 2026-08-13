@@ -13,11 +13,11 @@ import {
 export const migrateNotesToTabs = async () => {
   if (game.user !== game.users.activeGM) return
 
-  const actorTypes = game.settings.get('cortexprime', 'actorTypes')
+  const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
   const migratedActorTypes = computeMigratedActorTypes(actorTypes, localizer('Notes'))
 
   if (migratedActorTypes) {
-    await game.settings.set('cortexprime', 'actorTypes', migratedActorTypes)
+    await game.settings.set('cortexprime-ext', 'actorTypes', migratedActorTypes)
   }
 
   // Actor Types not migrated just now may still have been migrated on a previous run — every

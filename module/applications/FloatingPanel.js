@@ -21,7 +21,7 @@ export class FloatingPanel extends Application {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'cortexprime-floating-panel',
-      template: 'systems/cortexprime/templates/floating-panel.html',
+      template: 'systems/cortexprime-ext/templates/floating-panel.html',
       classes: ['cortexprime', 'floating-panel'],
       popOut: false
     })

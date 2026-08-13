@@ -5,7 +5,7 @@
       <input class="breadcrumb-name-change input-cpt" data-target="{{concat 'simpleTrait-' actorTypeIndex '-' simpleTraitIndex}}" name="{{concat 'actorTypes.' path '.' simpleTraitIndex '.label'}}" type="text" value="{{simpleTrait.label}}">
     </div>
     <div class="flex-col">
-      {{> "systems/cortexprime/templates/partials/remove-button.html"
+      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
         group=path
         itemKey=simpleTraitIndex
         itemName=simpleTrait.label
@@ -42,7 +42,7 @@
       </label>
     </div>
   </div>
-  {{> (concat "systems/cortexprime/templates/partials/settings/value-types/" (?? simpleTrait.settings.valueType 'text') ".html")
+  {{> (concat "systems/cortexprime-ext/templates/partials/settings/value-types/" (?? simpleTrait.settings.valueType 'text') ".html")
     consumableOption=true
     fieldPath=(concat 'actorTypes.' path '.' simpleTraitIndex)
     path=(concat path '.' simpleTraitIndex)

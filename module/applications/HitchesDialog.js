@@ -70,7 +70,7 @@ export class HitchesDialog extends FormApplication {
   static get defaultOptions () {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: 'hitches-dialog',
-      template: 'systems/cortexprime/templates/dialog/hitches.html',
+      template: 'systems/cortexprime-ext/templates/dialog/hitches.html',
       title: localizer('Hitches'),
       classes: ['cortexprime', 'hitches-dialog'],
       width: 620,
@@ -131,7 +131,7 @@ export class HitchesDialog extends FormApplication {
   }
 
   async getData () {
-    const themes = game.settings.get('cortexprime', 'themes')
+    const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     const { complications, sceneComplications, defaultComplicationLabel, doomPool, plotPoints, projection, summary } = this._getState()
@@ -263,7 +263,7 @@ export class HitchesDialog extends FormApplication {
       const { doomPool, plotPoints, projection, summary } = this._getState()
 
       const summaryHtml = await foundry.applications.handlebars.renderTemplate(
-        'systems/cortexprime/templates/chat/hitches.html',
+        'systems/cortexprime-ext/templates/chat/hitches.html',
         {
           actorName: this.actor.name,
           doomPoolLabel: doomPool?.label ?? localizer('DoomPoolTrait'),
