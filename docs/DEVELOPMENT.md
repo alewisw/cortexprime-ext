@@ -26,6 +26,9 @@ for testing.
   and included whenever `scss/` changes.
 - `system.json` — Foundry system manifest (id, version, compatibility,
   download/manifest URLs, etc.)
+- `e2e/` — Playwright end-to-end tests that drive a real, locally running
+  Foundry instance in a browser (see
+  [End-to-end (Playwright) tests](#end-to-end-playwright-tests)).
 
 ## Install dependencies
 
@@ -137,6 +140,112 @@ setup screen.
 - **system.json / template.json changes** (e.g. compatibility, actor
   types): these typically require fully restarting Foundry (relaunch the
   application/server), not just reloading the page.
+
+## End-to-end (Playwright) tests
+
+Unlike the Vitest unit tests under `test/`, which only cover pure-logic
+modules with no dependency on a running Foundry instance, the tests under
+`e2e/` drive your **real, locally running** Foundry instance through an
+actual browser with [Playwright](https://playwright.dev/), so they can
+exercise Foundry-coupled code (actor sheets, hooks, settings apps,
+`game`/`Hooks`/`CONFIG` globals) that the unit tests deliberately cannot
+touch.
+
+These tests are **local-only** — no CI automation, no headless server, no
+credentials stored anywhere. You run Foundry yourself; Playwright just
+drives the browser tab.
+
+### One-time setup
+
+```
+npx playwright install chromium
+```
+
+### Running the tests
+
+1. Start your local Foundry instance and **launch a world that uses this
+   system** (`cortexprime-ext`), so it's sitting at the join-a-world screen
+   or already in-game at `http://localhost:30000`.
+2. Run:
+
+   ```
+   npm run test:e2e
+   ```
+
+   To watch it run instead of headless, or step through interactively:
+
+   ```
+   npm run test:e2e:ui
+   ```
+
+   (Playwright's UI mode — timeline, DOM snapshots, and step-by-step replay
+   for every test. `npx playwright test --headed` is the lighter-weight
+   option if you just want a visible browser window.)
+
+   Set `FOUNDRY_URL` if your instance isn't at the default
+   `http://localhost:30000`.
+
+### Test accounts and actors
+
+The tests expect three dedicated, no-password accounts to exist in the
+world being tested against: **`PlaywrightGamemaster`** (GM role),
+**`PlaywrightPlayer1`** and **`PlaywrightPlayer2`** (player role). Create
+these once per world via Foundry's Configure Game Settings → Manage
+Players.
+
+They also expect two actors to exist for the players to be linked to:
+**`Amanda Singh`** and **`Cameron James`**. Global setup links
+`PlaywrightPlayer1` → `Amanda Singh` and `PlaywrightPlayer2` → `Cameron
+James` automatically (see below) — the actors just need to already exist
+in the world.
+
+### Global setup: one login per role, before any test runs
+
+Wired in as `globalSetup` in `playwright.config.js`
+(`e2e/global-setup.js`), this runs once before any test, and:
+
+1. Logs in as the GM and both players (one real login each, via
+   `joinAs()`).
+2. From the GM session, using real Foundry API calls (`game.users`,
+   `game.actors`, not UI clicks — fast and reliable):
+   - Links `PlaywrightPlayer1` → the `Amanda Singh` actor.
+   - Links `PlaywrightPlayer2` → the `Cameron James` actor.
+   - Unpauses the game if it was paused (`game.togglePause(false, {
+     broadcast: true })`, which also pushes the unpause to the player
+     sessions).
+   - Cancels any active crisis pool.
+   - Clears the spotlight (no character highlighted).
+
+   This puts every test run on the same known baseline, regardless of
+   whatever state a previous manual session or test run left behind.
+3. Saves each session's storage state to `.auth/gm.json`,
+   `.auth/player1.json`, `.auth/player2.json` (gitignored — these hold
+   live session cookies).
+
+Individual tests then call `openAs(browser, role)` (role is `'gm'`,
+`'player1'`, or `'player2'`) instead of `joinAs()` — this restores the
+saved session instantly, with no login flow and no repeating the
+link/unpause setup. See `e2e/multi-session.spec.js` for a working example
+using all three at once.
+
+`joinAs()` (real login) is still exported from `e2e/foundry.js` for global
+setup's own use, or for a test that genuinely needs a fresh, non-role
+session.
+
+### Current scope and extending coverage
+
+This harness currently only proves the setup → `openAs()` →
+read-live-state loop works, single- and multi-session
+(`e2e/smoke.spec.js`, `e2e/multi-session.spec.js`). It does **not**
+automate Foundry's Setup → "Launch World" screen — a world must already be
+running before `npm run test:e2e` starts (global setup logs into that
+running world). When writing a new test and you need real selectors from
+the live app, use Playwright's recorder against your running instance
+rather than guessing from Foundry's templates:
+
+```
+npx playwright codegen http://localhost:30000
+```
 
 ## Releasing a new version
 
