@@ -65,6 +65,28 @@ directly as ES modules.
 Before committing any `scss/` changes, run a build so the compiled
 `css/cortexprime.css` in the commit matches the source.
 
+## Packaging a distributable zip
+
+To produce the zip that gets uploaded to a host such as
+[The Forge](https://forge-vtt.com/) (or attached to a GitHub release):
+
+```
+npm run package
+```
+
+This compiles Sass first, then writes `dist/cortexprime-<version>.zip`, where
+`<version>` is read straight from `system.json` so the filename and the
+manifest inside the archive can never disagree.
+
+The archive contains only what Foundry needs at runtime — `system.json`,
+`template.json`, `cortexprime.js`, `README.md`, and the `assets/`, `configs/`,
+`css/`, `lang/`, `lib/`, `module/` and `templates/` directories. Sass sources,
+tests, `node_modules/` and build config are excluded. `system.json` sits at the
+root of the zip (not inside a wrapper folder), which is what package hosts
+expect. `dist/` is gitignored.
+
+To add or remove packaged files, edit `PACKAGE_SOURCES` in `gulpfile.js`.
+
 ## Deploying into FoundryVTT for local testing
 
 Foundry loads systems from its user data directory under `Data/systems/`.
@@ -126,6 +148,9 @@ setup screen.
 4. Create a GitHub release for that tag; the `download` URL in
    `system.json` must resolve to a zip of the repository at that tag so
    Foundry's installer can fetch it.
+   Run `npm run package` if you also need a trimmed, runtime-only zip to
+   attach to the release or upload to a host such as The Forge (see
+   [Packaging a distributable zip](#packaging-a-distributable-zip)).
 5. Confirm the `manifest` URL in `system.json` (raw URL to `system.json` on
    the default branch) is correct — this is what Foundry uses to check for
    and install updates.

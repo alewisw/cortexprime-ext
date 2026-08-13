@@ -1,6 +1,8 @@
+const fs = require('fs');
 const gulp = require('gulp');
 const prefix = require('gulp-autoprefixer');
 const sourcemaps = require('gulp-sourcemaps');
+const zip = require('gulp-zip');
 const sass = require('gulp-sass')(require('sass'));
 
 /* ----------------------------------------- */
@@ -32,6 +34,48 @@ function compileScss() {
 const css = gulp.series(compileScss);
 
 /* ----------------------------------------- */
+/*  Package for distribution
+/* ----------------------------------------- */
+
+// Everything Foundry needs at runtime. Anything not listed here (scss sources,
+// tests, node_modules, build config, CI files) is deliberately left out of the
+// distributed zip.
+const PACKAGE_SOURCES = [
+  "system.json",
+  "template.json",
+  "cortexprime.js",
+  "README.md",
+  "assets/**/*",
+  "configs/**/*",
+  "css/**/*",
+  "lang/**/*",
+  "lib/**/*",
+  "module/**/*",
+  "templates/**/*"
+];
+const DIST = "./dist";
+
+// system.json is the single source of truth for the version, so the zip name
+// always matches the manifest Foundry will read out of it.
+function packageVersion() {
+  return JSON.parse(fs.readFileSync("./system.json", "utf8")).version;
+}
+
+function buildPackage() {
+  const filename = `cortexprime-${packageVersion()}.zip`;
+
+  // system.json must sit at the root of the archive, so keep paths relative to
+  // the project root rather than to each glob's own base.
+  return gulp.src(PACKAGE_SOURCES, { base: ".", nodir: true })
+    .pipe(zip(filename))
+    .pipe(gulp.dest(DIST))
+    .on("end", () => console.log(`Packaged ${DIST}/${filename}`));
+}
+
+// Compile first so the css/ in the zip can never lag behind scss/.
+const packageSystem = gulp.series(compileScss, buildPackage);
+
+/* ----------------------------------------- */
 /*  Watch Updates
 /* ----------------------------------------- */
 
@@ -48,3 +92,4 @@ exports.default = gulp.series(
   watchUpdates
 );
 exports.css = css;
+exports.package = packageSystem;

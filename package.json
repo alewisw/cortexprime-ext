@@ -1,10 +1,11 @@
 {
   "name": "cortexprime",
-  "version": "0.2.16",
+  "version": "0.3.0",
   "description": "CSS compiler for the Cortex Prime system",
   "scripts": {
     "build": "gulp",
     "compile": "gulp css",
+    "package": "gulp package",
     "watch": "gulp",
     "gulp": "gulp",
     "test": "vitest run",
@@ -24,6 +25,7 @@
     "sass": "^1.45.1"
   },
   "devDependencies": {
+    "gulp-zip": "^5.1.0",
     "vitest": "^4.1.10"
   }
 }
