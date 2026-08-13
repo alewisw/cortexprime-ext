@@ -1,7 +1,6 @@
-import defaultActorTypes from "../actor/defaultActorTypes.js"
-import defaultMageSettings from "./defaultMageSettings.js"
-import defaultPlotPointUses from "../actor/defaultPlotPointUses.js"
+import defaultThemes from "../theme/defaultThemes.js"
 import { localizer, setCssVars } from "../scripts/foundryHelpers.js"
+import { SYNCED_SETTINGS } from "./syncedSettings.js"
 
 export default class ImportExportSettings extends FormApplication {
   constructor() {
@@ -42,15 +41,15 @@ export default class ImportExportSettings extends FormApplication {
   async _exportSettings(event) {
     event.preventDefault()
 
-    const { current, custom } = await game.settings.get('cortexprime-ext', 'themes')
+    const { current, custom } = game.settings.get('cortexprime-ext', 'themes')
 
     const settings = {
-      actorTypes: game.settings.get('cortexprime-ext', 'actorTypes'),
       cortexPrimeVersion: game.system.version,
-      customRuleSet: game.settings.get('cortexprime-ext', 'customRuleSet'),
-      mageSettings: game.settings.get('cortexprime-ext', 'mageSettings'),
-      plotPointUses: game.settings.get('cortexprime-ext', 'plotPointUses'),
       theme: { current, custom }
+    }
+
+    for (const { key } of SYNCED_SETTINGS) {
+      settings[key] = game.settings.get('cortexprime-ext', key)
     }
 
     await saveDataToFile(JSON.stringify(settings), 'json', 'my-cortex-prime-settings.json')
@@ -96,10 +95,10 @@ export default class ImportExportSettings extends FormApplication {
 
         if (confirmed) {
           await game.settings.set('cortexprime-ext', 'importedSettings', { currentSetting: file.name })
-          await game.settings.set('cortexprime-ext', 'actorTypes', data.actorTypes)
-          await game.settings.set('cortexprime-ext', 'customRuleSet', data.customRuleSet ?? 'none')
-          await game.settings.set('cortexprime-ext', 'mageSettings', data.mageSettings ?? defaultMageSettings)
-          await game.settings.set('cortexprime-ext', 'plotPointUses', data.plotPointUses ?? defaultPlotPointUses)
+
+          for (const { key, default: fallback } of SYNCED_SETTINGS) {
+            await game.settings.set('cortexprime-ext', key, data[key] ?? fallback)
+          }
 
           const themeSettings = await game.settings.get('cortexprime-ext', 'themes')
 
@@ -113,6 +112,11 @@ export default class ImportExportSettings extends FormApplication {
           const theme = themeSettings.current === 'custom' ? themeSettings.custom : themeSettings.list[themeSettings.current]
 
           setCssVars(theme)
+
+          // Some SYNCED_SETTINGS entries are config:true and shown on Foundry's native Configure
+          // Settings dialog, which only reads current values when it renders — refresh it if it's
+          // already open so the imported/reset values show up without a manual close/reopen.
+          if (game.settings.sheet.rendered) game.settings.sheet.render()
 
           ui.notifications.info(localizer('ImportSuccessMessage'))
 
@@ -139,10 +143,19 @@ export default class ImportExportSettings extends FormApplication {
 
     if (confirmed) {
       await game.settings.set('cortexprime-ext', 'importedSettings', { currentSetting: localizer('Default') })
-      await game.settings.set('cortexprime-ext', 'actorTypes', defaultActorTypes)
-      await game.settings.set('cortexprime-ext', 'customRuleSet', 'none')
-      await game.settings.set('cortexprime-ext', 'mageSettings', defaultMageSettings)
-      await game.settings.set('cortexprime-ext', 'plotPointUses', defaultPlotPointUses)
+
+      for (const { key, default: fallback } of SYNCED_SETTINGS) {
+        await game.settings.set('cortexprime-ext', key, fallback)
+      }
+
+      await game.settings.set('cortexprime-ext', 'themes', defaultThemes)
+      const theme = defaultThemes.current === 'custom' ? defaultThemes.custom : defaultThemes.list[defaultThemes.current]
+      setCssVars(theme)
+
+      // See the matching comment in _importSettings: refresh Foundry's native Configure Settings
+      // dialog if it's already open, since some SYNCED_SETTINGS entries are config:true there.
+      if (game.settings.sheet.rendered) game.settings.sheet.render()
+
       ui.notifications.info(localizer('ResetSuccessMessage'))
 
       this.render(true)
