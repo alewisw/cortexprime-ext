@@ -4,7 +4,7 @@
 // Foundry's own Scene Configuration. Never modifies UserDicePool.js, dice-pool.html,
 // dicePoolValidation.js, rollToBeat.js, or settings.js — only imports their existing exports.
 import { getLength } from '../../lib/helpers.js'
-import { localizer } from '../scripts/foundryHelpers.js'
+import { localizer, onSettingChanged } from '../scripts/foundryHelpers.js'
 import { flattenPoolEntries } from '../scripts/dicePoolValidation.js'
 import { getEffectiveDiceMap } from '../scripts/traitDiceTemporary.js'
 import { getActiveChallenge, getRollToBeatTargets, hasInitiatorRolled } from '../scripts/rollToBeat.js'
@@ -282,7 +282,7 @@ export const registerMageAscension = () => {
     'cortexprime-ext.customRuleSet'
   ]
 
-  Hooks.on('updateSetting', async setting => {
+  onSettingChanged(async setting => {
     if (!settingKeys.includes(setting.key)) return
 
     await syncRealityReinforcement()

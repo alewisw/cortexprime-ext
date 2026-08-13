@@ -6,7 +6,7 @@
 // destroyed at roll time and never persisted; they rebuild it).
 //
 // The pure decisions live in rollUndoLogic.js.
-import { localizer } from './foundryHelpers.js'
+import { localizer, onSettingChanged } from './foundryHelpers.js'
 import {
   clearActiveChallenge,
   getActiveChallenge,
@@ -232,7 +232,7 @@ export const registerRollUndo = () => {
   Hooks.on('updateActor', onRollRecorded)
 
   // The GM rolling retires every outstanding undo, so the buttons have to actually go away.
-  Hooks.on('updateSetting', setting => {
+  onSettingChanged(setting => {
     if (setting.key === 'cortexprime-ext.lastGmRoll') refreshUndoableCards()
   })
 

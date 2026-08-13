@@ -2,7 +2,7 @@
 // can write world settings; each player via a flag on their own assigned character actor,
 // since a player normally owns that document), and the GM-driven Test/Contest "challenge"
 // state that decides who currently has "Roll To Beat" available and who they're targeting.
-import { localizer } from './foundryHelpers.js'
+import { localizer, onSettingChanged } from './foundryHelpers.js'
 import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
 
 const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0, dice: [], poolEntries: [] }
@@ -729,7 +729,7 @@ export const registerRollToBeat = () => {
     }
   }
 
-  Hooks.on('updateSetting', setting => {
+  onSettingChanged(setting => {
     if (setting.key === 'cortexprime-ext.lastGmRoll') {
       processChallengeAdvancement()
       processGroupAdvancement()

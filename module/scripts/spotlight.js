@@ -1,6 +1,7 @@
 // Lets the GM highlight which connected player's character currently has the narrative
 // spotlight; visible to all players via a floating-panel widget.
 import { FloatingPanel } from '../applications/FloatingPanel.js'
+import { onSettingChanged } from './foundryHelpers.js'
 
 const getConnectedPlayerActors = () => game.users.contents
   .filter(user => user.active && !user.isGM && user.character)
@@ -32,7 +33,7 @@ export const registerSpotlight = () => {
     }
   })
 
-  Hooks.on('updateSetting', setting => {
+  onSettingChanged(setting => {
     if (setting.key === 'cortexprime-ext.spotlightActorId' || setting.key === 'cortexprime-ext.spotlightEnabled') {
       game.cortexprime.FloatingPanel?.refresh()
     }

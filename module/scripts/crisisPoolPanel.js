@@ -3,7 +3,7 @@
 // imports and remain safely importable from rollToBeat.js and unit tests.
 import { FloatingPanel } from '../applications/FloatingPanel.js'
 import { CrisisPoolDialog } from '../applications/CrisisPoolDialog.js'
-import { localizer } from './foundryHelpers.js'
+import { localizer, onSettingChanged } from './foundryHelpers.js'
 import { getCrisisPool } from './crisisPool.js'
 
 export const registerCrisisPool = () => {
@@ -30,7 +30,7 @@ export const registerCrisisPool = () => {
     }
   })
 
-  Hooks.on('updateSetting', async setting => {
+  onSettingChanged(async setting => {
     if (setting.key === 'cortexprime-ext.crisisPool') {
       game.cortexprime.FloatingPanel?.refresh()
       await game.cortexprime.UserDicePool?.refreshCrisisPool()

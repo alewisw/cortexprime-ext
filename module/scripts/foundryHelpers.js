@@ -19,6 +19,17 @@ export const getBorderWidth = (borderPosition, borderWidth) => {
 
 export const localizer = target => game.i18n.localize(target)
 
+// A world Setting is a Document like any other: the *first* time it's ever set (e.g. right
+// after a world is created, before a GM has touched it) Foundry creates that Setting document
+// and fires 'createSetting', not 'updateSetting' — every later change updates the existing
+// document and fires 'updateSetting' as expected. Listening for only 'updateSetting' means a
+// setting's very first change is silently missed. Use this instead of Hooks.on('updateSetting',
+// ...) wherever a setting change should trigger a refresh, so both cases are covered.
+export const onSettingChanged = callback => {
+  Hooks.on('createSetting', callback)
+  Hooks.on('updateSetting', callback)
+}
+
 // Shows the Dice So Nice "plot point" die-flip animation (the cp-pp preset registered in
 // cortexPrimeHooks.js), so every mechanism that moves a Plot Point reads the same visually —
 // pass a count when a single action moves more than one point (e.g. multiple Roll & Select

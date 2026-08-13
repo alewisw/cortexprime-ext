@@ -1,7 +1,7 @@
 // Button that opens the GM-designated Doom Pool actor (set via Doom Pool Settings). Visible
 // to both GM and players, and only present at all once a Doom Pool actor has been configured.
 import { FloatingPanel } from '../applications/FloatingPanel.js'
-import { localizer } from './foundryHelpers.js'
+import { localizer, onSettingChanged } from './foundryHelpers.js'
 
 const getDoomPoolActor = () => {
   const actorId = game.settings.get('cortexprime-ext', 'doomPoolActorId')
@@ -28,7 +28,7 @@ export const registerDoomPool = () => {
     }
   })
 
-  Hooks.on('updateSetting', setting => {
+  onSettingChanged(setting => {
     if (setting.key === 'cortexprime-ext.doomPoolActorId') {
       game.cortexprime.FloatingPanel?.refresh()
     }
