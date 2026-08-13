@@ -52,7 +52,7 @@ export default class ImportExportSettings extends FormApplication {
       settings[key] = game.settings.get('cortexprime-ext', key)
     }
 
-    await saveDataToFile(JSON.stringify(settings), 'json', 'my-cortex-prime-settings.json')
+    await saveDataToFile(JSON.stringify(settings, null, 2), 'json', 'my-cortex-prime-settings.json')
   }
 
   async _importSettings(event) {

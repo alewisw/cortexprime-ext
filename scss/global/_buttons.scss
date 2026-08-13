@@ -40,6 +40,14 @@
   }
 }
 
+// Twice the size of a plain .btn-icon (the trait/trait-set "shutdown" switch), since the
+// fa-toggle-on/fa-toggle-off glyph reads as fiddly and easy to miss at the standard icon size.
+.shutdown-toggle {
+  font-size: toRem(28px);
+  height: toRem(48px);
+  width: toRem(48px);
+}
+
 .add-trait-to-pool {
   cursor: pointer;
 }

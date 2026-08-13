@@ -1,1 +1,602 @@
-{"cortexPrimeVersion":"0.3.0","theme":{"current":"Default","custom":null},"actorTypes":{"0":{"defaultImage":"icons/svg/house.svg","hasAssets":false,"hasComplications":true,"hasHidableTraits":false,"hasNotesPage":false,"hasPlotPoints":false,"id":"_2","name":"Scene","showProfileImage":true,"simpleTraits":{"0":{"dice":{"value":{"0":"8"}},"id":"_1785156233574","label":"Reality Reinforcement","settings":{"editable":true,"valueType":"dice","consumableDice":false,"hasMultipleDice":false},"hasDescription":true,"text":{"value":""},"description":""},"1":{"dice":{"value":{"0":"8"}},"id":"_1786623924572","label":"Shielding","settings":{"editable":true,"valueType":"dice","consumableDice":false,"hasMultipleDice":false},"hasDescription":false,"text":{"value":""}}},"traitSets":{"0":{"description":null,"hasDescription":false,"id":"_24","label":"Scene Distinctions","shutdown":false,"traits":{},"settings":{"hasDescription":true,"hasDescriptors":false,"hasDice":true,"hasLabel":false,"hasSfx":false,"hasSubTraits":false,"subTraitsHaveDice":true,"subTraitsDiceConsumable":false,"diceConsumable":false,"limitOnePerDicePool":false,"mutuallyExclusiveWith":"","hasMultipleDice":true}}},"assetsHaveMultipleDice":true},"1":{"id":"_1767322477683","name":"Player","showProfileImage":true,"hasPlotPoints":true,"hasAssets":true,"hasComplications":true,"hasHidableTraits":false,"traitSets":{"0":{"id":"_1784978821236","label":"Distinctions","hasDescription":true,"settings":{"hasDescription":true,"hasLabel":true,"hasDescriptors":false,"hasSfx":false,"hasSubTraits":false,"hasDice":true,"diceConsumable":false,"limitOnePerDicePool":false,"mutuallyExclusiveWith":"","hasMultipleDice":true},"description":"Hinder: gain a plot point, switch this Distinction for a (D4)"},"1":{"id":"_1767322484291","label":"Values","hasDescription":false,"settings":{"hasDescription":true,"hasLabel":true,"hasDescriptors":true,"hasSfx":false,"hasSubTraits":false,"hasDice":true,"diceConsumable":false,"limitOnePerDicePool":false,"mutuallyExclusiveWith":"","hasMultipleDice":true},"traits":{"0":{"id":"_1767322516075","name":"Advancement","dice":{"value":{"0":"8"}},"description":"(describe your own)","descriptors":{"0":{"label":"Ambition","value":"The world advances through collective effort and patient work."}}},"1":{"id":"_1767322528847","name":"Will","dice":{"value":{"0":"8"}},"description":""},"2":{"id":"_1784978402850","name":"Loyalty","dice":{"value":{"0":"8"}},"description":""},"3":{"id":"_1784978411115","name":"The World","dice":{"value":{"0":"8"}},"description":""},"4":{"id":"_1784978418028","name":"Truth","dice":{"value":{"0":"8"}},"description":""},"5":{"id":"_1784978423752","name":"Connection","dice":{"value":{"0":"8"}},"description":""}},"description":""},"2":{"id":"_1784978960886","label":"Skills","hasDescription":true,"settings":{"hasDescription":true,"hasLabel":false,"hasDescriptors":false,"hasSfx":false,"hasSubTraits":false,"hasDice":true,"diceConsumable":false,"limitOnePerDicePool":false,"mutuallyExclusiveWith":"","hasMultipleDice":true},"description":"","traits":{"0":{"id":"_1784978980648","name":"Academics","dice":{"value":{"0":"4"}},"description":"Formal, book-bound knowledge.  History, science, languages, the library and the archive."},"1":{"id":"_1784979215991","name":"Athletics","dice":{"value":{"0":"4"}},"description":""},"2":{"id":"_1784979225709","name":"Deceive","dice":{"value":{"0":"4"}},"description":""},"3":{"id":"_1784979239405","name":"Drive","dice":{"value":{"0":"4"}},"description":""},"4":{"id":"_1784979251060","name":"Fight","dice":{"value":{"0":"4"}},"description":""},"5":{"id":"_1784979263188","name":"Notice","dice":{"value":{"0":"4"}},"description":""},"6":{"id":"_1784979271896","name":"Persuade","dice":{"value":{"0":"4"}},"description":""},"7":{"id":"_1784979282500","name":"Resources","dice":{"value":{"0":"4"}},"description":""},"8":{"id":"_1784979294131","name":"Shoot","dice":{"value":{"0":"4"}},"description":""},"9":{"id":"_1784979302855","name":"Stealth","dice":{"value":{"0":"4"}},"description":""},"10":{"id":"_1784979313723","name":"Streetwise","dice":{"value":{"0":"4"}},"description":""},"11":{"id":"_1784979322258","name":"Tech","dice":{"value":{"0":"4"}},"description":""}}},"3":{"id":"_1784980285420","label":"Powers","hasDescription":false,"settings":{"hasDescription":true,"hasLabel":false,"hasDescriptors":false,"hasSfx":false,"hasSubTraits":false,"hasDice":true,"diceConsumable":false,"limitOnePerDicePool":false,"mutuallyExclusiveWith":"","hasMultipleDice":true}}},"simpleTraits":{"0":{"dice":{"value":{}},"id":"_1784980204269","label":"Paradox","settings":{"editable":true,"valueType":"dice","consumableDice":false,"hasMultipleDice":true},"hasDescription":true,"text":{"value":""},"description":""},"1":{"dice":{"value":{}},"id":"_1784980229635","label":"Trauma","settings":{"editable":true,"valueType":"dice","consumableDice":false,"hasMultipleDice":true},"hasDescription":true,"text":{"value":""},"description":""}},"assetsHaveMultipleDice":true,"additionalTabs":{"0":{"id":"_notes-_1767322477683","name":"Rules"},"1":{"id":"_1786624926271","name":"Value Log"},"2":{"id":"_1786624946207","name":"Notes"}}},"2":{"hasNotesPage":false,"id":"_1785043193027","name":"GM","showProfileImage":true,"hasPlotPoints":false,"hasAssets":false,"hasComplications":false,"hasHidableTraits":false,"simpleTraits":{"0":{"dice":{"value":{}},"id":"_1786623837107","label":"Limited Doom Pool","settings":{"editable":true,"valueType":"dice","consumableDice":true,"hasMultipleDice":true},"hasDescription":false,"text":{"value":""}}},"traitSets":{}},"3":{"id":"_1785237793018","name":"NPC","showProfileImage":true,"hasPlotPoints":false,"hasAssets":false,"hasComplications":true,"hasHidableTraits":false,"traitSets":{"0":{"id":"_1785239606715","label":"Traits","hasDescription":false,"settings":{"hasDescription":false,"hasLabel":false,"hasDescriptors":false,"hasSfx":true,"hasSubTraits":false,"hasDice":true,"diceConsumable":false,"limitOnePerDicePool":false,"mutuallyExclusiveWith":"","hasMultipleDice":true},"description":""}},"simpleTraits":{"0":{"dice":{"value":{"0":"8"}},"id":"_1785546697194","label":"Organisation","settings":{"editable":true,"valueType":"text"},"hasDescription":false,"text":{"value":""}},"1":{"dice":{"value":{"0":"8"}},"id":"_1785546676845","label":"Title","settings":{"editable":true,"valueType":"text"},"hasDescription":false,"text":{"value":""}},"2":{"dice":{"value":{"0":"8"}},"id":"_1785546706212","label":"Type","settings":{"editable":true,"valueType":"text"},"hasDescription":false,"text":{"value":""}},"3":{"dice":{"value":{"0":"8"}},"id":"_1785239646817","label":"Characteristics","settings":{"editable":true,"valueType":"text"},"hasDescription":false,"text":{"value":""}}},"additionalTabs":{"0":{"id":"_notes-_1785237793018","name":"Notes"}}}},"customRuleSet":"mage","mageSettings":{"locationActorTypeId":"_2","realityReinforcementTraitId":"_1785156233574","shieldingTraitId":"_1786623924572","playerCharacterActorTypeId":"_1767322477683","paradoxTraitId":"_1784980204269","traumaTraitId":"_1784980229635","powersTraitSetId":"_1784980285420"},"plotPointUses":{"general":{"0":{"id":"_1","label":"Activate SFX"},"1":{"id":"_2","label":"Avoid being taken out of a scene"},"2":{"id":"_3","label":"Create an Asset of rating [6] for your use that lasts the rest of the scene"},"3":{"id":"_4","label":"Keep an Asset you can use this scene for the rest of the session"},"4":{"id":"_5","label":"Share an Asset you can use with everyone in the scene, for this scene only"},"5":{"id":"_6","label":"Interfere in a contest"},"6":{"id":"_7","label":"Resume a contest after successful interference"}},"opportunity":{"0":{"id":"_9","label":"Step down one of your complications"},"1":{"id":"_10","label":"Step up one of your Assets for the rest of the scene"}}},"doomPoolActorId":"SMvYrFn5ri2iT2P8","doomPoolTraitId":"_1786623837107","testModeSelectDiceValues":true,"spotlightEnabled":true}
+{
+  "cortexPrimeVersion": "0.3.0",
+  "theme": {
+    "current": "Default",
+    "custom": null
+  },
+  "actorTypes": {
+    "0": {
+      "defaultImage": "icons/svg/house.svg",
+      "hasAssets": false,
+      "hasComplications": true,
+      "hasHidableTraits": false,
+      "hasNotesPage": false,
+      "hasPlotPoints": false,
+      "id": "_2",
+      "name": "Scene",
+      "showProfileImage": true,
+      "simpleTraits": {
+        "0": {
+          "dice": {
+            "value": {
+              "0": "8"
+            }
+          },
+          "id": "_1785156233574",
+          "label": "Reality Reinforcement",
+          "settings": {
+            "editable": true,
+            "valueType": "dice",
+            "consumableDice": false,
+            "hasMultipleDice": false
+          },
+          "hasDescription": true,
+          "text": {
+            "value": ""
+          },
+          "description": ""
+        },
+        "1": {
+          "dice": {
+            "value": {
+              "0": "8"
+            }
+          },
+          "id": "_1786623924572",
+          "label": "Shielding",
+          "settings": {
+            "editable": true,
+            "valueType": "dice",
+            "consumableDice": false,
+            "hasMultipleDice": false
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          }
+        }
+      },
+      "traitSets": {
+        "0": {
+          "description": null,
+          "hasDescription": false,
+          "id": "_24",
+          "label": "Scene Distinctions",
+          "shutdown": false,
+          "traits": {},
+          "settings": {
+            "hasDescription": true,
+            "hasDescriptors": false,
+            "hasDice": true,
+            "hasLabel": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "subTraitsHaveDice": true,
+            "subTraitsDiceConsumable": false,
+            "diceConsumable": false,
+            "limitOnePerDicePool": false,
+            "mutuallyExclusiveWith": "",
+            "hasMultipleDice": true
+          }
+        }
+      },
+      "assetsHaveMultipleDice": true
+    },
+    "1": {
+      "id": "_1767322477683",
+      "name": "Player",
+      "showProfileImage": true,
+      "hasPlotPoints": true,
+      "hasAssets": true,
+      "hasComplications": true,
+      "hasHidableTraits": false,
+      "traitSets": {
+        "0": {
+          "id": "_1784978821236",
+          "label": "Distinctions",
+          "hasDescription": true,
+          "settings": {
+            "hasDescription": true,
+            "hasLabel": true,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "",
+            "hasMultipleDice": false
+          },
+          "description": "Hinder: gain a plot point, switch this Distinction for a (D4)"
+        },
+        "1": {
+          "id": "_1767322484291",
+          "label": "Values",
+          "hasDescription": false,
+          "settings": {
+            "hasDescription": true,
+            "hasLabel": true,
+            "hasDescriptors": true,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "",
+            "hasMultipleDice": false
+          },
+          "traits": {
+            "0": {
+              "id": "_1767322516075",
+              "name": "Advancement",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "(describe your own)",
+              "descriptors": {
+                "0": {
+                  "label": "Ambition",
+                  "value": "The world advances through collective effort and patient work."
+                }
+              }
+            },
+            "1": {
+              "id": "_1767322528847",
+              "name": "Will",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": ""
+            },
+            "2": {
+              "id": "_1784978402850",
+              "name": "Loyalty",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": ""
+            },
+            "3": {
+              "id": "_1784978411115",
+              "name": "The World",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": ""
+            },
+            "4": {
+              "id": "_1784978418028",
+              "name": "Truth",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": ""
+            },
+            "5": {
+              "id": "_1784978423752",
+              "name": "Connection",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": ""
+            }
+          },
+          "description": ""
+        },
+        "2": {
+          "id": "_1784978960886",
+          "label": "Skills",
+          "hasDescription": true,
+          "settings": {
+            "hasDescription": true,
+            "hasLabel": false,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "_1784980285420",
+            "hasMultipleDice": false
+          },
+          "description": "",
+          "traits": {
+            "0": {
+              "id": "_1784978980648",
+              "name": "Academics",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "Formal, book-bound knowledge.  History, science, languages, the library and the archive."
+            },
+            "1": {
+              "id": "_1784979215991",
+              "name": "Athletics",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "2": {
+              "id": "_1784979225709",
+              "name": "Deceive",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "3": {
+              "id": "_1784979239405",
+              "name": "Drive",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "4": {
+              "id": "_1784979251060",
+              "name": "Fight",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "5": {
+              "id": "_1784979263188",
+              "name": "Notice",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "6": {
+              "id": "_1784979271896",
+              "name": "Persuade",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "7": {
+              "id": "_1784979282500",
+              "name": "Resources",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "8": {
+              "id": "_1784979294131",
+              "name": "Shoot",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "9": {
+              "id": "_1784979302855",
+              "name": "Stealth",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "10": {
+              "id": "_1784979313723",
+              "name": "Streetwise",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            },
+            "11": {
+              "id": "_1784979322258",
+              "name": "Tech",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": ""
+            }
+          }
+        },
+        "3": {
+          "id": "_1784980285420",
+          "label": "Powers",
+          "hasDescription": false,
+          "settings": {
+            "hasDescription": true,
+            "hasLabel": false,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "_1784978960886",
+            "hasMultipleDice": false
+          }
+        }
+      },
+      "simpleTraits": {
+        "0": {
+          "dice": {
+            "value": {}
+          },
+          "id": "_1784980204269",
+          "label": "Paradox",
+          "settings": {
+            "editable": true,
+            "valueType": "dice",
+            "consumableDice": false,
+            "hasMultipleDice": false
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          },
+          "description": ""
+        },
+        "1": {
+          "dice": {
+            "value": {}
+          },
+          "id": "_1784980229635",
+          "label": "Trauma",
+          "settings": {
+            "editable": true,
+            "valueType": "dice",
+            "consumableDice": false,
+            "hasMultipleDice": false
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          },
+          "description": ""
+        }
+      },
+      "assetsHaveMultipleDice": true,
+      "additionalTabs": {
+        "0": {
+          "id": "_notes-_1767322477683",
+          "name": "Rules"
+        },
+        "1": {
+          "id": "_1786624926271",
+          "name": "Value Log"
+        },
+        "2": {
+          "id": "_1786624946207",
+          "name": "Notes"
+        }
+      }
+    },
+    "2": {
+      "hasNotesPage": false,
+      "id": "_1785043193027",
+      "name": "GM",
+      "showProfileImage": true,
+      "hasPlotPoints": false,
+      "hasAssets": false,
+      "hasComplications": false,
+      "hasHidableTraits": false,
+      "simpleTraits": {
+        "0": {
+          "dice": {
+            "value": {}
+          },
+          "id": "_1786623837107",
+          "label": "Limited Doom Pool",
+          "settings": {
+            "editable": true,
+            "valueType": "dice",
+            "consumableDice": true,
+            "hasMultipleDice": true
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          }
+        }
+      },
+      "traitSets": {}
+    },
+    "3": {
+      "id": "_1785237793018",
+      "name": "NPC",
+      "showProfileImage": true,
+      "hasPlotPoints": false,
+      "hasAssets": false,
+      "hasComplications": true,
+      "hasHidableTraits": false,
+      "traitSets": {
+        "0": {
+          "id": "_1785239606715",
+          "label": "Traits",
+          "hasDescription": false,
+          "settings": {
+            "hasDescription": false,
+            "hasLabel": false,
+            "hasDescriptors": false,
+            "hasSfx": true,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": false,
+            "mutuallyExclusiveWith": "",
+            "hasMultipleDice": true
+          },
+          "description": ""
+        }
+      },
+      "simpleTraits": {
+        "0": {
+          "dice": {
+            "value": {
+              "0": "8"
+            }
+          },
+          "id": "_1785546697194",
+          "label": "Organisation",
+          "settings": {
+            "editable": true,
+            "valueType": "text"
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          }
+        },
+        "1": {
+          "dice": {
+            "value": {
+              "0": "8"
+            }
+          },
+          "id": "_1785546676845",
+          "label": "Title",
+          "settings": {
+            "editable": true,
+            "valueType": "text"
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          }
+        },
+        "2": {
+          "dice": {
+            "value": {
+              "0": "8"
+            }
+          },
+          "id": "_1785546706212",
+          "label": "Type",
+          "settings": {
+            "editable": true,
+            "valueType": "text"
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          }
+        },
+        "3": {
+          "dice": {
+            "value": {
+              "0": "8"
+            }
+          },
+          "id": "_1785239646817",
+          "label": "Characteristics",
+          "settings": {
+            "editable": true,
+            "valueType": "text"
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          }
+        }
+      },
+      "additionalTabs": {
+        "0": {
+          "id": "_notes-_1785237793018",
+          "name": "Notes"
+        }
+      }
+    }
+  },
+  "customRuleSet": "mage",
+  "mageSettings": {
+    "locationActorTypeId": "_2",
+    "realityReinforcementTraitId": "_1785156233574",
+    "shieldingTraitId": "_1786623924572",
+    "playerCharacterActorTypeId": "_1767322477683",
+    "paradoxTraitId": "_1784980204269",
+    "traumaTraitId": "_1784980229635",
+    "powersTraitSetId": "_1784980285420"
+  },
+  "plotPointUses": {
+    "general": {
+      "0": {
+        "id": "_1",
+        "label": "Activate SFX"
+      },
+      "1": {
+        "id": "_2",
+        "label": "Avoid being taken out of a scene"
+      },
+      "2": {
+        "id": "_3",
+        "label": "Create an Asset of rating [6] for your use that lasts the rest of the scene"
+      },
+      "3": {
+        "id": "_4",
+        "label": "Keep an Asset you can use this scene for the rest of the session"
+      },
+      "4": {
+        "id": "_5",
+        "label": "Share an Asset you can use with everyone in the scene, for this scene only"
+      },
+      "5": {
+        "id": "_6",
+        "label": "Interfere in a contest"
+      },
+      "6": {
+        "id": "_7",
+        "label": "Resume a contest after successful interference"
+      }
+    },
+    "opportunity": {
+      "0": {
+        "id": "_9",
+        "label": "Step down one of your complications"
+      },
+      "1": {
+        "id": "_10",
+        "label": "Step up one of your Assets for the rest of the scene"
+      }
+    }
+  },
+  "doomPoolActorId": "SMvYrFn5ri2iT2P8",
+  "doomPoolTraitId": "_1786623837107",
+  "testModeSelectDiceValues": true,
+  "spotlightEnabled": true
+}

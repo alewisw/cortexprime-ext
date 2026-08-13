@@ -1090,6 +1090,11 @@
 .cortexprime .btn-icon i.fa {
   margin-right: 0;
 }
+.cortexprime .shutdown-toggle {
+  font-size: 1.75rem;
+  height: 3rem;
+  width: 3rem;
+}
 .cortexprime .add-trait-to-pool {
   cursor: pointer;
 }
