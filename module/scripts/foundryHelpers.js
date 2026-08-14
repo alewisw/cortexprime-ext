@@ -45,6 +45,29 @@ export const showPlotPointAnimation = (count = 1) => {
 
 export const showPlotPointSpendAnimation = showPlotPointAnimation
 
+// The notes-field pencil button (additional-tab.html, and its Settings-page default-content
+// analogue) opens Foundry's own ProseMirror editor, which measures the CURRENT height of
+// .editor-content before mounting - if the field has shrunk to fit short content (see
+// .notes-field in _forms.scss), editing would open at that same shrunk height instead of
+// expanding to the field's max. Force both to max height first, so Foundry's measurement (and
+// the abs-positioned editor surface that then fills .editor's box once mounted) picks up the
+// expanded size. Call this once per activateListeners, alongside the sheet's other listener
+// wiring; it registers on the capture phase so it runs before Foundry's own button.onclick,
+// bound during super.activateListeners.
+export const expandNotesFieldOnEdit = html => {
+  html[0].addEventListener('click', event => {
+    const button = event.target.closest('.notes-field .editor-edit')
+    if (!button) return
+
+    const notesField = button.closest('.notes-field')
+    const editorContent = notesField.querySelector('.editor-content')
+    const maxHeight = getComputedStyle(notesField).maxHeight
+
+    notesField.style.height = maxHeight
+    if (editorContent) editorContent.style.height = maxHeight
+  }, true)
+}
+
 export const setCssVars = (theme) => {
   Object.entries(theme).forEach(([ key, value ]) => {
     if ('inputBorderPosition' === key) {

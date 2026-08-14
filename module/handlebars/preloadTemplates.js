@@ -26,6 +26,7 @@ export const preloadHandlebarsTemplates = async function () {
     'reorder',
     'settings/actor-types',
     'settings/actor-type',
+    'settings/additional-tab',
     'settings/theme/background-position',
     'settings/theme/background-repeat',
     'settings/theme/background-size',

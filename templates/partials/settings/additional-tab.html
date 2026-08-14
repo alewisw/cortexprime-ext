@@ -1,0 +1,73 @@
+<article class="{{viewClasses (concat 'additionalTab-' actorTypeIndex '-' tabIndex) breadcrumbs}} additional-tab">
+  <header class="flex flex-ac py-2 relative-section">
+    <div class="section-background"></div>
+    <div class="flex-col col-12">
+      <input class="breadcrumb-name-change input-cpt" data-target="{{concat 'additionalTab-' actorTypeIndex '-' tabIndex}}" name="{{concat 'actorTypes.' path '.' tabIndex '.name'}}" type="text" value="{{additionalTab.name}}">
+    </div>
+    <div class="flex-col">
+      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
+        group=path
+        itemKey=tabIndex
+        itemName=additionalTab.name
+        setting='actorTypes'
+        type="trash"
+      }}
+    </div>
+  </header>
+  <section>
+    <header class="relative-section">
+      <div class="section-background-alternate"></div>
+      <div class="flex flex-ac flex-jsb py-1">
+        <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'DefaultSections'}}</h3>
+        <div class="flex-col">
+          <button class="btn btn-primary-cpt btn-icon add-default-note" data-path="{{concat path '.' tabIndex '.defaultNotes'}}" type="button">
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="separator-cpt"></div>
+      <div class="relative-section pa-2">
+        <div class="section-background-alternate"></div>
+        <p>{{localize 'DefaultSectionsDescription'}}</p>
+      </div>
+    </header>
+    {{#if (listHasMore additionalTab.defaultNotes 0)}}
+      <div class="separator-cpt"></div>
+    {{/if}}
+    <ul class="list-style-none px-0 my-0">
+      {{#each additionalTab.defaultNotes as |defaultNote noteIndex|}}
+        <li class="pa-2 relative-section">
+          <div class="{{ternary (eq (mod noteIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
+          <div class="flex-row flex-ae mb-1">
+            <div class="flex-col col-12">
+              <label>
+                <span class="input-label-cpt">{{localize 'Name'}}</span>
+                <input class="input-cpt" type="text" name="{{concat 'actorTypes.' path '.' tabIndex '.defaultNotes.' noteIndex '.label'}}" value="{{defaultNote.label}}">
+              </label>
+            </div>
+            <div class="flex-col">
+              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
+                group=(concat path '.' tabIndex '.defaultNotes')
+                itemKey=noteIndex
+                itemName=defaultNote.label
+                setting='actorTypes'
+                stayOnPage=true
+                type="trash"
+              }}
+            </div>
+          </div>
+          <div class="notes-field">
+            {{editor
+              defaultNote.value
+              content=defaultNote.value
+              target=(concat 'actorTypes.' path '.' tabIndex '.defaultNotes.' noteIndex '.value')
+              button=true
+              owner=true
+              editable=true
+            }}
+          </div>
+        </li>
+      {{/each}}
+    </ul>
+  </section>
+</article>

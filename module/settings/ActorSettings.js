@@ -1,4 +1,4 @@
-import { localizer } from '../scripts/foundryHelpers.js'
+import { expandNotesFieldOnEdit, localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFindKey, objectFindValue, objectMapValues, objectReduce, objectReindexFilter } from '../../lib/helpers.js'
 import { removeItem, reorderItem } from '../scripts/settingsHelpers.js'
 
@@ -49,6 +49,7 @@ export default class ActorSettings extends FormApplication {
     super.activateListeners(html)
     html.find('#add-new-actor-type').click(this._addNewActorType.bind(this))
     html.find('.add-additional-tab').click(this._addAdditionalTab.bind(this))
+    html.find('.add-default-note').click(this._addAdditionalTabDefaultNote.bind(this))
     html.find('.add-descriptor').click(this._addDescriptor.bind(this))
     html.find('.add-simple-trait').click(this._addSimpleTrait.bind(this))
     html.find('.add-sfx').click(this._addSfx.bind(this))
@@ -63,6 +64,7 @@ export default class ActorSettings extends FormApplication {
     html.find('.duplicate-item').click(this._duplicateItem.bind(this))
     html.find('.new-die').click(this._newDie.bind(this))
     html.find('.view-change').click(this._viewChange.bind(this))
+    expandNotesFieldOnEdit(html)
     removeItem.call(this, html)
     reorderItem.call(this, html)
   }
@@ -85,26 +87,46 @@ export default class ActorSettings extends FormApplication {
     this.render(true)
   }
 
-  // No drill-down edit page — unlike a Trait Set, a tab has nothing to configure beyond its name,
-  // which is edited inline in the list row itself.
   async _addAdditionalTab (event) {
     event.preventDefault()
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const actorTypeKey = $(event.currentTarget).data('actorType')
     const newKey = getLength(source[actorTypeKey]?.additionalTabs || {})
+    const name = localizer('NewAdditionalTab')
 
     const newAdditionalTab = {
       [actorTypeKey]: {
         additionalTabs: {
           [newKey]: {
             id: `_${Date.now()}`,
-            name: localizer('NewAdditionalTab')
+            name
           }
         }
       }
     }
 
     await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newAdditionalTab))
+    await this.changeView(name, `additionalTab-${actorTypeKey}-${newKey}`)
+    this.render(true)
+  }
+
+  async _addAdditionalTabDefaultNote (event) {
+    event.preventDefault()
+    const $addButton = $(event.currentTarget)
+    const path = $addButton.data('path')
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
+    const currentDefaultNotes = foundry.utils.getProperty(source, path) || {}
+
+    foundry.utils.setProperty(source, path,
+      {
+        ...currentDefaultNotes,
+        [getLength(currentDefaultNotes ?? {})]: {
+          label: localizer('NewSection'),
+          value: null
+        }
+      })
+
+    await game.settings.set('cortexprime-ext', 'actorTypes', source)
     this.render(true)
   }
 

@@ -59,6 +59,15 @@
                 simpleTraitIndex=simpleTraitIndex
               }}
             {{/each}}
+            {{#each actorType.additionalTabs as |additionalTab tabIndex|}}
+              {{> "systems/cortexprime-ext/templates/partials/settings/additional-tab.html"
+                actorTypeIndex=actorTypeIndex
+                additionalTab=additionalTab
+                breadcrumbs=../../breadcrumbs
+                path=(concat actorTypeIndex '.additionalTabs')
+                tabIndex=tabIndex
+              }}
+            {{/each}}
           {{/each}}
         </main>
       </div>

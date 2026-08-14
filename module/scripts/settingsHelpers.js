@@ -59,7 +59,7 @@ export const removeItem = async function (html) {
         let settings = game.settings.get('cortexprime-ext', setting)
 
         const currentGroupSettings = group ? await foundry.utils.getProperty(settings, group) : settings
-        const groupSettingValue = objectReindexFilter(currentGroupSettings, (_, key) => +key !== +itemKey)
+        const groupSettingValue = objectReindexFilter(currentGroupSettings, (_, key) => key !== itemKey)
 
         if (group) {
           foundry.utils.setProperty(settings, group, groupSettingValue)

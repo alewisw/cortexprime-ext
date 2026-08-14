@@ -219,17 +219,14 @@
                 currentIndex=tabIndex
                 setting="actorTypes"
               }}
-              <input class="input-cpt flex-col" type="text" name="actorTypes.{{../actorTypeIndex}}.additionalTabs.{{tabIndex}}.name" value="{{additionalTab.name}}">
+              <span class="section-secondary-title-cpt flex-col">{{or additionalTab.name (concat '[' (localize 'NoName' ) ']')}}</span>
             </div>
-            <div class="flex-col px-0">
-              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
-                group=(concat ../actorTypeIndex '.additionalTabs')
-                itemKey=tabIndex
-                itemName=additionalTab.name
-                setting="actorTypes"
-                stayOnPage=true
-                type="trash"
-              }}
+            <div class="flex-col flex-row flex-ac">
+              <div class="flex-col px-0">
+                <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{additionalTab.name}}" data-to="additionalTab-{{../actorTypeIndex}}-{{tabIndex}}" type="button">
+                  <i class="fa fa-edit ma-0"></i>
+                </button>
+              </div>
             </div>
           </li>
         {{/each}}
