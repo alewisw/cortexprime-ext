@@ -208,6 +208,16 @@
                   {{/if}}
                 </p>
               </div>
+              {{#if isGM}}
+                {{#each selectingRollers as |roller|}}
+                <div class="mt-1 flex flex-ac flex-jsb">
+                  <p class="sub-trait-label-cpt mb-0">{{localize 'Selecting'}} &mdash; {{roller.name}}</p>
+                  <button class="btn btn-secondary-cpt request-reroll" data-actor-id="{{roller.id}}" type="button">
+                    {{localize 'Reroll'}}
+                  </button>
+                </div>
+                {{/each}}
+              {{/if}}
               {{/if}}
               {{#if showChallengeTarget}}
               {{#if isInterfering}}

@@ -88,6 +88,29 @@ const getChallengeDisplay = (activeChallenge, rollToBeatTargets) => {
   }
 }
 
+// The id-returning twin of getChallengeDisplay's rollNowNames, for matching against who
+// currently has a "Select Your Dice" dialog open (see selectingRollers in getData) — a
+// responder, the not-yet-rolled interferer, or the front-of-queue Group duelist.
+const getEligibleRollerIds = activeChallenge => {
+  if (activeChallenge.interference) return [activeChallenge.interference.interfererId]
+
+  if (activeChallenge.type === 'group') {
+    const currentId = activeChallenge.group?.phase === 'dueling' ? activeChallenge.group.queue?.[0] : null
+    return currentId ? [currentId] : []
+  }
+
+  if (!activeChallenge.type) return []
+
+  const initiatorHasRolled = hasInitiatorRolled(activeChallenge)
+
+  if (activeChallenge.type === 'test') {
+    return initiatorHasRolled ? activeChallenge.responderIds : [activeChallenge.initiatorId]
+  }
+
+  const responderId = activeChallenge.responderIds[0] ?? null
+  return [initiatorHasRolled ? responderId : activeChallenge.initiatorId].filter(Boolean)
+}
+
 // Bundles everything the template needs to render the GM's challenge controls and the status
 // line, built on top of getChallengeDisplay's "who's up now" resolution.
 const getChallengeDisplayData = (activeChallenge, rollToBeatTargets) => {
@@ -188,6 +211,11 @@ export class UserDicePool extends FormApplication {
     const dicePoolInvalidReason = dicePoolInvalidResult
       ? game.i18n.format(dicePoolInvalidResult.key, dicePoolInvalidResult.data)
       : null
+    const eligibleRollerIds = getEligibleRollerIds(activeChallenge)
+    const selectingRollers = rollToBeatTargets
+      .filter(target => target.id !== 'gm' && eligibleRollerIds.includes(target.id))
+      .filter(target => !!game.actors.get(target.id)?.getFlag('cortexprime-ext', 'dicePickerOpen'))
+      .map(({ id, name }) => ({ id, name }))
 
     return {
       ...dice,
@@ -206,6 +234,7 @@ export class UserDicePool extends FormApplication {
       challengeTargetEffectDice: challengeTarget?.effectDice ?? [],
       isInterfering: !!myInterfererId,
       activeChallenge,
+      selectingRollers,
       // Only offered once the Contest is actually underway and nobody's currently interfering —
       // starting a second interference before the first is resumed isn't supported.
       eligibleInterferers: contestStarted && !activeChallenge.interference ? getEligibleInterferers() : [],
@@ -247,11 +276,29 @@ export class UserDicePool extends FormApplication {
     html.find('.start-group-initiative').click(this._startGroupInitiative.bind(this))
     html.find('.remove-group-participant').click(this._removeGroupParticipant.bind(this))
     html.find('.spend-plot-point-extra-die').change(this._onSpendPlotPointExtraDieChange.bind(this))
+    html.find('.request-reroll').click(this._requestReroll.bind(this))
+  }
+
+  async _requestReroll (event) {
+    event.preventDefault()
+    const actorId = $(event.currentTarget).data('actorId')
+    await game.settings.set('cortexprime-ext', 'dicePickerRerollRequest', { actorId, requestedAt: Date.now() })
   }
 
   async initPool () {
     await game.user.setFlag('cortexprime-ext', 'dicePool', null)
     await game.user.setFlag('cortexprime-ext', 'dicePool', this.dicePool)
+
+    // A "Select Your Dice" dialog can't survive a page load - if this user's browser closed or
+    // refreshed while one was open (see dicePickerOpen in rollDice.js), the flag never got
+    // cleared and the GM's SELECTING row would otherwise stay stuck on forever.
+    if (game.user.character) {
+      try {
+        await game.user.character.unsetFlag('cortexprime-ext', 'dicePickerOpen')
+      } catch (error) {
+        console.warn('CP | Could not clear stale dice picker open flag', error)
+      }
+    }
   }
 
   // Explicit read-modify-write, matching every other button/handler in this tray, rather than

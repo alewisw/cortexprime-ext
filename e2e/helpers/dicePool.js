@@ -74,11 +74,15 @@ export async function addCustomDie(page, label) {
 export async function rollAndSelect(page, values = []) {
   await page.locator(`${TRAY} button.roll-dice-pool`).first().click()
 
-  const picker = page.locator('.cortexprime.dice-picker')
+  // The Dialog's own outer window wrapper carries the SAME two classes as the template's root
+  // div (both get 'cortexprime'/'dice-picker' - the Dialog via its `classes` option, the template
+  // via dice-picker.html's own root element) - a bare '.cortexprime.dice-picker' locator matches
+  // both and trips Playwright's strict mode. Scoping to .window-content picks out the inner one.
+  const picker = page.locator('.window-content .cortexprime.dice-picker')
   await picker.waitFor({ state: 'visible' })
 
   for (let index = 0; index < values.length; index += 1) {
-    const die = page.locator('.cortexprime.dice-picker .die-value-target').nth(index)
+    const die = page.locator('.window-content .cortexprime.dice-picker .die-value-target').nth(index)
 
     if (!(await die.count())) break
 

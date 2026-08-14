@@ -78,6 +78,14 @@ export const registerSettings = () => {
     config: false,
   })
 
+  game.settings.register('cortexprime-ext', 'dicePickerRerollRequest', {
+    name: localizer('DicePickerRerollRequest'),
+    default: {},
+    scope: 'world',
+    type: Object,
+    config: false,
+  })
+
   game.settings.register('cortexprime-ext', 'crisisPool', {
     name: localizer('CrisisPool'),
     default: { active: false, name: '', dice: [] },

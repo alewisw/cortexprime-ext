@@ -747,6 +747,12 @@ export const registerRollToBeat = () => {
       processGroupAdvancement()
       refreshDicePool()
     }
+
+    // A player's "Select Your Dice" dialog opening/closing (see dicePickerOpen in rollDice.js)
+    // has to refresh the GM's tray too, or the SELECTING row never appears/disappears live.
+    if (foundry.utils.hasProperty(data, 'flags.cortexprime-ext.dicePickerOpen')) {
+      refreshDicePool()
+    }
   })
 }
 

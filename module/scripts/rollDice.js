@@ -176,6 +176,57 @@ const dicePicker = async rollResults => {
   const challengeTarget = getMyChallengeTarget()
   const availablePlotPoints = game.user.character?.system.pp.value ?? 0
 
+  // Lets the GM's Dice Pool panel show a "SELECTING - <name>" row (see selectingRollers in
+  // UserDicePool.js) with a Re-roll button while this dialog is open, and re-roll it from a
+  // different client. myActorId/dialogOpen/capturedHtml are read by onRerollRequested below;
+  // dialogOpen and the flag are both cleared together in resolveFromDom. The flag itself is set
+  // in the Dialog's render callback below, not here - setting it this early would flip the GM's
+  // row on before the dialog has actually appeared on this player's screen.
+  const myActorId = game.user.character?.id ?? null
+  let dialogOpen = true
+  let capturedHtml = null
+
+  // Re-rolls every die currently in this dialog (same faces/count, not the original pool - the
+  // trait selection that produced them is already gone by the time this dialog is open) and
+  // refreshes it in place, exactly like the test-mode die-value editor below does. Guarded so a
+  // request for someone else, or one that arrives after this dialog has already closed, is a
+  // no-op rather than needing to be unregistered.
+  const onRerollRequested = async setting => {
+    if (!dialogOpen || !myActorId || !capturedHtml) return
+    if (setting.key !== 'cortexprime-ext.dicePickerRerollRequest') return
+
+    const request = game.settings.get('cortexprime-ext', 'dicePickerRerollRequest')
+    if (request?.actorId !== myActorId) return
+
+    const formula = [...rollResults.hitches, ...rollResults.results].map(die => `d${die.faces}`).join('+')
+    if (!formula) return
+
+    const r = new Roll(formula)
+    const roll = await r.evaluate()
+
+    if (game.dice3d) game.dice3d.showForRoll(r, game.user, true)
+
+    const fresh = roll.dice
+      .map(die => ({ faces: die.faces, result: die.results[0].result }))
+      .reduce((acc, result) => result.result > 1
+        ? { ...acc, results: [...acc.results, result] }
+        : { ...acc, hitches: [...acc.hitches, result] }, { hitches: [], results: [] })
+
+    fresh.hitches.sort(sortHitches)
+    fresh.results.sort(sortResults)
+    rollResults.hitches = fresh.hitches
+    rollResults.results = fresh.results
+
+    const { pickerCase, content } = await buildContent()
+    capturedHtml.find('.cortexprime.dice-picker').replaceWith(content)
+    bindInteractivity(capturedHtml, pickerCase)
+  }
+
+  if (myActorId) {
+    Hooks.on('createSetting', onRerollRequested)
+    Hooks.on('updateSetting', onRerollRequested)
+  }
+
   // Re-derives everything getPickerCase decides (Botch/FixedSelection/SelectEffect, Total, Effect
   // Dice, selectability) from the CURRENT rollResults and renders it fresh — used for the initial
   // render and, in test mode, again after every edited die, since editing a die's value can move
@@ -204,6 +255,16 @@ const dicePicker = async rollResults => {
 
   return new Promise((resolve) => {
     const resolveFromDom = async html => {
+      dialogOpen = false
+
+      if (myActorId) {
+        try {
+          await game.user.character.unsetFlag('cortexprime-ext', 'dicePickerOpen')
+        } catch (error) {
+          console.warn('CP | Could not clear dice picker open flag', error)
+        }
+      }
+
       const $diceBox = html.find('.dice-box')
       const values = { dice: [], total: 0, effectDice: [] }
 
@@ -427,7 +488,19 @@ const dicePicker = async rollResults => {
       },
       default: 'confirm',
       close: resolveFromDom,
-      render: html => bindInteractivity(html, initialPickerCase)
+      // Foundry's appv1 Application#render() returns `this` (for chaining), not a Promise - the
+      // render: callback below is the real "it's actually rendered" signal, fired once the dialog
+      // is in the DOM and its listeners are bound.
+      render: html => {
+        capturedHtml = html
+        bindInteractivity(html, initialPickerCase)
+
+        if (myActorId) {
+          game.user.character.setFlag('cortexprime-ext', 'dicePickerOpen', true).catch(error => {
+            console.warn('CP | Could not flag dice picker as open', error)
+          })
+        }
+      }
     }, { jQuery: true, classes: ['dialog', 'dice-picker', 'cortexprime'] }).render(true)
   })
 }

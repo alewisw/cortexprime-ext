@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
-import { TRAY, openTray, seedRollRecord, clearRollRecord, addCustomDie, clearPool } from './helpers/dicePool.js'
+import { TRAY, openTray, seedRollRecord, clearRollRecord, addCustomDie, clearPool, rollAndSelect, confirmDialog } from './helpers/dicePool.js'
 import {
   setChallengeType,
   setInitiator,
@@ -11,7 +11,7 @@ import {
   getActiveChallenge,
   challengeIdFor
 } from './helpers/challenge.js'
-import { clearChallenge } from './helpers/world.js'
+import { clearChallenge, setSetting } from './helpers/world.js'
 
 // Challenge orchestration is the highest-value E2E surface in the system:
 // the GM writes activeChallenge / a roll record on their client, and every
@@ -168,5 +168,81 @@ test('a Group Challenge cannot start initiative with fewer than three participan
     await gm.context.close()
     await player1.context.close()
     await player2.context.close()
+  }
+})
+
+test('the GM sees a SELECTING row with Re-roll while a responder has Select Your Dice open, and Re-roll refreshes it in place', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+  const player1 = await openAs(browser, 'player1')
+
+  try {
+    await clearChallenge(gm.page)
+    await clearRollRecord(gm.page)
+    await setSetting(gm.page, 'dicePickerRerollRequest', {})
+
+    await openTray(gm.page)
+    await openTray(player1.page)
+
+    // Roll & Select needs more than 2 non-hitch dice to show a real choice, and enough of them
+    // that a genuine re-roll landing on the exact same faces/results again is vanishingly rare.
+    await clearPool(player1.page)
+    await addCustomDie(player1.page, 'Die One')
+    await addCustomDie(player1.page, 'Die Two')
+    await addCustomDie(player1.page, 'Die Three')
+    await addCustomDie(player1.page, 'Die Four')
+
+    const gmId = await challengeIdFor(gm.page, 'gm')
+    const player1Id = await challengeIdFor(gm.page, 'player1')
+
+    await setChallengeType(gm.page, 'test')
+    await setInitiator(gm.page, gmId)
+    await checkResponder(gm.page, player1Id)
+
+    // Get the responder rolling.
+    await seedRollRecord(gm.page, { total: 5, effectDice: [4] })
+
+    await expect
+      .poll(() => anyRollButtonEnabled(player1.page))
+      .toBe(true)
+
+    // Nobody is mid-dialog yet.
+    await expect(gm.page.locator(`${TRAY} button.request-reroll`)).toHaveCount(0)
+
+    const picker = await rollAndSelect(player1.page)
+    await expect(picker).toBeVisible()
+
+    // The GM's tray has to live-update to show this, without a reload on their end.
+    await expect
+      .poll(() => gm.page.locator(`${TRAY} button.request-reroll[data-actor-id="${player1Id}"]`).count())
+      .toBe(1)
+    await expect(gm.page.locator(TRAY)).toContainText('Selecting')
+
+    const diceSignature = () => player1.page.evaluate(() =>
+      [...document.querySelectorAll('.cortexprime.dice-picker .result-die')]
+        .map(die => `${die.dataset.faces}:${die.dataset.result}`)
+        .join(',')
+    )
+
+    const before = await diceSignature()
+
+    await gm.page.locator(`${TRAY} button.request-reroll[data-actor-id="${player1Id}"]`).click()
+
+    // The player's own dialog re-rolls in place - new dice, same dialog, never closed.
+    await expect.poll(diceSignature, { timeout: 15_000 }).not.toBe(before)
+    await expect(picker).toBeVisible()
+
+    // Confirming closes the dialog and clears the row again.
+    await confirmDialog(player1.page)
+
+    await expect
+      .poll(() => gm.page.locator(`${TRAY} button.request-reroll[data-actor-id="${player1Id}"]`).count())
+      .toBe(0)
+  } finally {
+    await setSetting(gm.page, 'dicePickerRerollRequest', {})
+    await clearRollRecord(gm.page)
+    await clearChallenge(gm.page)
+
+    await gm.context.close()
+    await player1.context.close()
   }
 })
