@@ -27,10 +27,11 @@ Respond like smart caveman. Cut all filler, keep technical substance.
 ## Testing
 
 When implementing a new feature:
-- Make sure all unit tests (`vitest`) pass.
-- Minimize the number of playwright tests to execute.
-  - Make sure new playwright tests pass.
-  - Make sure existing playwright tests that are impacted by this change pass.
+- All unit tests (`vitest`) must pass.
+- NEVER run `npx playwright test` with no file/grep filter. Always target specific test titles.
+- Before running anything, name which test titles (and their spec file(s)) are impacted (import/exercise the changed module) and run only those, plus any new test titles.
+- Full-suite e2e runs require explicit request from me.
+
 
 ## Architecture
 
