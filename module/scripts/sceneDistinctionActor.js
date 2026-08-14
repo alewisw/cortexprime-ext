@@ -67,7 +67,7 @@ const injectLinkedActorField = (app, html) => {
 export const registerSceneDistinctionActor = () => {
   FloatingPanel.registerButton({
     id: 'scene-distinction-actor',
-    icon: 'fa-solid fa-address-card',
+    icon: 'fa-solid fa-house',
     tooltip: () => localizer(getLinkedActor() ? 'OpenDistinctionActor' : 'NoDistinctionActorLinked'),
     isEnabled: () => !!getLinkedActor(),
     isActive: () => !!getLinkedActor()?.sheet?.rendered,
