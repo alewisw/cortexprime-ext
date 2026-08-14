@@ -39,10 +39,19 @@
         <li class="pa-2 relative-section">
           <div class="{{ternary (eq (mod noteIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
           <div class="flex-row flex-ae mb-1">
-            <div class="flex-col col-12">
+            <div class="flex-col col-8">
               <label>
                 <span class="input-label-cpt">{{localize 'Name'}}</span>
                 <input class="input-cpt" type="text" name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.label'}}" value="{{defaultNote.label}}">
+              </label>
+            </div>
+            <div class="flex-col col-4">
+              <label class="flex flex-ac">
+                <div class="checkmark-container">
+                  <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.locked'}}" type="checkbox" {{checked defaultNote.locked}}>
+                  <div class="checkmark-cpt"></div>
+                </div>
+                <span class="input-label-cpt mb-0 ml-2">{{localize 'LockSection'}}</span>
               </label>
             </div>
             <div class="flex-col">

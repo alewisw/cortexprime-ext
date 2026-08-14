@@ -2,7 +2,7 @@
  * Extend the basic ActorSheet with some very simple modifications
  * @extends {foundry.appv1.sheets.ActorSheet}
  */
-import { getLength, objectMapValues, objectFindValue, objectReduce, objectSome } from '../../lib/helpers.js'
+import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReduce, objectSome } from '../../lib/helpers.js'
 import { expandNotesFieldOnEdit, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
@@ -535,11 +535,11 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
             const existingNotes = matchingSetting.notes ?? {}
 
             const notes = objectReduce(defaultNotes ?? {}, (acc, defaultNote) => {
-              const alreadyExists = !!objectFindValue(acc, note => note.label === defaultNote.label)
+              const matchKey = objectFindKey(acc, note => note.label === defaultNote.label)
 
-              return alreadyExists
-                ? acc
-                : { ...acc, [getLength(acc)]: { label: defaultNote.label, value: defaultNote.value } }
+              return matchKey !== undefined
+                ? { ...acc, [matchKey]: { ...acc[matchKey], locked: !!defaultNote.locked } }
+                : { ...acc, [getLength(acc)]: { label: defaultNote.label, value: defaultNote.value, locked: !!defaultNote.locked } }
             }, existingNotes)
 
             return { ...matchingSetting, id, name, notes }

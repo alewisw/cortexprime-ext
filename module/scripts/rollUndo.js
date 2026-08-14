@@ -198,12 +198,10 @@ const injectUndoButton = (message, html) => {
 
   if (!rollResult) return
 
-  // Its own row under the card's existing Re-roll/To Pool buttons, rather than squeezed into that
-  // space-between row — this is a GM-only, destructive action and shouldn't read as a third
-  // everyday option.
-  const row = document.createElement('div')
+  const sendToPoolButton = rollResult.querySelector('.send-to-pool')
+  const existingRow = sendToPoolButton?.parentElement
 
-  row.className = 'mt-2 flex flex-jsb undo-roll-row'
+  if (!existingRow) return
 
   const button = document.createElement('button')
 
@@ -224,8 +222,7 @@ const injectUndoButton = (message, html) => {
     }
   })
 
-  row.appendChild(button)
-  rollResult.appendChild(row)
+  existingRow.insertBefore(button, sendToPoolButton)
 }
 
 export const registerRollUndo = () => {

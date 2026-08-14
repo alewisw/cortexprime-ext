@@ -178,6 +178,8 @@
   "LinkedDistinctionActor": "Linked Distinction Actor",
   "Location": "Location",
   "LocationActorType": "Actor Type for a Location",
+  "Locked": "Locked",
+  "LockSection": "Lock section",
   "Lost": "Lost",
   "Lowercase": "lowercase",
   "MageMagick": "Magick",

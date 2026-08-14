@@ -24,18 +24,25 @@
       <div class="section-content">
         <header class="mb-2 flex-row flex-ae">
           <div class="flex-col col-12">
-            <label class="input-label-cpt">{{localize 'Name'}}</label>
-            <input class="input-cpt" type="text" name="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.label'}}" value="{{note.label}}">
+            <label class="input-label-cpt">
+              {{localize 'Name'}}
+              {{#if note.locked}}
+                <i class="fa fa-lock" title="{{localize 'Locked'}}"></i>
+              {{/if}}
+            </label>
+            <input class="input-cpt" type="text" name="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.label'}}" value="{{note.label}}"{{{ternary note.locked ' readonly' ''}}}>
           </div>
-          <div class="flex-col">
-            {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
-              path=(concat 'system.actorType.additionalTabs.' ../tabIndex)
-              target='notes'
-              itemKey=noteIndex
-              itemName=note.label
-              type="trash"
-            }}
-          </div>
+          {{#unless note.locked}}
+            <div class="flex-col">
+              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
+                path=(concat 'system.actorType.additionalTabs.' ../tabIndex)
+                target='notes'
+                itemKey=noteIndex
+                itemName=note.label
+                type="trash"
+              }}
+            </div>
+          {{/unless}}
         </header>
         <div class="notes-field">
           {{editor

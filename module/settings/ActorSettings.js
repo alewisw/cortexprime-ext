@@ -122,6 +122,7 @@ export default class ActorSettings extends FormApplication {
         ...currentDefaultNotes,
         [getLength(currentDefaultNotes ?? {})]: {
           label: localizer('NewSection'),
+          locked: false,
           value: null
         }
       })

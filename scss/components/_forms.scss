@@ -17,4 +17,13 @@ input {
   height: auto;
   max-height: toRem(350px);
   overflow-y: auto;
+
+  // Foundry's .editor-edit pencil button is absolutely positioned 5px from the top of .editor,
+  // at ~1.25em + padding/border tall. .editor itself (Foundry core CSS) has its own overflow:auto
+  // and sizes to its own content, independent of this wrapper - when empty/short content collapses
+  // .editor shorter than that, the button gets clipped/scrolled inside .editor, not just this
+  // outer field, so the floor has to apply to .editor directly.
+  .editor {
+    min-height: toRem(40px);
+  }
 }
