@@ -14,5 +14,7 @@ input {
 
 .notes-field {
   font-size: toRem(16px);
-  height: toRem(350px);
+  height: auto;
+  max-height: toRem(350px);
+  overflow-y: auto;
 }

@@ -1126,7 +1126,9 @@
 }
 .cortexprime .notes-field {
   font-size: 1rem;
-  height: 21.875rem;
+  height: auto;
+  max-height: 21.875rem;
+  overflow-y: auto;
 }
 .cortexprime nav.sheet-tabs {
   height: auto;

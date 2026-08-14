@@ -131,6 +131,53 @@ test('additional tabs configured for an actor type render on the sheet', async (
   }
 })
 
+// .notes-field (_forms.scss) shrinks to fit a short note rather than showing
+// a big empty box, but editing should still expand it to the field's full
+// max-height rather than opening at the shrunk size (module/actor/actor-sheet.js,
+// the capture-phase listener on .editor-edit).
+test('opening a note for editing expands it to the field\'s max height', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const tabs = await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs')
+  const tabEntries = Object.entries(tabs ?? {})
+  test.skip(tabEntries.length === 0, `${ACTOR}'s actor type has no additional tabs configured`)
+
+  const [tabIndex, tab] = tabEntries[0]
+  const noteIndex = Object.keys(tab.notes ?? {}).length
+  const notePath = `system.actorType.additionalTabs.${tabIndex}.notes.${noteIndex}`
+  const deleteKey = `system.actorType.additionalTabs.${tabIndex}.notes.-=${noteIndex}`
+
+  try {
+    // Short enough that shrink-to-fit leaves it well under the max.
+    await updateActor(gm.page, ACTOR, {
+      [`${notePath}.label`]: 'E2E max-height check',
+      [`${notePath}.value`]: '<p>Short.</p>'
+    })
+
+    const sheet = await openActorSheet(gm.page, ACTOR)
+    await sheet.locator(`nav.sheet-tabs a.item[data-tab="${tab.id}"]`).click()
+
+    const notesField = sheet.locator('.notes-field').last()
+    const maxHeight = await notesField.evaluate(el => getComputedStyle(el).maxHeight)
+    const shrunkHeight = await notesField.evaluate(el => getComputedStyle(el).height)
+
+    expect(parseFloat(shrunkHeight)).toBeLessThan(parseFloat(maxHeight))
+
+    // The pencil is display:none until .editor is hovered (Foundry core
+    // CSS: body.game .app .editor:hover .editor-edit), so hover first.
+    await notesField.hover()
+    await notesField.locator('.editor-edit').click()
+
+    await expect
+      .poll(() => notesField.evaluate(el => getComputedStyle(el).height))
+      .toBe(maxHeight)
+  } finally {
+    await updateActor(gm.page, ACTOR, { [deleteKey]: null })
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})
+
 test('the Help link has been removed from the sheet tabs', async ({ browser }) => {
   const gm = await openAs(browser, 'gm')
 

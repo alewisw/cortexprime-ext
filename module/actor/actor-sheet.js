@@ -75,6 +75,27 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.step-die-down').click(this._stepDieDown.bind(this))
     html.find('.step-die-up').click(this._stepDieUp.bind(this))
     html.find('.trait-set-edit').click(this._traitSetEdit.bind(this))
+
+    // The notes-field pencil button (additional-tab.html) opens Foundry's own ProseMirror
+    // editor, which measures the CURRENT height of .editor-content before mounting - if the
+    // note is short and .notes-field has shrunk to fit it (see _forms.scss), editing would
+    // open at that same shrunk height instead of expanding to the field's max. Force both to
+    // max height first, so Foundry's measurement (and the abs-positioned editor surface that
+    // then fills .editor's box once mounted) picks up the expanded size. Registered on the
+    // capture phase so this runs before Foundry's own button.onclick, bound during
+    // super.activateListeners above.
+    html[0].addEventListener('click', event => {
+      const button = event.target.closest('.notes-field .editor-edit')
+      if (!button) return
+
+      const notesField = button.closest('.notes-field')
+      const editorContent = notesField.querySelector('.editor-content')
+      const maxHeight = getComputedStyle(notesField).maxHeight
+
+      notesField.style.height = maxHeight
+      if (editorContent) editorContent.style.height = maxHeight
+    }, true)
+
     removeItems.call(this, html)
     toggleItems.call(this, html)
 
