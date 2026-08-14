@@ -30,6 +30,18 @@ describe('getDiceByTargetTotal', () => {
     expect(effectDice).toEqual([12])
   })
 
+  it('prioritizes beating the total', () => {
+    const results = [die(6, 6), die(10, 5), die(6, 2), die(4, 1)]
+
+    const { total, effectDice, won } = getDiceByTargetTotal(results, 8)
+
+    // Using the d6(2) as effect leaves d6(6)+d10(5)=11 for total, beating the d10(5)-as-effect
+    // alternative (which would only leave d6(6)+d6(2)=8)
+    expect(total).toBe(11)
+    expect(won).toBe(true)
+    expect(effectDice).toEqual([6])
+  })
+
   it('breaks ties between same-faced effect-die candidates by preferring the higher resulting total', () => {
     const results = [die(12, 3), die(12, 6), die(6, 4), die(8, 5)]
 
@@ -131,6 +143,63 @@ describe('getDiceByTargetTotal', () => {
     expect(total).toBe(11)
     expect(won).toBe(true)
     expect(effectDice).toEqual([])
+  })
+
+  it('restricts the effect-die tie-break to winning candidates, not the whole pool', () => {
+    const results = [die(8, 3), die(10, 3), die(10, 4), die(12, 7)]
+
+    const { total, effectDice, won } = getDiceByTargetTotal(results, 7)
+
+    // Using d12(7) as effect loses (remaining d10(4)+d8(3)=7, tied with target). Restricted to
+    // the candidates that actually win, the two d10 options tie on face size, so the higher
+    // total (d10(3), leaving d12(7)+d10(4)=11) is chosen over d10(4) (leaving d12(7)+d8(3)=10) —
+    // not the d12(7) pick a face-only sort over the whole pool would make.
+    expect(total).toBe(11)
+    expect(won).toBe(true)
+    expect(effectDice).toEqual([10])
+  })
+
+  it('ignores 1s when choosing the effect die among 3+ non-hitch dice, leaving the hitch untagged', () => {
+    const results = [die(4, 1), die(6, 3), die(8, 4), die(12, 6)]
+
+    const { dice, total, effectDice, won } = getDiceByTargetTotal(results, 5)
+
+    expect(total).toBe(7)
+    expect(won).toBe(true)
+    expect(effectDice).toEqual([12])
+    expect(dice.find(result => result.faces === 4)).toEqual({ faces: 4, result: 1 })
+  })
+
+  it('tags duplicate-valued dice independently rather than both or neither', () => {
+    const results = [die(8, 5), die(8, 5), die(6, 3)]
+
+    const { dice, total, effectDice, won } = getDiceByTargetTotal(results, 4)
+
+    expect(total).toBe(8)
+    expect(won).toBe(true)
+    expect(effectDice).toEqual([8])
+    expect(dice[0]).toEqual({ faces: 8, result: 5, total: true })
+    expect(dice[1]).toEqual({ faces: 8, result: 5, effect: true })
+  })
+
+  it('resolves a fully-tied pair (same face, same total) deterministically', () => {
+    const results = [die(8, 5), die(8, 5), die(6, 4)]
+
+    const { dice, total, effectDice, won } = getDiceByTargetTotal(results, 5)
+
+    expect(total).toBe(9)
+    expect(won).toBe(true)
+    expect(effectDice).toEqual([8])
+    expect(dice[0]).toEqual({ faces: 8, result: 5, total: true })
+    expect(dice[1]).toEqual({ faces: 8, result: 5, effect: true })
+  })
+
+  it('echoes the target total in the result exactly as passed in', () => {
+    const results = [die(8, 6), die(6, 4)]
+
+    const { targetTotal } = getDiceByTargetTotal(results, 42)
+
+    expect(targetTotal).toBe(42)
   })
 })
 

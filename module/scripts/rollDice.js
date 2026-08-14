@@ -135,7 +135,7 @@ const getBestNExcluding = (nonHitchResults, excludedDice, n) => nonHitchResults
   .sort((a, b) => b.result - a.result)
   .slice(0, n)
 
-const getPickerCase = results => {
+const getPickerCase = (results, target) => {
   if (results.length === 0) {
     return { title: 'Botch', selectable: false, dice: results, total: 0, effectDice: [] }
   }
@@ -145,6 +145,14 @@ const getPickerCase = results => {
     const dice = results.map(die => ({ ...die, total: true }))
 
     return { title: 'FixedSelection', selectable: false, dice, total, effectDice: [] }
+  }
+
+  // A clear Roll to Beat target means there's a right answer for which die maximizes the
+  // Effect die - seed the picker with the same choice "Roll to Beat" itself would make, while
+  // still leaving it fully editable below.
+  if (target != null) {
+    const { dice, total, effectDice } = getDiceByTargetTotal(results, target)
+    return { title: 'SelectEffect', selectable: true, dice, total, effectDice }
   }
 
   const sortedByFaces = [...results].sort((a, b) => a.faces !== b.faces ? b.faces - a.faces : b.result - a.result)
@@ -173,7 +181,7 @@ const dicePicker = async rollResults => {
   // render and, in test mode, again after every edited die, since editing a die's value can move
   // it across the hitch/non-hitch boundary and change which case applies entirely.
   const buildContent = async () => {
-    const pickerCase = getPickerCase(rollResults.results)
+    const pickerCase = getPickerCase(rollResults.results, challengeTarget?.total)
 
     const content = await foundry.applications.handlebars.renderTemplate('systems/cortexprime-ext/templates/dialog/dice-picker.html', {
       rollResults: { hitches: rollResults.hitches, results: pickerCase.dice },
@@ -311,13 +319,20 @@ const dicePicker = async rollResults => {
       // effect die to extend at all (both go straight to Total per the normal rules), and
       // "extra total" specifically also goes stale the moment fewer than 3 dice remain once
       // the currently-selected effect dice are set aside (e.g. after picking a 2nd effect die).
+      // "Extra effect" needs the mirror image of that: a 2nd effect die is only meaningful if
+      // enough non-hitch dice remain afterward to still fill Total (2, or 3 if "extra total" is
+      // also checked) — hitches are never selectable as an effect die (see the .selectable
+      // click handler below, keyed off rollResults.results, which is already hitch-free), so
+      // with e.g. exactly 3 non-hitch dice there's no 4th die anywhere to become that 2nd effect
+      // die once the existing 1 effect + 2 total already account for all of them.
       // A checkbox already checked is never disabled, so the player can always uncheck it.
       const updateCheckboxAvailability = () => {
         const checkedCount = (($extraTotalCheckbox.prop('checked') ? 1 : 0) + ($extraEffectCheckbox.prop('checked') ? 1 : 0))
         const remainingForTotal = rollResults.results.length - selectedEffectDice.length
+        const totalDiceNeeded = $extraTotalCheckbox.prop('checked') ? 3 : 2
 
         const extraTotalUseless = !pickerCase.selectable || remainingForTotal < 3
-        const extraEffectUseless = !pickerCase.selectable
+        const extraEffectUseless = !pickerCase.selectable || rollResults.results.length < 2 + totalDiceNeeded
 
         $extraTotalCheckbox.prop('disabled', !$extraTotalCheckbox.prop('checked') && (extraTotalUseless || checkedCount >= availablePlotPoints))
         $extraEffectCheckbox.prop('disabled', !$extraEffectCheckbox.prop('checked') && (extraEffectUseless || checkedCount >= availablePlotPoints))

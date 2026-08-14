@@ -849,14 +849,18 @@ export const getDiceByTargetTotal = (results, target) => {
     return { effectDie, totalDice, total: sumOf(totalDice) }
   })
 
-  // Always maximize the Effect die (tie-broken by Total), even on a guaranteed loss — in a
-  // Contest, a losing roll's Effect die can still blunt the eventual winner's (see
-  // applyContestEffectStepDown), so it's never pointless to maximize it.
-  candidates.sort((a, b) => a.effectDie.faces !== b.effectDie.faces
+  // Winning beats everything else - only among candidates that actually beat the target (or,
+  // if none can, among all of them) do we then maximize the Effect die (tie-broken by Total).
+  // Never pointless even on a guaranteed loss - in a Contest, a losing roll's Effect die can
+  // still blunt the eventual winner's (see applyContestEffectStepDown).
+  const winningCandidates = candidates.filter(candidate => candidate.total > target)
+  const pool = winningCandidates.length > 0 ? winningCandidates : candidates
+
+  pool.sort((a, b) => a.effectDie.faces !== b.effectDie.faces
     ? a.effectDie.faces - b.effectDie.faces
     : a.total - b.total)
 
-  const chosen = candidates[candidates.length - 1]
+  const chosen = pool[pool.length - 1]
   const totalDiceSet = new Set(chosen.totalDice)
 
   const dice = results.map(result => {
