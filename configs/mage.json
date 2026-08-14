@@ -116,8 +116,8 @@
           "settings": {
             "hasDescription": true,
             "hasLabel": true,
-            "hasDescriptors": true,
-            "hasSfx": false,
+            "hasDescriptors": false,
+            "hasSfx": true,
             "hasSubTraits": false,
             "hasDice": true,
             "diceConsumable": false,
@@ -131,14 +131,21 @@
               "name": "Advancement",
               "dice": {
                 "value": {
-                  "0": "8"
+                  "0": "10"
                 }
               },
-              "description": "(describe your own)",
+              "description": "Your value statement here.",
               "descriptors": {
                 "0": {
                   "label": "Ambition",
                   "value": "The world advances through collective effort and patient work."
+                }
+              },
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
                 }
               }
             },
@@ -150,7 +157,14 @@
                   "0": "8"
                 }
               },
-              "description": ""
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              }
             },
             "2": {
               "id": "_1784978402850",
@@ -160,37 +174,65 @@
                   "0": "8"
                 }
               },
-              "description": ""
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              }
             },
             "3": {
               "id": "_1784978411115",
               "name": "The World",
               "dice": {
                 "value": {
-                  "0": "8"
+                  "0": "6"
                 }
               },
-              "description": ""
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              }
             },
             "4": {
               "id": "_1784978418028",
               "name": "Truth",
               "dice": {
                 "value": {
-                  "0": "8"
+                  "0": "6"
                 }
               },
-              "description": ""
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              }
             },
             "5": {
               "id": "_1784978423752",
               "name": "Connection",
               "dice": {
                 "value": {
-                  "0": "8"
+                  "0": "4"
                 }
               },
-              "description": ""
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              }
             }
           },
           "description": ""
@@ -221,7 +263,7 @@
                   "0": "4"
                 }
               },
-              "description": "Formal, book-bound knowledge.  History, science, languages, the library and the archive."
+              "description": ""
             },
             "1": {
               "id": "_1784979215991",
@@ -399,7 +441,33 @@
         },
         "1": {
           "id": "_1786624926271",
-          "name": "Value Log"
+          "name": "Values Log",
+          "defaultNotes": {
+            "0": {
+              "label": "Advancement",
+              "value": null
+            },
+            "1": {
+              "label": "Will",
+              "value": null
+            },
+            "2": {
+              "label": "Loyalty",
+              "value": null
+            },
+            "3": {
+              "label": "The World",
+              "value": null
+            },
+            "4": {
+              "label": "Truth",
+              "value": null
+            },
+            "5": {
+              "label": "Connection",
+              "value": null
+            }
+          }
         },
         "2": {
           "id": "_1786624946207",
