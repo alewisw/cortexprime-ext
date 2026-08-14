@@ -6,7 +6,10 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.js',
   globalSetup: './e2e/global-setup.js',
-  timeout: 60_000,
+  // Generous: a spec opening three real sessions spends ~15-20s per login
+  // before it asserts anything, and this drives a live app rather than a
+  // stub.
+  timeout: 180_000,
   expect: {
     timeout: 15_000
   },

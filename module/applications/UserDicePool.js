@@ -41,6 +41,18 @@ const blankPool = {
 
 const CRISIS_POOL_SOURCE = 'Crisis Pool'
 
+// The dicePool flag is legitimately absent at times: every write in this class deliberately
+// clears it to null before setting the new value, and a user who has never had a pool has none
+// at all. Since the read side then immediately dereferences it (currentDice.pool...), every
+// read goes through here rather than assuming an object is there — otherwise landing on that
+// null window throws "Cannot read properties of null (reading 'pool')" and takes out whatever
+// was being done, up to and including rendering the tray at all.
+//
+// Falls back to a *clone*: blankPool is shared module state and callers mutate what they get
+// back, so handing out the original would leak one pool's contents into every later fallback.
+const readDicePool = () =>
+  game.user.getFlag('cortexprime-ext', 'dicePool') ?? foundry.utils.deepClone(blankPool)
+
 // Computes "who's currently up" for both the status line and the GM's Contest radio
 // selections. In a Contest, once the current "Roll Now" person has actually rolled, display
 // flips to show the other party as Roll Now — it's their turn to try to beat it — even though
@@ -140,13 +152,8 @@ const getGroupDisplayData = (activeChallenge, rollToBeatTargets) => {
 export class UserDicePool extends FormApplication {
   constructor() {
     super()
-    let userDicePool = game.user.getFlag('cortexprime-ext', 'dicePool')
 
-    if (!userDicePool) {
-      userDicePool = blankPool
-    }
-
-    this.dicePool = userDicePool
+    this.dicePool = readDicePool()
   }
 
   static get defaultOptions () {
@@ -167,7 +174,7 @@ export class UserDicePool extends FormApplication {
   }
 
   async getData () {
-    const dice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const dice = readDicePool()
     const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
     const activeChallenge = getActiveChallenge()
@@ -211,7 +218,7 @@ export class UserDicePool extends FormApplication {
   }
 
   async _updateObject (event, formData) {
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
     const newDice = foundry.utils.mergeObject(currentDice, foundry.utils.expandObject(formData))
 
     await game.user.setFlag('cortexprime-ext', 'dicePool', newDice)
@@ -256,7 +263,7 @@ export class UserDicePool extends FormApplication {
     event.preventDefault()
     event.stopPropagation()
 
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
 
     foundry.utils.setProperty(currentDice, 'spendPlotPointForExtraDie', event.currentTarget.checked)
 
@@ -272,7 +279,7 @@ export class UserDicePool extends FormApplication {
   async _addCustomTraitToPool (event) {
     event.preventDefault()
 
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
     const currentCustomLength = getLength(currentDice.pool.custom ?? {})
 
     foundry.utils.setProperty(currentDice, `pool.custom.${currentCustomLength}`, currentDice.customAdd)
@@ -290,7 +297,7 @@ export class UserDicePool extends FormApplication {
   }
 
   async _addTraitToPool (source, label, value, traitPath = null, traitSetId = null) {
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
     const currentDiceLength = getLength(currentDice.pool[source] || {})
     foundry.utils.setProperty(currentDice, `pool.${source}.${currentDiceLength}`, { label, value, traitPath, traitSetId })
 
@@ -305,7 +312,7 @@ export class UserDicePool extends FormApplication {
     event.preventDefault()
 
     const { faces } = event.currentTarget.dataset
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
 
     foundry.utils.setProperty(currentDice, 'pool.Difficulty', {
       0: { label: '', value: { 0: faces, 1: faces } }
@@ -339,7 +346,7 @@ export class UserDicePool extends FormApplication {
   async _clearSource (event) {
     event.preventDefault()
     const { source } = event.currentTarget.dataset
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
 
     await game.user.setFlag('cortexprime-ext', 'dicePool', null)
 
@@ -352,7 +359,7 @@ export class UserDicePool extends FormApplication {
 
   async _onDieChange (event) {
     event.preventDefault()
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
     const $targetDieSelect = $(event.currentTarget)
     const target = $targetDieSelect.data('target')
     const targetKey = $targetDieSelect.data('key')
@@ -374,7 +381,7 @@ export class UserDicePool extends FormApplication {
     event.preventDefault()
 
     if (event.button === 2) {
-      const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+      const currentDice = readDicePool()
       const $targetDieSelect = $(event.currentTarget)
       const target = $targetDieSelect.data('target')
       const targetKey = $targetDieSelect.data('key')
@@ -394,7 +401,7 @@ export class UserDicePool extends FormApplication {
 
   async _onNewDie (event) {
     event.preventDefault()
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
     const $targetNewDie = $(event.currentTarget)
     const target = $targetNewDie.data('target')
     const dataTargetValue = foundry.utils.getProperty(currentDice, `${target}.value`) || {}
@@ -414,7 +421,7 @@ export class UserDicePool extends FormApplication {
     event.preventDefault()
     const $target = $(event.currentTarget)
     const source = $target.data('source')
-    let currentDicePool = game.user.getFlag('cortexprime-ext', 'dicePool')
+    let currentDicePool = readDicePool()
 
     if (getLength(currentDicePool.pool[source] || {}) < 2) {
       delete currentDicePool.pool[source]
@@ -432,7 +439,7 @@ export class UserDicePool extends FormApplication {
   async _resetCustomPoolTrait (event) {
     event.preventDefault()
 
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
 
     foundry.utils.setProperty(currentDice, 'customAdd', {
       label: '',
@@ -447,7 +454,7 @@ export class UserDicePool extends FormApplication {
   }
 
   async _setPool (pool) {
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
 
     foundry.utils.setProperty(currentDice, 'pool', pool)
 
@@ -585,7 +592,7 @@ export class UserDicePool extends FormApplication {
 
     const $target = $(event.currentTarget)
 
-    const currentDicePool = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDicePool = readDicePool()
 
     const dicePool = currentDicePool.pool
 
@@ -635,7 +642,7 @@ export class UserDicePool extends FormApplication {
       return
     }
 
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
     const value = crisis.dice.reduce((acc, face, index) => ({ ...acc, [index]: String(face) }), {})
 
     foundry.utils.setProperty(currentDice, `pool.${CRISIS_POOL_SOURCE}`, { 0: { label: crisis.name, value } })
@@ -656,7 +663,7 @@ export class UserDicePool extends FormApplication {
       return
     }
 
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
     const existingRow = currentDice.pool[CRISIS_POOL_SOURCE]?.[0]
     const existingFaces = existingRow ? Object.values(existingRow.value).map(face => parseInt(face, 10)) : []
 
@@ -681,7 +688,7 @@ export class UserDicePool extends FormApplication {
   // Removes the GM's CrisisPool source entirely — used once a crisis has ended (either the
   // pool ran dry or the GM ended it manually), so it doesn't linger in the tray as dead weight.
   async _removeCrisisPool () {
-    const currentDice = game.user.getFlag('cortexprime-ext', 'dicePool')
+    const currentDice = readDicePool()
 
     if (!currentDice.pool[CRISIS_POOL_SOURCE]) return
 

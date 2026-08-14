@@ -196,8 +196,40 @@ Players.
 They also expect two actors to exist for the players to be linked to:
 **`Amanda Singh`** and **`Cameron James`**. Global setup links
 `PlaywrightPlayer1` → `Amanda Singh` and `PlaywrightPlayer2` → `Cameron
-James` automatically (see below) — the actors just need to already exist
-in the world.
+James` automatically, **and grants each player OWNER on their own
+character** — the actors just need to already exist in the world.
+
+That ownership grant matters: being *assigned* an actor is not the same as
+being able to use it. Foundry silently refuses to render a sheet the user
+can't observe, so without OWNER a player can't open their character, add
+traits to a dice pool, or roll — and most of the suite would skip.
+
+### What's covered
+
+| Spec | Covers |
+|---|---|
+| `smoke.spec.js` | Harness proof-of-life: login → `game.ready` → read live system state |
+| `multi-session.spec.js` | GM + both players logged in simultaneously, correctly linked and unpaused |
+| `floating-panel.spec.js` | Role gating: My Character (player-only), Scene Journal (GM-only), Crisis toggle (GM-only), Doom Pool (both) |
+| `spotlight.spec.js` | GM sets/clears the spotlight live on all clients; the `spotlightEnabled` master switch; a disconnecting player drops out of the GM's list |
+| `crisis-pool.spec.js` | Start / edit / end a crisis, with the card and its dice count reaching both players live |
+| `doom-pool.spec.js` | Configuring the actor makes the button appear live for GM *and* players; it opens that actor's sheet |
+| `my-character.spec.js` | A player opens their own sheet; unassigning removes the button live |
+| `dice-pool.spec.js` | GM-only difficulty buttons (and that they replace, not append); custom dice; adding a trait from a character sheet |
+| `challenge.spec.js` | A Test holds its responder back until the initiator rolls, then enables them live, while the bystander stays locked out; Contest radios lock once underway; Group Challenge needs three participants |
+| `actor-sheet.spec.js` | Trait-set shutdown dims the set *and* strips `add-to-pool`; a GM's shutdown re-renders the owning player's open sheet; additional tabs; the Help link is gone |
+| `mage.spec.js` | The Magick box is GM-only and challenge-gated; the Magick choice is announced live on every tray; a magickal roll is refused without a Powers trait |
+
+Deliberately **not** covered, and why:
+
+- Anything already proven by the 300 Vitest unit tests (challenge
+  resolution maths, hitch plot-point rules, crisis reduction, paradox
+  arithmetic). E2E duplicates of those add runtime, not confidence.
+- `Reset to Default` / importing settings — they overwrite world-wide
+  `actorTypes` and themes, which is too destructive to run against a world
+  you care about.
+- The one-shot `migrateNotesToTabs` migration: destructive, runs once, and
+  its logic is unit-tested.
 
 ### Global setup: one login per role, before any test runs
 

@@ -65,3 +65,66 @@ test('GM setting the spotlight is broadcast live to all players, and clearing it
     await player2.context.close()
   }
 })
+
+// The spotlightEnabled world setting is the master switch for the whole
+// widget (spotlight.js:15 short-circuits getContext when it's off), so
+// turning it off must clear the card everywhere — including the GM's own,
+// which otherwise renders even with nobody spotlighted.
+test('disabling the Spotlight setting removes the widget from every client live', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+  const player1 = await openAs(browser, 'player1')
+
+  const wasEnabled = await gm.page.evaluate(() =>
+    window.game.settings.get('cortexprime-ext', 'spotlightEnabled')
+  )
+
+  try {
+    await gm.page.evaluate(() =>
+      window.game.settings.set('cortexprime-ext', 'spotlightEnabled', true)
+    )
+    await expect(gm.page.locator('[data-widget="spotlight"]')).toHaveCount(1)
+
+    await gm.page.evaluate(() =>
+      window.game.settings.set('cortexprime-ext', 'spotlightEnabled', false)
+    )
+
+    await expect(gm.page.locator('[data-widget="spotlight"]')).toHaveCount(0)
+    await expect(player1.page.locator('[data-widget="spotlight"]')).toHaveCount(0)
+
+    await gm.page.evaluate(() =>
+      window.game.settings.set('cortexprime-ext', 'spotlightEnabled', true)
+    )
+    await expect(gm.page.locator('[data-widget="spotlight"]')).toHaveCount(1)
+  } finally {
+    await gm.page.evaluate(
+      value => window.game.settings.set('cortexprime-ext', 'spotlightEnabled', value),
+      wasEnabled
+    )
+
+    await gm.context.close()
+    await player1.context.close()
+  }
+})
+
+// The GM's dropdown is built from *connected* players' characters
+// (getConnectedPlayerActors filters on user.active), and spotlight.js
+// listens on userConnected specifically so the list stays correct as
+// people come and go. Closing a player's session should drop them from the
+// GM's options with no GM-side reload.
+test('a player disconnecting drops their character from the GM spotlight list live', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+  const player2 = await openAs(browser, 'player2')
+
+  const gmSelect = gm.page.locator('[data-widget="spotlight"] select.spotlight-select')
+
+  try {
+    await expect(gmSelect.locator('option', { hasText: 'Cameron James' })).toHaveCount(1)
+
+    await player2.context.close()
+
+    await expect(gmSelect.locator('option', { hasText: 'Cameron James' })).toHaveCount(0)
+  } finally {
+    await gm.page.evaluate(() => window.game.settings.set('cortexprime-ext', 'spotlightActorId', ''))
+    await gm.context.close()
+  }
+})

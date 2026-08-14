@@ -5,8 +5,9 @@ import { authFile, joinAs, ROLE_USERS } from './foundry.js'
 /**
  * Runs once before any test (wired via playwright.config.js's
  * `globalSetup`). Logs in as the GM and both players, has the GM link each
- * player to their character, unpause the game, cancel any active crisis
- * pool, and clear the spotlight — all via real Foundry API calls — so
+ * player to their character (granting OWNER so they can actually use it),
+ * unpause the game, cancel any active crisis pool, and clear the
+ * spotlight — all via real Foundry API calls — so
  * every test run starts from the same known baseline regardless of
  * whatever state a previous manual session or test run left behind. Then
  * saves each session's storageState to .auth/<role>.json so individual
@@ -23,10 +24,18 @@ export default async function globalSetup() {
   const player2 = await joinAs(browser, { user: ROLE_USERS.player2 })
 
   await gm.page.evaluate(async ({ player1User, player2User }) => {
+    // Assigning a character is only half the job: without an ownership
+    // grant Foundry silently refuses to render the sheet, and the player
+    // can't add traits to a pool or roll. Grant OWNER too, matching how a
+    // real table sets up a PC.
     const link = async (userName, actorName) => {
       const user = game.users.getName(userName, { strict: true })
       const actor = game.actors.getName(actorName, { strict: true })
+
       await user.update({ character: actor.id })
+      await actor.update({
+        [`ownership.${user.id}`]: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
+      })
     }
 
     await link(player1User, 'Amanda Singh')
