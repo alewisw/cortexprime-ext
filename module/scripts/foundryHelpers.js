@@ -25,9 +25,19 @@ export const localizer = target => game.i18n.localize(target)
 // document and fires 'updateSetting' as expected. Listening for only 'updateSetting' means a
 // setting's very first change is silently missed. Use this instead of Hooks.on('updateSetting',
 // ...) wherever a setting change should trigger a refresh, so both cases are covered.
+//
+// Returns a disposer that unregisters both hooks. Most callers register once at startup and
+// listen for the life of the session, so they can ignore it — but anything scoped to something
+// shorter-lived (a dialog, a temporarily open window) MUST call it when that thing goes away,
+// or every open/close cycle leaves another listener behind holding its whole closure alive.
 export const onSettingChanged = callback => {
   Hooks.on('createSetting', callback)
   Hooks.on('updateSetting', callback)
+
+  return () => {
+    Hooks.off('createSetting', callback)
+    Hooks.off('updateSetting', callback)
+  }
 }
 
 // Shows the Dice So Nice "plot point" die-flip animation (the cp-pp preset registered in

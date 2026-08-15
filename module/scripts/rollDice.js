@@ -1,5 +1,5 @@
 import { objectReduce } from '../../lib/helpers.js'
-import { localizer, showPlotPointSpendAnimation } from './foundryHelpers.js'
+import { localizer, onSettingChanged, showPlotPointSpendAnimation } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
 import { flattenPoolEntries } from './dicePoolValidation.js'
 import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyBeatTargetId, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
@@ -189,8 +189,8 @@ const dicePicker = async rollResults => {
   // Re-rolls every die currently in this dialog (same faces/count, not the original pool - the
   // trait selection that produced them is already gone by the time this dialog is open) and
   // refreshes it in place, exactly like the test-mode die-value editor below does. Guarded so a
-  // request for someone else, or one that arrives after this dialog has already closed, is a
-  // no-op rather than needing to be unregistered.
+  // request for someone else is a no-op; the dialogOpen check is belt-and-braces for a request
+  // already in flight as this dialog closes, since resolveFromDom unregisters this listener.
   const onRerollRequested = async setting => {
     if (!dialogOpen || !myActorId || !capturedHtml) return
     if (setting.key !== 'cortexprime-ext.dicePickerRerollRequest') return
@@ -222,10 +222,10 @@ const dicePicker = async rollResults => {
     bindInteractivity(capturedHtml, pickerCase)
   }
 
-  if (myActorId) {
-    Hooks.on('createSetting', onRerollRequested)
-    Hooks.on('updateSetting', onRerollRequested)
-  }
+  // Scoped to this one dialog, so it MUST be unregistered when the dialog goes away (see
+  // resolveFromDom) — left behind, every roll would strand another listener holding this whole
+  // closure, and with it the captured dialog DOM, for the rest of the session.
+  const stopListeningForReroll = myActorId ? onSettingChanged(onRerollRequested) : null
 
   // Re-derives everything getPickerCase decides (Botch/FixedSelection/SelectEffect, Total, Effect
   // Dice, selectability) from the CURRENT rollResults and renders it fresh — used for the initial
@@ -268,6 +268,11 @@ const dicePicker = async rollResults => {
 
       resolved = true
       dialogOpen = false
+
+      stopListeningForReroll?.()
+      // Nothing else references the dialog's DOM once the listener above is gone, but this is the
+      // handle that was keeping it reachable, so drop it explicitly rather than by implication.
+      capturedHtml = null
 
       if (myActorId) {
         try {
