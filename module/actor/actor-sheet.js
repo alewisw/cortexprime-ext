@@ -578,7 +578,10 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       })
     }
 
-    this._resetDataPoint('system', 'actorType', newData)
-    this.actor.update()
+    // Awaited, so a failure surfaces instead of becoming an unhandled rejection — and so the
+    // unset/set pair lands as the two consecutive updates _resetDataPoint depends on. It used to
+    // be fired and forgotten, with a bare no-op this.actor.update() behind it that did nothing
+    // except slip a third update in between the two halves.
+    await this._resetDataPoint('system', 'actorType', newData)
   }
 }

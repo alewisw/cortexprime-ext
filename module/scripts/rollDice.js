@@ -269,7 +269,6 @@ const dicePicker = async rollResults => {
       resolved = true
       dialogOpen = false
 
-      stopListeningForReroll?.()
       // Nothing else references the dialog's DOM once the listener above is gone, but this is the
       // handle that was keeping it reachable, so drop it explicitly rather than by implication.
       capturedHtml = null
