@@ -442,11 +442,15 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     event.preventDefault()
     const $field = $(event.currentTarget)
     const parsedValue = parseInt($field.val(), 10)
-    const currentValue = parseInt(this.actor.pp.value, 10)
+    // Plot Points live at system.pp, not on the Document itself (see changePpBy in
+    // entities/CortexPrimeActor.js) — and system.pp only exists once an Actor Type has been
+    // confirmed (_actorTypeConfirm above), so an actor that hasn't been through that yet counts
+    // as 0 rather than throwing.
+    const currentValue = parseInt(this.actor.system.pp?.value ?? 0, 10)
     const newValue = parsedValue < 0 ? 0 : parsedValue
     const changeAmount = newValue - currentValue
 
-    this.actor.changePpBy(changeAmount, true)
+    await this.actor.changePpBy(changeAmount, true)
   }
 
   async _spendPp (event) {
