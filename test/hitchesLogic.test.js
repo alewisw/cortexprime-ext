@@ -586,4 +586,60 @@ describe('hasHitchOutcomes', () => {
 
     expect(hasHitchOutcomes(projection)).toBe(true)
   })
+
+  // Being taken out is the most consequential thing this dialog can do, and it is the one outcome
+  // that leaves every "changed" list empty: a D12 complication cannot step up, so its dice never
+  // move and projectComplications reports it under takenOut instead. Going by the changed lists
+  // alone silently swallowed the announcement.
+  it('is true when a complication was taken out, even though nothing changed', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_COMPLICATION, complicationKey: 'existing:0' })],
+      complications: [{ label: 'Bleeding Out', dice: ['12'] }],
+      doomDice: []
+    })
+
+    // The exact shape that made this a regression: taken out, but nothing on any changed list.
+    expect(projection.takenOut).toEqual(['Bleeding Out'])
+    expect(projection.changedComplications).toEqual([])
+    expect(projection.doomDiceDetail).toEqual([])
+    expect(projection.paradoxSteps).toBe(0)
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
+  })
+
+  // The scene list is projected independently of the character's, so it needs its own clause —
+  // checking only takenOut would leave a scene actor's taken-out complication just as silent.
+  it('is true when a scene complication was taken out, with the character untouched', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION, complicationKey: 'existing:0' })],
+      complications: [],
+      sceneComplications: [{ label: 'Collapsing Roof', dice: ['12'] }],
+      doomDice: []
+    })
+
+    expect(projection.sceneTakenOut).toEqual(['Collapsing Roof'])
+    expect(projection.takenOut).toEqual([])
+    expect(projection.changedSceneComplications).toEqual([])
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
+  })
+
+  // A rename rides along even when the die cannot grow, so the card has a new name to report —
+  // still nothing on any changed list.
+  it('is true when a taken-out complication was renamed on the way out', () => {
+    const projection = computeProjection({
+      rows: [row({
+        action: HITCH_ACTIONS.STEP_UP_COMPLICATION,
+        complicationKey: 'existing:0',
+        renameComplication: 'Bleeding Out Badly'
+      })],
+      complications: [{ label: 'Bleeding Out', dice: ['12'] }],
+      doomDice: []
+    })
+
+    expect(projection.takenOut).toEqual(['Bleeding Out Badly'])
+    expect(projection.changedComplications).toEqual([])
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
+  })
 })

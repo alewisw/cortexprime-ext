@@ -291,8 +291,16 @@ export const computeProjection = ({
 // acted on) leaves every field below empty, so the chat card should stay silent rather than post
 // an effectively-blank summary. Mirrors the isNew/isSteppedUp filter the chat summary itself uses
 // for doomDice.
+//
+// takenOut/sceneTakenOut have to be checked in their own right: a complication already at D12 has
+// nowhere to step up to, so projectComplications reports it as taken out and deliberately leaves
+// it OUT of changedComplications (its dice never moved). Going by the "changed" lists alone would
+// therefore stay silent on the single most consequential outcome the dialog can produce - the chat
+// template has always had a block ready to announce it (templates/chat/hitches.html).
 export const hasHitchOutcomes = projection =>
   projection.changedComplications.length > 0 ||
   projection.changedSceneComplications.length > 0 ||
+  projection.takenOut.length > 0 ||
+  projection.sceneTakenOut.length > 0 ||
   projection.doomDiceDetail.some(entry => entry.isNew || entry.isSteppedUp) ||
   projection.paradoxSteps > 0
