@@ -6,6 +6,7 @@ import {
   computeProjection,
   getAvailableActions,
   getComplicationOptions,
+  hasHitchOutcomes,
   isBotch,
   stepUpDoomDie
 } from '../module/scripts/hitchesLogic.js'
@@ -505,5 +506,84 @@ describe('computeProjection', () => {
 
     expect(complications).toEqual([{ label: 'Winded', dice: ['6'] }])
     expect(doomDice).toEqual(['8'])
+  })
+})
+
+describe('hasHitchOutcomes', () => {
+  it('is false when every row is left on NONE', () => {
+    const projection = computeProjection({
+      rows: [row(), row({ faces: 6 })],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(hasHitchOutcomes(projection)).toBe(false)
+  })
+
+  it('is false for an empty roll', () => {
+    const projection = computeProjection({ rows: [], complications: [], doomDice: [] })
+
+    expect(hasHitchOutcomes(projection)).toBe(false)
+  })
+
+  it('is true when a complication was introduced', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.INTRODUCE_COMPLICATION, complicationName: 'On Fire' })],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
+  })
+
+  it('is true when a scene complication was stepped up', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_SCENE_COMPLICATION, complicationKey: 'existing:0' })],
+      complications: [],
+      sceneComplications: [{ label: 'On Fire', dice: ['6'] }],
+      doomDice: []
+    })
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
+  })
+
+  it('is true when a Doom Pool die was added', () => {
+    const projection = computeProjection({
+      rows: [row({ faces: 6, action: HITCH_ACTIONS.ADD_DOOM_DIE })],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
+  })
+
+  it('is true when a Doom Pool die was stepped up', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '6' })],
+      complications: [],
+      doomDice: ['6']
+    })
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
+  })
+
+  it('is false when a step-up Doom Pool die is already at D12 and cannot grow', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_DOOM_DIE, doomDieSize: '4' })],
+      complications: [],
+      doomDice: ['12']
+    })
+
+    expect(hasHitchOutcomes(projection)).toBe(false)
+  })
+
+  it('is true when Paradox was stepped up', () => {
+    const projection = computeProjection({
+      rows: [row({ action: HITCH_ACTIONS.STEP_UP_PARADOX })],
+      complications: [],
+      doomDice: []
+    })
+
+    expect(hasHitchOutcomes(projection)).toBe(true)
   })
 })

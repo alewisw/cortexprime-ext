@@ -88,4 +88,30 @@ export async function userIdByName(page, userName) {
   return page.evaluate(n => window.game.users.getName(n)?.id ?? null, userName)
 }
 
+/** Every chat message id currently in the log, to diff against later. */
+export async function getChatMessageIds(page) {
+  return page.evaluate(() => window.game.messages.contents.map(message => message.id))
+}
+
+/**
+ * Chat cards created since `beforeIds` that announce a Plot Point movement.
+ *
+ * CortexPrimeActor#createPpMessage renders templates/chat/change-pp.html,
+ * the only template carrying `<span class="icon pp">` — so one card here
+ * means exactly one changePpBy() actually ran. That makes this a more
+ * reliable witness than the resulting pp.value: two concurrent spends can
+ * both read the same starting value and both write the same result,
+ * leaving the total looking correct while the table sees it charged twice.
+ */
+export async function plotPointMessagesSince(page, beforeIds) {
+  return page.evaluate(ids => {
+    const seen = new Set(ids)
+
+    return window.game.messages.contents
+      .filter(message => !seen.has(message.id))
+      .filter(message => (message.content ?? '').includes('class="icon pp"'))
+      .map(message => message.content)
+  }, beforeIds)
+}
+
 export { NS }

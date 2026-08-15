@@ -254,7 +254,19 @@ const dicePicker = async rollResults => {
   const { pickerCase: initialPickerCase, content: initialContent } = await buildContent()
 
   return new Promise((resolve) => {
+    // Foundry's appv1 Dialog#submit calls the chosen button's callback and THEN close(), which in
+    // turn fires the dialog's own `close` handler — and this function is wired to both (see the
+    // Dialog config below), so clicking Confirm runs it twice. The element is still in the DOM for
+    // that second pass (close() only removes it after a 200ms slide), so it re-reads the same
+    // checked Plot Point boxes and charges for them again. Everything below here is
+    // side-effecting, so the second pass has to be a no-op — same resolveOnce guard
+    // plotPointUsageDialog.js uses for exactly this reason.
+    let resolved = false
+
     const resolveFromDom = async html => {
+      if (resolved) return
+
+      resolved = true
       dialogOpen = false
 
       if (myActorId) {

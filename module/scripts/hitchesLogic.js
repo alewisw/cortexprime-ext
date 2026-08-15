@@ -286,3 +286,13 @@ export const computeProjection = ({
     paradoxSteps: rows.filter(row => row.action === HITCH_ACTIONS.STEP_UP_PARADOX).length
   }
 }
+
+// True once the GM's choices actually changed something - every row still on NONE (no hitches
+// acted on) leaves every field below empty, so the chat card should stay silent rather than post
+// an effectively-blank summary. Mirrors the isNew/isSteppedUp filter the chat summary itself uses
+// for doomDice.
+export const hasHitchOutcomes = projection =>
+  projection.changedComplications.length > 0 ||
+  projection.changedSceneComplications.length > 0 ||
+  projection.doomDiceDetail.some(entry => entry.isNew || entry.isSteppedUp) ||
+  projection.paradoxSteps > 0

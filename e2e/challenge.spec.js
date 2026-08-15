@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
-import { TRAY, openTray, seedRollRecord, clearRollRecord, addCustomDie, clearPool, rollAndSelect, confirmDialog } from './helpers/dicePool.js'
+import { TRAY, openTray, closeTray, seedRollRecord, clearRollRecord, addCustomDie, clearPool, rollAndSelect, confirmDialog } from './helpers/dicePool.js'
 import {
   setChallengeType,
   setInitiator,
@@ -11,7 +11,8 @@ import {
   getActiveChallenge,
   challengeIdFor
 } from './helpers/challenge.js'
-import { clearChallenge, setSetting } from './helpers/world.js'
+import { clearChallenge, getChatMessageIds, plotPointMessagesSince, setSetting } from './helpers/world.js'
+import { getActorPath, updateActor } from './helpers/sheet.js'
 
 // Challenge orchestration is the highest-value E2E surface in the system:
 // the GM writes activeChallenge / a roll record on their client, and every
@@ -23,6 +24,9 @@ import { clearChallenge, setSetting } from './helpers/world.js'
 // These use seedRollRecord() rather than real dice: hasInitiatorRolled()
 // only checks that a roll record is newer than the challenge, so writing
 // one directly gives a deterministic Target Total with no RNG involved.
+
+// PlaywrightPlayer1's assigned character, per e2e/global-setup.js.
+const PLAYER1_ACTOR = 'Amanda Singh'
 
 test('a Test enables its responder only once the initiator has rolled, and never the bystander', async ({ browser }) => {
   const gm = await openAs(browser, 'gm')
@@ -171,25 +175,41 @@ test('a Group Challenge cannot start initiative with fewer than three participan
   }
 })
 
-test('the GM sees a SELECTING row with Re-roll while a responder has Select Your Dice open, and Re-roll refreshes it in place', async ({ browser }) => {
+// Also covers the Plot Point cost of the picker's two "spend a Plot Point for an extra die"
+// checkboxes: one checked box must cost exactly one Plot Point, and say so once.
+test('a responder\'s Select Your Dice dialog shows the GM a SELECTING row, re-rolls in place, and charges one Plot Point per extra-die box on Confirm', async ({ browser }) => {
   const gm = await openAs(browser, 'gm')
   const player1 = await openAs(browser, 'player1')
+
+  const ppPath = 'system.pp.value'
+  const ppBefore = await getActorPath(gm.page, PLAYER1_ACTOR, ppPath)
 
   try {
     await clearChallenge(gm.page)
     await clearRollRecord(gm.page)
     await setSetting(gm.page, 'dicePickerRerollRequest', {})
 
+    // Enough Plot Points that a second, unintended spend can actually go through: with only 1
+    // banked, changePpBy's own `newValue >= 0` guard would silently absorb the duplicate and the
+    // total would land on the right number for the wrong reason. Set before the roll, since the
+    // picker reads the available budget once, when it opens (rollDice.js:177).
+    await updateActor(gm.page, PLAYER1_ACTOR, { [ppPath]: 3 })
+
     await openTray(gm.page)
     await openTray(player1.page)
 
     // Roll & Select needs more than 2 non-hitch dice to show a real choice, and enough of them
     // that a genuine re-roll landing on the exact same faces/results again is vanishingly rare.
+    // Six rather than four so the "extra total die" checkbox is near-certain to be live too: it
+    // goes inert below 3 dice left over once the effect die is set aside (rollDice.js:390-400),
+    // and any die that comes up a natural 1 is a hitch that never reaches that count.
     await clearPool(player1.page)
     await addCustomDie(player1.page, 'Die One')
     await addCustomDie(player1.page, 'Die Two')
     await addCustomDie(player1.page, 'Die Three')
     await addCustomDie(player1.page, 'Die Four')
+    await addCustomDie(player1.page, 'Die Five')
+    await addCustomDie(player1.page, 'Die Six')
 
     const gmId = await challengeIdFor(gm.page, 'gm')
     const player1Id = await challengeIdFor(gm.page, 'player1')
@@ -211,6 +231,14 @@ test('the GM sees a SELECTING row with Re-roll while a responder has Select Your
     const picker = await rollAndSelect(player1.page)
     await expect(picker).toBeVisible()
 
+    // Same trap as the actor sheet vs. the floating panel: at this viewport the roller's own Dice
+    // Pool tray is left of centre and overlaps the left half of the picker, swallowing pointer
+    // events aimed at the "extra total die" checkbox — Foundry won't move either window out of the
+    // way. The tray has done its job (the roll is already underway and the pool is cleared), so
+    // close it before touching anything in the dialog. The GM's tray, which the assertions below
+    // are about, is untouched.
+    await closeTray(player1.page)
+
     // The GM's tray has to live-update to show this, without a reload on their end.
     await expect
       .poll(() => gm.page.locator(`${TRAY} button.request-reroll[data-actor-id="${player1Id}"]`).count())
@@ -231,13 +259,46 @@ test('the GM sees a SELECTING row with Re-roll while a responder has Select Your
     await expect.poll(diceSignature, { timeout: 15_000 }).not.toBe(before)
     await expect(picker).toBeVisible()
 
+    // Buying one extra Total die costs one Plot Point. The box is only offered to players
+    // (dice-picker.html wraps it in {{#unless isGM}}), and only while enough dice remain for it
+    // to change anything — a hitch-heavy roll legitimately has nothing to sell here.
+    const extraTotal = picker.locator('input.extra-total-die-checkbox')
+    await expect(extraTotal).toHaveCount(1)
+
+    const canBuyExtraTotal = await extraTotal.isEnabled()
+    test.skip(!canBuyExtraTotal, 'This roll left too few non-hitch dice for an extra Total die to be purchasable')
+
+    await extraTotal.check()
+    await expect(extraTotal).toBeChecked()
+
+    const messagesBefore = await getChatMessageIds(player1.page)
+
     // Confirming closes the dialog and clears the row again.
     await confirmDialog(player1.page)
 
     await expect
       .poll(() => gm.page.locator(`${TRAY} button.request-reroll[data-actor-id="${player1Id}"]`).count())
       .toBe(0)
+
+    // The spend lands as its own chat card, so wait for it before judging the count.
+    await expect
+      .poll(() => plotPointMessagesSince(player1.page, messagesBefore).then(cards => cards.length), { timeout: 15_000 })
+      .toBeGreaterThan(0)
+
+    // A settle window, because what's being asserted is the ABSENCE of a second spend: Foundry's
+    // appv1 Dialog#submit runs the button callback and then close(), and the picker wires
+    // resolveFromDom (rollDice.js) to both — so a duplicate charge arrives a round trip behind the
+    // first, not concurrently with it. Polling for "exactly one" would pass before it shows up.
+    await player1.page.waitForTimeout(2_000)
+
+    const ppCards = await plotPointMessagesSince(player1.page, messagesBefore)
+    expect(ppCards).toHaveLength(1)
+
+    await expect
+      .poll(() => getActorPath(gm.page, PLAYER1_ACTOR, ppPath))
+      .toBe(2)
   } finally {
+    await updateActor(gm.page, PLAYER1_ACTOR, { [ppPath]: ppBefore ?? 1 })
     await setSetting(gm.page, 'dicePickerRerollRequest', {})
     await clearRollRecord(gm.page)
     await clearChallenge(gm.page)

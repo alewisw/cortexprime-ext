@@ -7,6 +7,7 @@ import {
   computeProjection,
   getAvailableActions,
   getComplicationOptions,
+  hasHitchOutcomes,
   isBotch,
   isHitch
 } from '../scripts/hitchesLogic.js'
@@ -262,19 +263,23 @@ export class HitchesDialog extends FormApplication {
     try {
       const { doomPool, plotPoints, projection, summary } = this._getState()
 
-      const summaryHtml = await foundry.applications.handlebars.renderTemplate(
-        'systems/cortexprime-ext/templates/chat/hitches.html',
-        {
-          actorName: this.actor.name,
-          doomPoolLabel: doomPool?.label ?? localizer('DoomPoolTrait'),
-          hasDoomPool: !!doomPool,
-          hasSceneActor: !!this.sceneActor,
-          isBotch: isBotch(this.rows),
-          plotPoints,
-          projection,
-          summary
-        }
-      )
+      // A dialog left entirely on NONE (or hitches nobody acted on) has nothing to tell the table
+      // — skip the chat card rather than post an effectively-blank summary.
+      const summaryHtml = hasHitchOutcomes(projection)
+        ? await foundry.applications.handlebars.renderTemplate(
+            'systems/cortexprime-ext/templates/chat/hitches.html',
+            {
+              actorName: this.actor.name,
+              doomPoolLabel: doomPool?.label ?? localizer('DoomPoolTrait'),
+              hasDoomPool: !!doomPool,
+              hasSceneActor: !!this.sceneActor,
+              isBotch: isBotch(this.rows),
+              plotPoints,
+              projection,
+              summary
+            }
+          )
+        : null
 
       await applyHitchOutcomes({ actor: this.actor, sceneActor: this.sceneActor, projection, plotPoints, summaryHtml })
 
