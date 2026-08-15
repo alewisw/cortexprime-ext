@@ -295,8 +295,26 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       isOwner: game.user.isOwner
     })
 
-    return new Promise((resolve, reject) => {
-      new Dialog({ 
+    // "Nothing selected" — a fresh object each time, since the caller reads it back out.
+    const noDice = () => ({ remove: [], value: {} })
+
+    return new Promise(resolve => {
+      // Every exit path has to answer, or the caller's await hangs for the rest of the session:
+      // dismissing via the window's X (or Escape) is a real way out of this dialog and means the
+      // same thing Cancel does. Foundry's appv1 Dialog#submit runs the chosen button's callback
+      // and THEN close(), so `close` below fires on the button paths too — first answer wins, and
+      // resolveOnce makes that explicit rather than leaning on Promise semantics. Same guard
+      // plotPointUsageDialog.js uses.
+      let resolved = false
+
+      const resolveOnce = value => {
+        if (resolved) return
+
+        resolved = true
+        resolve(value)
+      }
+
+      new Dialog({
         title: label,
         content,
         buttons: {
@@ -304,7 +322,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
             icon: '<i class="fa-solid fa-times"></i>',
             label: localizer('Cancel'),
             callback () {
-              resolve({ remove: [], value: {} })
+              resolveOnce(noDice())
             }
           },
           done: {
@@ -314,13 +332,14 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
               const remove = html.find('.remove-check').prop('checked')
               const selectedDice = html.find('.die-select.selected').get()
 
-              if (!selectedDice?.length) {
-                resolve({ remove: [], value: {} })
+              if (!selectedDice.length) {
+                resolveOnce(noDice())
+                return
               }
 
-              resolve(
+              resolveOnce(
                 selectedDice
-                  .reduce((selectedValues, selectedDie, index) => {
+                  .reduce((selectedValues, selectedDie) => {
                     const $selectedDie = $(selectedDie)
 
                     if (remove) {
@@ -330,12 +349,13 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
                     selectedValues.value = { ...selectedValues.value, [getLength(selectedValues.value)]: $selectedDie.data('value') }
 
                     return selectedValues
-                  }, { remove: [], value: {} })
+                  }, noDice())
               )
             }
           }
         },
         default: 'cancel',
+        close: () => resolveOnce(noDice()),
         render(html) {
           html.find('.die-select').click(function () {
             const $dieContainer = $(this)
