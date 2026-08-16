@@ -44,10 +44,6 @@ const injectLinkedActorField = (app, html) => {
   if (!tab) return
 
   const currentActorId = app.document.getFlag('cortexprime-ext', 'linkedActorId') || ''
-  const actorOptions = game.actors.contents
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(actor => `<option value="${actor.id}" ${actor.id === currentActorId ? 'selected' : ''}>${actor.name}</option>`)
-    .join('')
 
   const fieldGroup = document.createElement('div')
   fieldGroup.classList.add('form-group')
@@ -56,10 +52,20 @@ const injectLinkedActorField = (app, html) => {
     <div class="form-fields">
       <select name="flags.cortexprime-ext.linkedActorId">
         <option value="">${localizer('None')}</option>
-        ${actorOptions}
       </select>
     </div>
   `
+
+  const select = fieldGroup.querySelector('select')
+  game.actors.contents
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(actor => {
+      const option = document.createElement('option')
+      option.value = actor.id
+      option.textContent = actor.name
+      option.selected = actor.id === currentActorId
+      select.appendChild(option)
+    })
 
   tab.appendChild(fieldGroup)
 }
