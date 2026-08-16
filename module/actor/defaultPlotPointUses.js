@@ -6,7 +6,8 @@ export default {
     3: { id: '_4', label: 'Keep an Asset you can use this scene for the rest of the session' },
     4: { id: '_5', label: 'Share an Asset you can use with everyone in the scene, for this scene only' },
     5: { id: '_6', label: 'Interfere in a contest' },
-    6: { id: '_7', label: 'Resume a contest after successful interference' }
+    6: { id: '_7', label: 'Resume a contest after successful interference' },
+    7: { id: '_8', label: 'Any other reason' }
   },
   opportunity: {
     0: { id: '_9', label: 'Step down one of your complications' },
