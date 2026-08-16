@@ -157,7 +157,11 @@ test('opening a note for editing expands it to the field\'s max height', async (
     const sheet = await openActorSheet(gm.page, ACTOR)
     await sheet.locator(`nav.sheet-tabs a.item[data-tab="${tab.id}"]`).click()
 
-    const notesField = sheet.locator('.notes-field').last()
+    // Scoped to the tab the note was actually created in. The sheet renders every additional
+    // tab's markup at once and only marks one .active, so a bare '.notes-field' .last() reaches
+    // into whichever tab happens to sort last — and a hidden one has no used height, so
+    // getComputedStyle().height comes back 'auto' and every measurement below turns into NaN.
+    const notesField = sheet.locator(`section.tab[data-tab="${tab.id}"] .notes-field`).last()
     const maxHeight = await notesField.evaluate(el => getComputedStyle(el).maxHeight)
     const shrunkHeight = await notesField.evaluate(el => getComputedStyle(el).height)
 
