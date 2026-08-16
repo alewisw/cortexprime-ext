@@ -54,7 +54,7 @@
                       addToPool=true
                       consumable=../settings.consumableDice
                       dice=trait.dice.value
-                      minDice=0
+                      minDice=(ternary (eq ../settings.hasMultipleDice false) 1 0)
                       maxDice=(ternary (eq ../settings.hasMultipleDice false) 1 -1)
                       label=(ternary (and ../settings.hasLabel trait.label) trait.label trait.name)
                       selectName=(concat ../path '.' ../target '.' traitIndex '.dice')

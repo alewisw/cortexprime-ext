@@ -395,11 +395,19 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     const targetValue = $targetNewDie.val()
     const currentDiceData = foundry.utils.getProperty(this.actor, target)
 
-    console.log(target)
-
     const newValue = objectMapValues(currentDiceData.value ?? {}, (value, index) => parseInt(index, 10) === targetKey ? targetValue : value)
 
-    await this._resetDataPoint(target, 'value', newValue)
+    // A temporary step recorded against this die's old face is meaningless once the face itself
+    // changes — left in place, it keeps rendering as a stale extra badge next to the real one.
+    const temporaryValue = currentDiceData.temporaryValue ?? {}
+
+    if (targetKey in temporaryValue) {
+      const newTemporaryValue = { ...temporaryValue }
+      delete newTemporaryValue[targetKey]
+      await this._resetDataPoints(target, { value: newValue, temporaryValue: newTemporaryValue })
+    } else {
+      await this._resetDataPoint(target, 'value', newValue)
+    }
   }
 
   async _onDieRemove (event) {
