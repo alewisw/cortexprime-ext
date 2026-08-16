@@ -78,8 +78,28 @@ export const expandNotesFieldOnEdit = html => {
   }, true)
 }
 
-export const setCssVars = (theme) => {
-  Object.entries(theme).forEach(([ key, value ]) => {
+const PX_KEYS = [
+  'bodyFontSize',
+  'descriptorLabelFontSize',
+  'inputBorderWidth',
+  'inputLabelFontSize',
+  'sectionBorderWidth',
+  'sectionPrimaryTitleFontSize',
+  'sectionSecondaryTitleFontSize',
+  'separatorWeight',
+  'sfxLabelFontSize',
+  'subTraitLabelFontSize',
+  'traitSubTitleFontSize',
+  'traitTitleFontSize'
+]
+
+const IMAGE_KEYS = ['sheetBackgroundImage', 'sectionBackgroundImage']
+
+// Pure: the theme -> CSS custom property transform, as [property, value] pairs. Split out from
+// setCssVars below (whose only other job is writing them onto document.body) so the value
+// rules — px suffixes, url() wrapping, camelCase -> --cp-kebab-case — are unit testable.
+export const computeCssVars = (theme) =>
+  Object.entries(theme).map(([ key, value ]) => {
     if ('inputBorderPosition' === key) {
       value = getBorderWidth(value, theme.inputBorderWidth)
     }
@@ -88,24 +108,11 @@ export const setCssVars = (theme) => {
       value = getBorderWidth(value, theme.sectionBorderWidth)
     }
 
-    if ([
-      'bodyFontSize',
-      'descriptorLabelFontSize',
-      'inputBorderWidth',
-      'inputLabelFontSize',
-      'sectionBorderWidth',
-      'sectionPrimaryTitleFontSize',
-      'sectionSecondaryTitleFontSize',
-      'separatorWeight',
-      'sfxLabelFontSize',
-      'subTraitLabelFontSize',
-      'traitSubTitleFontSize',
-      'traitTitleFontSize'
-    ].includes(key)) {
+    if (PX_KEYS.includes(key)) {
       value = `${value}px`
     }
 
-    if (['sheetBackgroundImage', 'sectionBackgroundImage'].includes(key)) {
+    if (IMAGE_KEYS.includes(key)) {
       value = value
         ? value.startsWith('http')
           ? `url('${value}')`
@@ -115,6 +122,11 @@ export const setCssVars = (theme) => {
 
     const property = `--cp-${key.replace(/[A-Z]+(?![a-z])|[A-Z]/g, ($, ofs) => (ofs ? "-" : "") + $.toLowerCase())}`
 
+    return [property, value]
+  })
+
+export const setCssVars = (theme) => {
+  computeCssVars(theme).forEach(([ property, value ]) => {
     document.body.style.setProperty(property, value)
   })
 }

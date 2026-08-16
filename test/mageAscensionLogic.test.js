@@ -145,6 +145,14 @@ describe('computeRealityReinforcementSync', () => {
     expect(computeRealityReinforcementSync('opposes', false)).toEqual({ gm: 'remove', roller: 'remove' })
     expect(computeRealityReinforcementSync('reinforces', false)).toEqual({ gm: 'remove', roller: 'remove' })
   })
+
+  // The default: branch. An unset or unrecognised value must clean up rather than leave a
+  // stale Reality Reinforcement die sitting in either pool.
+  it('removes from both pools for an unset or unrecognised value while applicable', () => {
+    expect(computeRealityReinforcementSync(undefined, true)).toEqual({ gm: 'remove', roller: 'remove' })
+    expect(computeRealityReinforcementSync('', true)).toEqual({ gm: 'remove', roller: 'remove' })
+    expect(computeRealityReinforcementSync('nonsense', true)).toEqual({ gm: 'remove', roller: 'remove' })
+  })
 })
 
 describe('computeGmRealityReinforcementDiceMap', () => {

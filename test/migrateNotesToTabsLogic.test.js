@@ -5,6 +5,24 @@ import {
   getMigratedNotesTabId
 } from '../module/scripts/migrateNotesToTabsLogic.js'
 
+// Asserted transitively everywhere else in this spec via the expected tab ids. Pinned directly
+// because the whole migration is idempotent only as long as this id stays deterministic - a
+// change here means a second "Notes" tab on every already-migrated Actor Type.
+describe('getMigratedNotesTabId', () => {
+  it('derives a stable id from the Actor Type id', () => {
+    expect(getMigratedNotesTabId('_1')).toBe('_notes-_1')
+    expect(getMigratedNotesTabId('abc')).toBe('_notes-abc')
+  })
+
+  it('is deterministic across calls', () => {
+    expect(getMigratedNotesTabId('_1')).toBe(getMigratedNotesTabId('_1'))
+  })
+
+  it('gives different Actor Types different tab ids', () => {
+    expect(getMigratedNotesTabId('_1')).not.toBe(getMigratedNotesTabId('_2'))
+  })
+})
+
 describe('computeMigratedActorTypes', () => {
   it('adds a Notes tab and drops hasNotesPage for an Actor Type that has the old flag', () => {
     const actorTypes = { 0: { id: '_1', name: 'Character', hasNotesPage: true } }

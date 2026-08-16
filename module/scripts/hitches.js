@@ -5,7 +5,13 @@
 import { getLength } from '../../lib/helpers.js'
 import { localizer, showPlotPointAnimation } from './foundryHelpers.js'
 import { getActiveChallenge } from './rollToBeat.js'
+import { toComplicationsObject, toDiceObject } from './hitchesLogic.js'
 import { canHitchesStepUpParadox, getParadoxOutcome } from '../mage/paradoxLogic.js'
+
+// Re-exported so HitchesDialog.js keeps importing it from here alongside applyHitchOutcomes and
+// getDoomPool — the shape mapping itself now lives in hitchesLogic.js with the rest of the pure
+// logic.
+export { getComplications } from './hitchesLogic.js'
 
 const CHALLENGE_TYPES = ['test', 'contest', 'group']
 
@@ -41,32 +47,6 @@ export const getSceneActor = () => {
   const actorId = game.scenes?.active?.getFlag('cortexprime-ext', 'linkedActorId')
 
   return actorId ? game.actors.get(actorId) : null
-}
-
-// Foundry stores these as index-keyed objects ({ 0: '6', 1: '8' }); hitchesLogic.js works in plain
-// arrays. These two pairs of helpers are the only places that difference is dealt with.
-const toDiceArray = value => Object.values(value ?? {}).map(String)
-const toDiceObject = dice => dice.reduce((acc, face, index) => ({ ...acc, [index]: String(face) }), {})
-
-export const getComplications = actor =>
-  Object.values(actor.system.actorType?.complications ?? {})
-    .map(complication => ({ label: complication.label, dice: toDiceArray(complication.dice?.value) }))
-
-// Rebuilds the complications object, preserving every field the dialog doesn't touch (edit,
-// hidden, description, temporaryValue...) on the entries that already existed.
-const toComplicationsObject = (actor, projectedComplications) => {
-  const existing = Object.values(actor.system.actorType?.complications ?? {})
-
-  return projectedComplications.reduce((acc, complication, index) => ({
-    ...acc,
-    [index]: complication.isNew
-      ? { label: complication.label, dice: { value: toDiceObject(complication.dice) } }
-      : {
-          ...existing[index],
-          label: complication.label,
-          dice: { ...existing[index]?.dice, value: toDiceObject(complication.dice) }
-        }
-  }), {})
 }
 
 // Same unset-then-set reset used throughout actor-sheet.js. The two update() calls MUST stay

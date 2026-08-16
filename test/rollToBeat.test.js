@@ -4,6 +4,8 @@ import {
   canStartGroupInitiative,
   computeHeroicStepUp,
   filterEligibleInterferers,
+  getBeatTargetIdFor,
+  getBlankRecord,
   getDiceByTargetTotal,
   getGroupDisplayOrder,
   getPendingGroupParticipants,
@@ -13,7 +15,8 @@ import {
   removeFromGroup,
   resolveChallengeAfterRoll,
   resolveGroupDuel,
-  startGroupDueling
+  startGroupDueling,
+  sumOf
 } from '../module/scripts/rollToBeat.js'
 
 const die = (faces, result) => ({ faces, result })
@@ -601,5 +604,116 @@ describe('getGroupDisplayOrder', () => {
 
   it('omits the champion slot entirely when there is no champion', () => {
     expect(getGroupDisplayOrder({ queue: ['a', 'b'], championId: null })).toEqual(['a', 'b'])
+  })
+})
+
+describe('getBlankRecord', () => {
+  it('is the "never rolled" shape, with rolledAt 0 so every reactor skips it', () => {
+    expect(getBlankRecord()).toEqual({
+      total: 0, effectDice: [], won: null, rolledAt: 0, dice: [], poolEntries: []
+    })
+  })
+
+  // The whole reason it's a factory rather than a shared constant. Handing out the same array
+  // instances would let one undone roll's mutations leak into the next blanked record.
+  it('hands out fresh arrays every call', () => {
+    const first = getBlankRecord()
+    const second = getBlankRecord()
+
+    expect(first.effectDice).not.toBe(second.effectDice)
+    expect(first.dice).not.toBe(second.dice)
+    expect(first.poolEntries).not.toBe(second.poolEntries)
+
+    first.dice.push(die(8, 5))
+    expect(second.dice).toEqual([])
+  })
+})
+
+describe('sumOf', () => {
+  it('adds the results, ignoring the faces', () => {
+    expect(sumOf([die(8, 5), die(12, 3)])).toBe(8)
+    expect(sumOf([])).toBe(0)
+  })
+})
+
+// The pure twin of getMyBeatTargetId. getMyBeatTargetId bottoms out in the current user, so
+// only this version can answer "who was THAT roller shooting at" - which is what the GM's
+// client needs when reacting to someone else's roll. Each branch below mirrors the
+// current-user version; if the two ever drift, this is where it should show up.
+describe('getBeatTargetIdFor', () => {
+  it('points a responder at the initiator', () => {
+    const challenge = { type: 'test', initiatorId: 'gm', responderIds: ['actor1', 'actor2'] }
+
+    expect(getBeatTargetIdFor(challenge, 'actor1')).toBe('gm')
+    expect(getBeatTargetIdFor(challenge, 'actor2')).toBe('gm')
+  })
+
+  it('gives the initiator no target of their own', () => {
+    expect(getBeatTargetIdFor({ type: 'test', initiatorId: 'gm', responderIds: ['actor1'] }, 'gm'))
+      .toBeNull()
+  })
+
+  it('gives a bystander no target', () => {
+    expect(getBeatTargetIdFor({ type: 'test', initiatorId: 'gm', responderIds: ['actor1'] }, 'actor9'))
+      .toBeNull()
+  })
+
+  it('points an interferer at the initiator too', () => {
+    const challenge = {
+      type: 'contest',
+      initiatorId: 'actor1',
+      responderIds: ['actor2'],
+      interference: { interfererId: 'actor3' }
+    }
+
+    expect(getBeatTargetIdFor(challenge, 'actor3')).toBe('actor1')
+  })
+
+  it('points the front-of-queue duelist at the champion', () => {
+    const challenge = {
+      type: 'group',
+      group: { phase: 'dueling', queue: ['actor1', 'actor2'], championId: 'actor3' }
+    }
+
+    expect(getBeatTargetIdFor(challenge, 'actor1')).toBe('actor3')
+  })
+
+  it('gives a queued duelist who is not up yet no target', () => {
+    const challenge = {
+      type: 'group',
+      group: { phase: 'dueling', queue: ['actor1', 'actor2'], championId: 'actor3' }
+    }
+
+    expect(getBeatTargetIdFor(challenge, 'actor2')).toBeNull()
+  })
+
+  it('gives no target during group initiative, where everyone rolls unopposed', () => {
+    const challenge = {
+      type: 'group',
+      group: { phase: 'initiative', queue: ['actor1'], championId: null, participantIds: ['actor1'] }
+    }
+
+    expect(getBeatTargetIdFor(challenge, 'actor1')).toBeNull()
+  })
+
+  it('gives no target when a duel has lost its champion', () => {
+    const challenge = {
+      type: 'group',
+      group: { phase: 'dueling', queue: ['actor1'], championId: null }
+    }
+
+    expect(getBeatTargetIdFor(challenge, 'actor1')).toBeNull()
+  })
+
+  it('returns null for a missing challenge, an untyped challenge, or no roller', () => {
+    expect(getBeatTargetIdFor(null, 'actor1')).toBeNull()
+    expect(getBeatTargetIdFor(undefined, 'actor1')).toBeNull()
+    expect(getBeatTargetIdFor({ type: null, responderIds: ['actor1'] }, 'actor1')).toBeNull()
+    expect(getBeatTargetIdFor({ type: 'test', initiatorId: 'gm', responderIds: ['actor1'] }, null))
+      .toBeNull()
+  })
+
+  it('tolerates a challenge with no responderIds array at all', () => {
+    expect(getBeatTargetIdFor({ type: 'test', initiatorId: 'gm' }, 'actor1')).toBeNull()
   })
 })

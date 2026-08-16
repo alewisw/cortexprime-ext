@@ -4,11 +4,19 @@ import {
   HITCH_ACTIONS,
   computePlotPoints,
   computeProjection,
+  findDoomDieToStepUp,
   getAvailableActions,
   getComplicationOptions,
+  getComplications,
+  getExistingComplicationKey,
+  getPendingComplicationKey,
   hasHitchOutcomes,
   isBotch,
-  stepUpDoomDie
+  isHitch,
+  stepUpDoomDie,
+  toComplicationsObject,
+  toDiceArray,
+  toDiceObject
 } from '../module/scripts/hitchesLogic.js'
 
 const row = overrides => ({
@@ -20,6 +28,36 @@ const row = overrides => ({
   renameComplication: '',
   doomDieSize: '',
   ...overrides
+})
+
+describe('isHitch', () => {
+  it('is a natural 1, whatever the die size', () => {
+    expect(isHitch({ faces: 12, result: 1 })).toBe(true)
+    expect(isHitch({ faces: 4, result: 1 })).toBe(true)
+  })
+
+  it('is not any other result', () => {
+    expect(isHitch({ faces: 4, result: 2 })).toBe(false)
+    expect(isHitch({ faces: 12, result: 12 })).toBe(false)
+  })
+})
+
+// The complication-key format is a contract between getComplicationOptions (which mints keys)
+// and computeProjection (which resolves them). The rest of this spec writes the keys out as
+// literals for readability, so this block is what ties those literals back to the builders -
+// change the format and this fails, instead of production silently breaking while the
+// hardcoded literals keep passing.
+describe('complication keys', () => {
+  it('mints the exact key strings the rest of this spec hardcodes', () => {
+    expect(getPendingComplicationKey(0)).toBe('pending:0')
+    expect(getPendingComplicationKey(1)).toBe('pending:1')
+    expect(getExistingComplicationKey(0)).toBe('existing:0')
+    expect(getExistingComplicationKey(1)).toBe('existing:1')
+  })
+
+  it('keeps pending and existing keys in separate namespaces', () => {
+    expect(getPendingComplicationKey(0)).not.toBe(getExistingComplicationKey(0))
+  })
 })
 
 describe('isBotch', () => {
@@ -119,6 +157,32 @@ describe('getComplicationOptions', () => {
 describe('DOOM_DIE_STEP_OPTIONS', () => {
   it('offers the whole ladder below D12, which has nowhere to step up to', () => {
     expect(DOOM_DIE_STEP_OPTIONS).toEqual(['4', '6', '8', '10'])
+  })
+})
+
+// Covered transitively through stepUpDoomDie, but it's the part that decides WHICH die moves,
+// and it returns an index rather than a pool - worth asserting directly.
+describe('findDoomDieToStepUp', () => {
+  it('picks the die the GM named when it is still in the pool', () => {
+    expect(findDoomDieToStepUp(['4', '8', '10'], '8')).toBe(1)
+  })
+
+  it('picks the next size up when the named size is gone', () => {
+    expect(findDoomDieToStepUp(['4', '8', '10'], '6')).toBe(1)
+  })
+
+  it('picks the lowest qualifying die when several match', () => {
+    expect(findDoomDieToStepUp(['10', '6', '8'], '6')).toBe(1)
+  })
+
+  it('returns -1 when every die is smaller than the picked size', () => {
+    expect(findDoomDieToStepUp(['4', '6'], '10')).toBe(-1)
+  })
+
+  it('returns -1 for an empty pool or an unusable picked size', () => {
+    expect(findDoomDieToStepUp([], '6')).toBe(-1)
+    expect(findDoomDieToStepUp(['8'], '')).toBe(-1)
+    expect(findDoomDieToStepUp(['8'], undefined)).toBe(-1)
   })
 })
 
@@ -641,5 +705,142 @@ describe('hasHitchOutcomes', () => {
     expect(projection.changedComplications).toEqual([])
 
     expect(hasHitchOutcomes(projection)).toBe(true)
+  })
+})
+
+// The Foundry-shape boundary: actor data stores dice as index-keyed objects of strings, while
+// everything above works in plain arrays. These sit between two well-tested layers and are
+// exactly where index and string-vs-number bugs hide.
+describe('dice shape mapping', () => {
+  describe('toDiceArray', () => {
+    it('turns an index-keyed dice object into an array of string faces', () => {
+      expect(toDiceArray({ 0: '6', 1: '8' })).toEqual(['6', '8'])
+    })
+
+    it('coerces numeric faces to strings, so comparisons downstream stay consistent', () => {
+      expect(toDiceArray({ 0: 6, 1: 8 })).toEqual(['6', '8'])
+    })
+
+    it('collapses a sparse map in key order rather than leaving holes', () => {
+      expect(toDiceArray({ 0: '6', 5: '8', 9: '10' })).toEqual(['6', '8', '10'])
+    })
+
+    it('treats a missing or empty map as no dice', () => {
+      expect(toDiceArray(undefined)).toEqual([])
+      expect(toDiceArray(null)).toEqual([])
+      expect(toDiceArray({})).toEqual([])
+    })
+  })
+
+  describe('toDiceObject', () => {
+    it('turns an array back into a dense index-keyed object of strings', () => {
+      expect(toDiceObject(['6', '8'])).toEqual({ 0: '6', 1: '8' })
+      expect(toDiceObject([6, 8])).toEqual({ 0: '6', 1: '8' })
+    })
+
+    it('maps an empty array to an empty object', () => {
+      expect(toDiceObject([])).toEqual({})
+    })
+  })
+
+  it('round-trips a dice map without changing order or count', () => {
+    expect(toDiceObject(toDiceArray({ 0: '4', 1: '8', 2: '8', 3: '12' })))
+      .toEqual({ 0: '4', 1: '8', 2: '8', 3: '12' })
+  })
+
+  // The round trip is also what densifies: a sparse stored map comes back contiguous.
+  it('densifies a sparse map on the round trip', () => {
+    expect(toDiceObject(toDiceArray({ 0: '4', 7: '8' }))).toEqual({ 0: '4', 1: '8' })
+  })
+})
+
+describe('getComplications', () => {
+  it('reads label and dice off each complication', () => {
+    const actor = {
+      system: { actorType: { complications: {
+        0: { label: 'Winded', dice: { value: { 0: 6 } } },
+        1: { label: 'Bleeding', dice: { value: { 0: '8', 1: '8' } } }
+      } } }
+    }
+
+    expect(getComplications(actor)).toEqual([
+      { label: 'Winded', dice: ['6'] },
+      { label: 'Bleeding', dice: ['8', '8'] }
+    ])
+  })
+
+  it('returns nothing for an actor with no complications or no actorType', () => {
+    expect(getComplications({ system: { actorType: {} } })).toEqual([])
+    expect(getComplications({ system: {} })).toEqual([])
+  })
+
+  it('handles a complication with no dice at all', () => {
+    const actor = { system: { actorType: { complications: { 0: { label: 'Marked' } } } } }
+
+    expect(getComplications(actor)).toEqual([{ label: 'Marked', dice: [] }])
+  })
+})
+
+describe('toComplicationsObject', () => {
+  const actor = {
+    system: { actorType: { complications: {
+      0: {
+        label: 'Winded',
+        edit: true,
+        hidden: false,
+        description: 'from the fall',
+        dice: { value: { 0: '6' }, temporaryValue: { 0: '10' } }
+      }
+    } } }
+  }
+
+  // The dialog only ever changes label and dice; everything else on an existing complication has
+  // to survive, or confirming a hitch would silently wipe the GM's other edits.
+  it('preserves untouched fields on an existing complication', () => {
+    const result = toComplicationsObject(actor, [{ label: 'Winded', dice: ['8'], isNew: false }])
+
+    expect(result[0]).toMatchObject({
+      label: 'Winded',
+      edit: true,
+      hidden: false,
+      description: 'from the fall'
+    })
+    expect(result[0].dice.value).toEqual({ 0: '8' })
+    expect(result[0].dice.temporaryValue).toEqual({ 0: '10' })
+  })
+
+  it('writes a renamed complication under the same entry', () => {
+    const result = toComplicationsObject(actor, [{ label: 'Winded Badly', dice: ['8'], isNew: false }])
+
+    expect(result[0].label).toBe('Winded Badly')
+    expect(result[0].description).toBe('from the fall')
+  })
+
+  // A new complication is built from scratch — it must NOT inherit whatever happened to sit at
+  // that index on the actor already.
+  it('builds a new complication with only label and dice', () => {
+    const result = toComplicationsObject(actor, [{ label: 'On Fire', dice: ['6'], isNew: true }])
+
+    expect(result[0]).toEqual({ label: 'On Fire', dice: { value: { 0: '6' } } })
+  })
+
+  it('reindexes the result densely from zero', () => {
+    const result = toComplicationsObject(actor, [
+      { label: 'Winded', dice: ['8'], isNew: false },
+      { label: 'On Fire', dice: ['6'], isNew: true }
+    ])
+
+    expect(Object.keys(result)).toEqual(['0', '1'])
+  })
+
+  it('maps an empty projection to an empty object', () => {
+    expect(toComplicationsObject(actor, [])).toEqual({})
+  })
+
+  it('does not mutate the actor', () => {
+    const before = JSON.stringify(actor)
+    toComplicationsObject(actor, [{ label: 'Changed', dice: ['12'], isNew: false }])
+
+    expect(JSON.stringify(actor)).toBe(before)
   })
 })

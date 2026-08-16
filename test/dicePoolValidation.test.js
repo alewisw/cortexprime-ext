@@ -128,4 +128,38 @@ describe('validateDicePool', () => {
     const pool = [entry('path.1', 'unknown-id'), entry('path.2', 'unknown-id')]
     expect(validateDicePool(pool, [limitOneTraitSet], false)).toBeNull()
   })
+
+  // Spending a Plot Point buys an extra die, which raises the Limit One allowance from 1 to 2.
+  // It does not buy an exemption from the other two rules — those are about which traits may
+  // legally combine, not how many dice you get.
+  describe('spending a Plot Point for an extra die', () => {
+    it('raises the Limit One allowance to two, but no further', () => {
+      const two = [
+        entry('path.1', limitOneTraitSet.id, 'Distinction 1'),
+        entry('path.2', limitOneTraitSet.id, 'Distinction 2')
+      ]
+      expect(validateDicePool(two, [limitOneTraitSet], true)).toBeNull()
+
+      const three = [...two, entry('path.3', limitOneTraitSet.id, 'Distinction 3')]
+      expect(validateDicePool(three, [limitOneTraitSet], true))
+        .toMatchObject({ key: 'DicePoolInvalidLimitOne' })
+    })
+
+    it('does not excuse the same trait being added twice', () => {
+      const pool = [
+        entry('path.1', plainTraitSet.id, 'Athletics'),
+        entry('path.1', plainTraitSet.id, 'Athletics')
+      ]
+
+      expect(validateDicePool(pool, [plainTraitSet], true))
+        .toMatchObject({ key: 'DicePoolInvalidDuplicateTrait', data: { trait: 'Athletics' } })
+    })
+
+    it('does not excuse two mutually exclusive Trait Sets', () => {
+      const pool = [entry('path.1', exclusiveA.id, 'Sphere'), entry('path.2', exclusiveB.id, 'Crowbar')]
+
+      expect(validateDicePool(pool, [exclusiveA, exclusiveB], true))
+        .toMatchObject({ key: 'DicePoolInvalidMutuallyExclusive' })
+    })
+  })
 })

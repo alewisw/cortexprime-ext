@@ -53,6 +53,32 @@ export async function requireSceneLink(page) {
   return linked ? null : 'The active scene has no linked Distinction actor'
 }
 
+/**
+ * Skip reason unless THIS session is Foundry's elected active GM.
+ *
+ * Several behaviours run on exactly one client — the active GM's — so that they
+ * happen once rather than once per connected GM: the Hitches dialog
+ * (hitches.js), the roll-undo snapshot and its card refresh (rollUndo.js), and
+ * challenge advancement (rollToBeat.js). Foundry elects the first connected GM,
+ * so if you have your own Gamemaster session open, it wins and those reactions
+ * land on YOUR screen instead of the test's.
+ *
+ * Specs asserting on that GM-side UI have to skip rather than fail — the system
+ * is behaving correctly, the test just isn't the one being talked to.
+ */
+export async function requireActiveGM(page) {
+  const state = await page.evaluate(() => ({
+    me: window.game.user.name,
+    activeGM: window.game.users.activeGM?.name ?? null,
+    isActive: window.game.user === window.game.users.activeGM
+  }))
+
+  if (state.isActive) return null
+
+  return `This session (${state.me}) is not Foundry's active GM — "${state.activeGM}" is. ` +
+    'Disconnect that Gamemaster session and re-run; GM-side reactions fire only on the active GM.'
+}
+
 /** Skip reason unless test mode (deterministic die values) is enabled. */
 export async function requireTestMode(page) {
   const on = await getSetting(page, 'testModeSelectDiceValues')
@@ -81,6 +107,55 @@ export async function restoreSettings(page, snapshot) {
 /** The universal reset between challenge specs. */
 export async function clearChallenge(page) {
   await setSetting(page, 'activeChallenge', {})
+}
+
+/** The crisis pool's dice, as a plain array of faces. */
+export async function getCrisisDice(page) {
+  const pool = await getSetting(page, 'crisisPool')
+  return pool?.dice ?? []
+}
+
+export async function startCrisis(page, { name, dice }) {
+  await setSetting(page, 'crisisPool', { active: true, name, dice })
+}
+
+export async function endCrisis(page) {
+  await setSetting(page, 'crisisPool', { active: false, name: '', dice: [] })
+}
+
+/**
+ * The roll record for a player's character, or for the GM when actorName is
+ * omitted. This is what getRollToBeatTargets() reads, so it's the witness for
+ * what a roll actually recorded — total, effect dice, and win/loss.
+ */
+export async function getRollRecord(page, actorName) {
+  return page.evaluate(name => {
+    if (name) return window.game.actors.getName(name)?.getFlag('cortexprime-ext', 'lastRoll') ?? null
+
+    return window.game.settings.get('cortexprime-ext', 'lastGmRoll') ?? null
+  }, actorName)
+}
+
+/** Turns deterministic die values on, returning the previous value to restore. */
+export async function enableTestMode(page) {
+  const previous = await getSetting(page, 'testModeSelectDiceValues')
+
+  if (!previous) await setSetting(page, 'testModeSelectDiceValues', true)
+
+  return previous
+}
+
+/**
+ * Waits for a world setting to reach a value on THIS client. World settings
+ * reach other sessions over a socket, so a player's page can still be reading
+ * the old value for a moment after the GM writes it.
+ */
+export async function awaitSetting(page, key, expected, timeout = 15_000) {
+  await page.waitForFunction(
+    ({ k, v }) => JSON.stringify(window.game.settings.get('cortexprime-ext', k)) === JSON.stringify(v),
+    { k: key, v: expected },
+    { timeout }
+  )
 }
 
 /** Foundry user id for one of the dedicated Playwright accounts. */

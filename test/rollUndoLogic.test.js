@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canUndoRoll, computeUndoChallenge } from '../module/scripts/rollUndoLogic.js'
+import { canUndoRoll, computeUndoChallenge, resolveUndoState } from '../module/scripts/rollUndoLogic.js'
 
 const undoable = overrides => ({
   actorId: 'actor1',
@@ -35,6 +35,12 @@ describe('canUndoRoll', () => {
 
   it('still allows undo when the GM rolled before it', () => {
     expect(canUndoRoll(undoable({ gmRolledAt: 50 }))).toBe(true)
+  })
+
+  // Boundary of the `gmRolledAt > rolledAt` guard. Identical timestamps mean the GM has not
+  // rolled *after* this roll, so the undo is still safe.
+  it('allows undo when the GM roll carries the same timestamp', () => {
+    expect(canUndoRoll(undoable({ gmRolledAt: 100 }))).toBe(true)
   })
 
   describe('sequential challenges', () => {
@@ -145,5 +151,89 @@ describe('computeUndoChallenge', () => {
 
     expect(computeUndoChallenge({ snapshot: null, current, actorId: 'actor1' })).toEqual(current)
     expect(computeUndoChallenge({ snapshot: { type: null }, current, actorId: 'actor1' })).toEqual(current)
+  })
+})
+
+// The decision half of the Undo button's availability: match the card's roll flag against the
+// stored snapshot, derive the GM and latest-player roll times from the live target list, then
+// defer to canUndoRoll. Only the isGM check and the two reads stay in rollUndo.js.
+describe('resolveUndoState', () => {
+  const rollFlag = { actorId: 'actor1', rolledAt: 100 }
+  const snapshot = { rolledAt: 100, challenge: { type: 'test' } }
+  const targets = [
+    { id: 'gm', name: 'GM', rolledAt: 0 },
+    { id: 'actor1', name: 'Amanda', rolledAt: 100 },
+    { id: 'actor2', name: 'Cameron', rolledAt: 0 }
+  ]
+
+  it('offers the undo, naming the player whose card it is', () => {
+    expect(resolveUndoState({ rollFlag, snapshot, targets }))
+      .toEqual({ snapshot, name: 'Amanda' })
+  })
+
+  it('declines a card with no actor or no timestamp', () => {
+    expect(resolveUndoState({ rollFlag: { rolledAt: 100 }, snapshot, targets })).toBeNull()
+    expect(resolveUndoState({ rollFlag: { actorId: 'actor1' }, snapshot, targets })).toBeNull()
+    expect(resolveUndoState({ rollFlag: null, snapshot, targets })).toBeNull()
+  })
+
+  it('declines when no snapshot was ever stored for that actor', () => {
+    expect(resolveUndoState({ rollFlag, snapshot: undefined, targets })).toBeNull()
+  })
+
+  // Snapshots are per-actor and overwritten on every roll, so a mismatch means this card's roll
+  // has already been superseded and there is nothing to rewind to.
+  it('declines when the stored snapshot belongs to a different roll', () => {
+    expect(resolveUndoState({ rollFlag, snapshot: { ...snapshot, rolledAt: 200 }, targets }))
+      .toBeNull()
+  })
+
+  it('declines once the GM has rolled after it', () => {
+    const gmRolledLater = targets.map(t => t.id === 'gm' ? { ...t, rolledAt: 150 } : t)
+
+    expect(resolveUndoState({ rollFlag, snapshot, targets: gmRolledLater })).toBeNull()
+  })
+
+  it('declines once that player has rolled again', () => {
+    const rolledAgain = targets.map(t => t.id === 'actor1' ? { ...t, rolledAt: 200 } : t)
+
+    expect(resolveUndoState({ rollFlag, snapshot, targets: rolledAgain })).toBeNull()
+  })
+
+  // A Contest is strictly sequential, so only the most recent player roll may be undone; a Test's
+  // responders roll independently, so an earlier one still can.
+  it('applies the sequential rule using the latest roll across all players', () => {
+    const cameronRolledLater = targets.map(t => t.id === 'actor2' ? { ...t, rolledAt: 200 } : t)
+
+    expect(resolveUndoState({
+      rollFlag,
+      snapshot: { rolledAt: 100, challenge: { type: 'contest' } },
+      targets: cameronRolledLater
+    })).toBeNull()
+
+    expect(resolveUndoState({ rollFlag, snapshot, targets: cameronRolledLater }))
+      .toMatchObject({ name: 'Amanda' })
+  })
+
+  it('reads the group phase out of the snapshot, not the current challenge', () => {
+    const cameronRolledLater = targets.map(t => t.id === 'actor2' ? { ...t, rolledAt: 200 } : t)
+    const duel = { rolledAt: 100, challenge: { type: 'group', group: { phase: 'dueling' } } }
+    const initiative = { rolledAt: 100, challenge: { type: 'group', group: { phase: 'initiative' } } }
+
+    expect(resolveUndoState({ rollFlag, snapshot: duel, targets: cameronRolledLater })).toBeNull()
+    expect(resolveUndoState({ rollFlag, snapshot: initiative, targets: cameronRolledLater }))
+      .toMatchObject({ name: 'Amanda' })
+  })
+
+  // A player who has disconnected has no live target record, so their own rolledAt reads as 0 and
+  // no longer matches the card - the button disappears rather than offering a broken undo.
+  it('declines when the roller is no longer a live target', () => {
+    const withoutAmanda = targets.filter(target => target.id !== 'actor1')
+
+    expect(resolveUndoState({ rollFlag, snapshot, targets: withoutAmanda })).toBeNull()
+  })
+
+  it('treats a missing target list as no targets at all', () => {
+    expect(resolveUndoState({ rollFlag, snapshot })).toBeNull()
   })
 })

@@ -19,6 +19,14 @@ describe('chooseCrisisDieIndex', () => {
   it('a D4 in the pool is never an elimination target, only ever a step-down/fallback candidate', () => {
     expect(chooseCrisisDieIndex([4], 12)).toBe(0)
   })
+
+  // Precondition, pinned: the fallback reduce seeds from index 0, so an empty pool yields 0 —
+  // an index that doesn't exist. Harmless today because computeCrisisReduction stops as soon
+  // as the pool empties and never calls in with []. Anyone calling this directly must check
+  // for an empty pool first.
+  it('assumes a non-empty pool — an empty one yields the out-of-range index 0', () => {
+    expect(chooseCrisisDieIndex([], 8)).toBe(0)
+  })
 })
 
 describe('reduceCrisisDice', () => {

@@ -14,7 +14,7 @@ import {
   getRollToBeatTargets,
   setActiveChallenge
 } from './rollToBeat.js'
-import { canUndoRoll, computeUndoChallenge } from './rollUndoLogic.js'
+import { computeUndoChallenge, resolveUndoState } from './rollUndoLogic.js'
 
 const CHALLENGE_TYPES = ['test', 'contest', 'group']
 
@@ -81,30 +81,13 @@ const onRollRecorded = async (actor, data) => {
 // ---- Availability ----
 
 const getUndoState = rollFlag => {
-  if (!game.user.isGM || !rollFlag?.actorId || !rollFlag?.rolledAt) return null
+  if (!game.user.isGM) return null
 
-  const snapshot = getSnapshots()[rollFlag.actorId]
-
-  if (!snapshot || snapshot.rolledAt !== rollFlag.rolledAt) return null
-
-  const targets = getRollToBeatTargets()
-  const self = targets.find(target => target.id === rollFlag.actorId)
-  const gmRolledAt = targets.find(target => target.id === 'gm')?.rolledAt ?? 0
-  const latestPlayerRolledAt = targets
-    .filter(target => target.id !== 'gm')
-    .reduce((latest, target) => Math.max(latest, target.rolledAt ?? 0), 0)
-
-  const allowed = canUndoRoll({
-    actorId: rollFlag.actorId,
-    rolledAt: rollFlag.rolledAt,
-    challengeType: snapshot.challenge?.type,
-    groupPhase: snapshot.challenge?.group?.phase,
-    currentLastRolledAt: self?.rolledAt ?? 0,
-    gmRolledAt,
-    latestPlayerRolledAt
+  return resolveUndoState({
+    rollFlag,
+    snapshot: getSnapshots()[rollFlag?.actorId],
+    targets: getRollToBeatTargets()
   })
-
-  return allowed ? { snapshot, name: self?.name ?? '' } : null
 }
 
 // ---- The undo itself ----

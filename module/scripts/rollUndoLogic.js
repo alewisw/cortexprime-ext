@@ -39,6 +39,38 @@ export const canUndoRoll = ({
   return true
 }
 
+// Everything getUndoState (rollUndo.js) decides once the live reads are done: matching the card's
+// roll flag against the stored snapshot, deriving the GM's and the latest player's roll times out
+// of the target list, and handing the result to canUndoRoll. The impure half left behind is just
+// the game.user.isGM check and fetching `snapshot`/`targets`.
+//
+// Returns { snapshot, name } when the card should show an Undo button, or null when it shouldn't.
+export const resolveUndoState = ({ rollFlag, snapshot, targets = [] }) => {
+  if (!rollFlag?.actorId || !rollFlag?.rolledAt) return null
+
+  // A snapshot is taken per actor and overwritten on every roll, so one that doesn't match this
+  // card's rolledAt belongs to a newer roll — there's nothing left to rewind this card to.
+  if (!snapshot || snapshot.rolledAt !== rollFlag.rolledAt) return null
+
+  const self = targets.find(target => target.id === rollFlag.actorId)
+  const gmRolledAt = targets.find(target => target.id === 'gm')?.rolledAt ?? 0
+  const latestPlayerRolledAt = targets
+    .filter(target => target.id !== 'gm')
+    .reduce((latest, target) => Math.max(latest, target.rolledAt ?? 0), 0)
+
+  const allowed = canUndoRoll({
+    actorId: rollFlag.actorId,
+    rolledAt: rollFlag.rolledAt,
+    challengeType: snapshot.challenge?.type,
+    groupPhase: snapshot.challenge?.group?.phase,
+    currentLastRolledAt: self?.rolledAt ?? 0,
+    gmRolledAt,
+    latestPlayerRolledAt
+  })
+
+  return allowed ? { snapshot, name: self?.name ?? '' } : null
+}
+
 const withoutDuplicates = ids => [...new Set(ids)]
 
 // What the active challenge should become. `snapshot` is the challenge as it stood immediately

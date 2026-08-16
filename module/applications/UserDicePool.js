@@ -3,6 +3,7 @@ import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '.
 import rollDice from '../scripts/rollDice.js'
 import { getCrisisPool } from '../scripts/crisisPool.js'
 import { getDicePoolInvalidReason } from '../scripts/dicePoolValidation.js'
+import { getChallengeDisplayData, getEligibleRollerIds, getGroupDisplayData } from './userDicePoolLogic.js'
 import {
   canCurrentUserRoll,
   canStartGroupInitiative,
@@ -10,13 +11,11 @@ import {
   endInterference,
   getActiveChallenge,
   getEligibleInterferers,
-  getGroupDisplayOrder,
   getMyBeatTargetId,
   getMyChallengeTarget,
   getMyGroupRollRole,
   getMyInterfererId,
   getMyResponderId,
-  getPendingGroupParticipants,
   getRollToBeatTargets,
   getTargetTotal,
   hasContestStarted,
@@ -53,125 +52,6 @@ const CRISIS_POOL_SOURCE = 'Crisis Pool'
 const readDicePool = () =>
   game.user.getFlag('cortexprime-ext', 'dicePool') ?? foundry.utils.deepClone(blankPool)
 
-// Computes "who's currently up" for both the status line and the GM's Contest radio
-// selections. In a Contest, once the current "Roll Now" person has actually rolled, display
-// flips to show the other party as Roll Now — it's their turn to try to beat it — even though
-// the underlying initiatorId/responderIds only actually swap if that roll goes on to lose (see
-// processChallengeAdvancement). In a Test, once the initiator has rolled, every remaining
-// responder moves up into "Roll Now" at once instead — a Test can have any number of
-// responders, so a single displayed "swap" doesn't apply there.
-const getChallengeDisplay = (activeChallenge, rollToBeatTargets) => {
-  const initiatorId = activeChallenge.initiatorId
-  const responderId = activeChallenge.responderIds[0] ?? null
-  const initiatorHasRolled = hasInitiatorRolled(activeChallenge)
-  const nameOf = id => rollToBeatTargets.find(target => target.id === id)?.name
-
-  if (activeChallenge.type === 'test') {
-    const responderNames = activeChallenge.responderIds.map(nameOf).filter(Boolean)
-
-    return {
-      displayedInitiatorId: initiatorId,
-      displayedResponderId: responderId,
-      rollNowNames: initiatorHasRolled ? responderNames : [nameOf(initiatorId)].filter(Boolean),
-      rollNextNames: initiatorHasRolled ? [] : responderNames
-    }
-  }
-
-  const displayedInitiatorId = initiatorHasRolled ? responderId : initiatorId
-  const displayedResponderId = initiatorHasRolled ? initiatorId : responderId
-
-  return {
-    displayedInitiatorId,
-    displayedResponderId,
-    rollNowNames: [nameOf(displayedInitiatorId)].filter(Boolean),
-    rollNextNames: [nameOf(displayedResponderId)].filter(Boolean)
-  }
-}
-
-// The id-returning twin of getChallengeDisplay's rollNowNames, for matching against who
-// currently has a "Select Your Dice" dialog open (see selectingRollers in getData) — a
-// responder, the not-yet-rolled interferer, or the front-of-queue Group duelist.
-const getEligibleRollerIds = activeChallenge => {
-  if (activeChallenge.interference) return [activeChallenge.interference.interfererId]
-
-  if (activeChallenge.type === 'group') {
-    const currentId = activeChallenge.group?.phase === 'dueling' ? activeChallenge.group.queue?.[0] : null
-    return currentId ? [currentId] : []
-  }
-
-  if (!activeChallenge.type) return []
-
-  const initiatorHasRolled = hasInitiatorRolled(activeChallenge)
-
-  if (activeChallenge.type === 'test') {
-    return initiatorHasRolled ? activeChallenge.responderIds : [activeChallenge.initiatorId]
-  }
-
-  const responderId = activeChallenge.responderIds[0] ?? null
-  return [initiatorHasRolled ? responderId : activeChallenge.initiatorId].filter(Boolean)
-}
-
-// Bundles everything the template needs to render the GM's challenge controls and the status
-// line, built on top of getChallengeDisplay's "who's up now" resolution.
-const getChallengeDisplayData = (activeChallenge, rollToBeatTargets) => {
-  const display = getChallengeDisplay(activeChallenge, rollToBeatTargets)
-
-  return {
-    challengeInitiatorOptions: rollToBeatTargets.map(target => ({
-      ...target,
-      selected: target.id === display.displayedInitiatorId
-    })),
-    challengeResponderOptions: rollToBeatTargets
-      .filter(target => target.id !== display.displayedInitiatorId)
-      .map(target => ({
-        ...target,
-        checked: activeChallenge.type === 'test'
-          ? activeChallenge.responderIds.includes(target.id)
-          : target.id === display.displayedResponderId
-      })),
-    rollNowNames: display.rollNowNames,
-    rollNextNames: display.rollNextNames,
-    challengeRadiosReadOnly: hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))
-  }
-}
-
-// Bundles everything the template needs for the GM's Group controls and status line, per phase.
-// Returns isGroupChallenge:false for non-Group challenges so it can be spread unconditionally,
-// exactly like getChallengeDisplayData.
-const getGroupDisplayData = (activeChallenge, rollToBeatTargets) => {
-  if (activeChallenge.type !== 'group' || !activeChallenge.group) return { isGroupChallenge: false }
-
-  const group = activeChallenge.group
-  const targetOf = id => rollToBeatTargets.find(target => target.id === id)
-  const nameOf = id => targetOf(id)?.name
-  const champion = group.championId ? targetOf(group.championId) : null
-
-  return {
-    isGroupChallenge: true,
-    isGroupSelecting: group.phase === 'selecting',
-    isGroupInitiative: group.phase === 'initiative',
-    isGroupDueling: group.phase === 'dueling',
-    groupParticipantOptions: rollToBeatTargets.map(target => ({
-      ...target,
-      checked: group.participantIds.includes(target.id)
-    })),
-    groupCanStartInitiative: canStartGroupInitiative(activeChallenge),
-    groupPendingNames: group.phase === 'initiative'
-      ? getPendingGroupParticipants(activeChallenge, rollToBeatTargets).map(nameOf).filter(Boolean)
-      : [],
-    groupOrder: group.phase === 'dueling'
-      ? getGroupDisplayOrder(group)
-          .map(id => ({ id, name: nameOf(id), isChampion: id === group.championId, isCurrent: id === group.queue[0] }))
-          .filter(entry => !!entry.name)
-      : [],
-    groupChampionName: champion?.name ?? null,
-    groupCurrentChallengerName: group.phase === 'dueling' && group.queue[0] ? nameOf(group.queue[0]) : null,
-    // The champion was removed mid-duel: no Target, nobody can roll until the GM acts. Surfaced
-    // so the frozen roll buttons have a visible explanation.
-    groupNeedsChampion: group.phase === 'dueling' && !group.championId
-  }
-}
-
 export class UserDicePool extends FormApplication {
   constructor() {
     super()
@@ -206,12 +86,15 @@ export class UserDicePool extends FormApplication {
     const myGroupRole = getMyGroupRollRole()
     const canRollToBeat = !!getMyResponderId() || !!myInterfererId || myGroupRole === 'duel'
     const challengeTarget = getMyChallengeTarget()
-    const contestStarted = hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge))
+    // Resolved once here and threaded into the display logic below, which is pure and can't
+    // read live Foundry state for itself.
+    const initiatorHasRolled = hasInitiatorRolled(activeChallenge)
+    const contestStarted = hasContestStarted(activeChallenge, initiatorHasRolled)
     const dicePoolInvalidResult = getDicePoolInvalidReason(dice.pool, !!dice.spendPlotPointForExtraDie)
     const dicePoolInvalidReason = dicePoolInvalidResult
       ? game.i18n.format(dicePoolInvalidResult.key, dicePoolInvalidResult.data)
       : null
-    const eligibleRollerIds = getEligibleRollerIds(activeChallenge)
+    const eligibleRollerIds = getEligibleRollerIds(activeChallenge, initiatorHasRolled)
     const selectingRollers = rollToBeatTargets
       .filter(target => target.id !== 'gm' && eligibleRollerIds.includes(target.id))
       .filter(target => !!game.actors.get(target.id)?.getFlag('cortexprime-ext', 'dicePickerOpen'))
@@ -241,7 +124,7 @@ export class UserDicePool extends FormApplication {
       interfererName: activeChallenge.interference
         ? rollToBeatTargets.find(target => target.id === activeChallenge.interference.interfererId)?.name
         : null,
-      ...getChallengeDisplayData(activeChallenge, rollToBeatTargets),
+      ...getChallengeDisplayData(activeChallenge, rollToBeatTargets, initiatorHasRolled),
       ...getGroupDisplayData(activeChallenge, rollToBeatTargets)
     }
   }

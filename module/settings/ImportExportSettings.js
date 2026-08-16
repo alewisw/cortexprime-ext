@@ -1,6 +1,14 @@
 import defaultThemes from "../theme/defaultThemes.js"
 import { localizer, setCssVars } from "../scripts/foundryHelpers.js"
-import { SYNCED_SETTINGS } from "./syncedSettings.js"
+import {
+  buildExportPayload,
+  buildImportValues,
+  buildResetValues,
+  isImportableSettings,
+  needsVersionWarning,
+  resolveActiveTheme,
+  resolveImportedThemes
+} from "./importExportLogic.js"
 
 export default class ImportExportSettings extends FormApplication {
   constructor() {
@@ -41,16 +49,11 @@ export default class ImportExportSettings extends FormApplication {
   async _exportSettings(event) {
     event.preventDefault()
 
-    const { current, custom } = game.settings.get('cortexprime-ext', 'themes')
-
-    const settings = {
-      cortexPrimeVersion: game.system.version,
-      theme: { current, custom }
-    }
-
-    for (const { key } of SYNCED_SETTINGS) {
-      settings[key] = game.settings.get('cortexprime-ext', key)
-    }
+    const settings = buildExportPayload(
+      game.system.version,
+      game.settings.get('cortexprime-ext', 'themes'),
+      key => game.settings.get('cortexprime-ext', key)
+    )
 
     await foundry.utils.saveDataToFile(JSON.stringify(settings, null, 2), 'json', 'my-cortex-prime-settings.json')
   }
@@ -74,12 +77,12 @@ export default class ImportExportSettings extends FormApplication {
           return
         }
 
-        if (!data?.cortexPrimeVersion && !data?.actorTypes) {
+        if (!isImportableSettings(data)) {
           ui.notifications.error(localizer('CantReadImportFile'))
           return
         }
 
-        if (game.system.version !== data?.cortexPrimeVersion) {
+        if (needsVersionWarning(game.system.version, data)) {
           warning = localizer('ImportVersionWarning')
         }
 
@@ -96,22 +99,18 @@ export default class ImportExportSettings extends FormApplication {
         if (confirmed) {
           await game.settings.set('cortexprime-ext', 'importedSettings', { currentSetting: file.name })
 
-          for (const { key, default: fallback } of SYNCED_SETTINGS) {
-            await game.settings.set('cortexprime-ext', key, data[key] ?? fallback)
+          for (const [key, value] of buildImportValues(data)) {
+            await game.settings.set('cortexprime-ext', key, value)
           }
 
-          const themeSettings = await game.settings.get('cortexprime-ext', 'themes')
-
-          const { current, custom } = data.theme ?? {}
-
-          themeSettings.current = current ?? 'Default'
-          themeSettings.custom = custom ?? themeSettings.custom
+          const themeSettings = resolveImportedThemes(
+            await game.settings.get('cortexprime-ext', 'themes'),
+            data
+          )
 
           await game.settings.set('cortexprime-ext', 'themes', themeSettings)
 
-          const theme = themeSettings.current === 'custom' ? themeSettings.custom : themeSettings.list[themeSettings.current]
-
-          setCssVars(theme)
+          setCssVars(resolveActiveTheme(themeSettings))
 
           // Some SYNCED_SETTINGS entries are config:true and shown on Foundry's native Configure
           // Settings dialog, which only reads current values when it renders — refresh it if it's
@@ -144,13 +143,12 @@ export default class ImportExportSettings extends FormApplication {
     if (confirmed) {
       await game.settings.set('cortexprime-ext', 'importedSettings', { currentSetting: localizer('Default') })
 
-      for (const { key, default: fallback } of SYNCED_SETTINGS) {
-        await game.settings.set('cortexprime-ext', key, fallback)
+      for (const [key, value] of buildResetValues()) {
+        await game.settings.set('cortexprime-ext', key, value)
       }
 
       await game.settings.set('cortexprime-ext', 'themes', defaultThemes)
-      const theme = defaultThemes.current === 'custom' ? defaultThemes.custom : defaultThemes.list[defaultThemes.current]
-      setCssVars(theme)
+      setCssVars(resolveActiveTheme(defaultThemes))
 
       // See the matching comment in _importSettings: refresh Foundry's native Configure Settings
       // dialog if it's already open, since some SYNCED_SETTINGS entries are config:true there.

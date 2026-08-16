@@ -27,6 +27,34 @@ const MAX_DIE = '12'
 
 export const isHitch = die => die.result === 1
 
+// Foundry stores dice as index-keyed objects ({ 0: '6', 1: '8' }); everything in this file works
+// in plain arrays of string faces. These four are the only places that difference is dealt with —
+// they read actor-shaped plain objects and never touch a Foundry global, so they live here rather
+// than in hitches.js.
+export const toDiceArray = value => Object.values(value ?? {}).map(String)
+export const toDiceObject = dice => dice.reduce((acc, face, index) => ({ ...acc, [index]: String(face) }), {})
+
+export const getComplications = actor =>
+  Object.values(actor.system.actorType?.complications ?? {})
+    .map(complication => ({ label: complication.label, dice: toDiceArray(complication.dice?.value) }))
+
+// Rebuilds the complications object, preserving every field the dialog doesn't touch (edit,
+// hidden, description, temporaryValue...) on the entries that already existed.
+export const toComplicationsObject = (actor, projectedComplications) => {
+  const existing = Object.values(actor.system.actorType?.complications ?? {})
+
+  return projectedComplications.reduce((acc, complication, index) => ({
+    ...acc,
+    [index]: complication.isNew
+      ? { label: complication.label, dice: { value: toDiceObject(complication.dice) } }
+      : {
+          ...existing[index],
+          label: complication.label,
+          dice: { ...existing[index]?.dice, value: toDiceObject(complication.dice) }
+        }
+  }), {})
+}
+
 // Every single die came up 1 — the dialog says BOTCH rather than HITCH.
 export const isBotch = dice => dice.length > 0 && dice.every(isHitch)
 

@@ -219,17 +219,47 @@ traits to a dice pool, or roll — and most of the suite would skip.
 | `challenge.spec.js` | A Test holds its responder back until the initiator rolls, then enables them live, while the bystander stays locked out; Contest radios lock once underway; Group Challenge needs three participants |
 | `actor-sheet.spec.js` | Trait-set shutdown dims the set *and* strips `add-to-pool`; a GM's shutdown re-renders the owning player's open sheet; additional tabs; the Help link is gone |
 | `mage.spec.js` | The Magick box is GM-only and challenge-gated; the Magick choice is announced live on every tray; a magickal roll is refused without a Powers trait |
+| `challenge-resolution.spec.js` | Real rolls driven through to resolution: a Contest's roles swapping and ending, Crisis Pool reduction on a player win (and *not* on a GM win), Effect-die blunting, Interference, and a Group Challenge from initiative through duelling to a winner |
+| `hitches.spec.js` | A player's natural 1 opens the Hitches dialog on the GM's client only; confirming writes the complication and awards the Plot Point onto the player |
+| `roll-undo.spec.js` | The GM's Undo button on a player's roll card restores the challenge and frees them to roll again |
 
 Deliberately **not** covered, and why:
 
-- Anything already proven by the 300 Vitest unit tests (challenge
+- Anything already proven by the ~550 Vitest unit tests (challenge
   resolution maths, hitch plot-point rules, crisis reduction, paradox
-  arithmetic). E2E duplicates of those add runtime, not confidence.
+  arithmetic). E2E duplicates of those add runtime, not confidence — but note
+  the *orchestration* around them is covered, in
+  `challenge-resolution.spec.js`: the unit tests prove what the answer should
+  be, that spec proves the answer actually reaches every client.
 - `Reset to Default` / importing settings — they overwrite world-wide
   `actorTypes` and themes, which is too destructive to run against a world
   you care about.
 - The one-shot `migrateNotesToTabs` migration: destructive, runs once, and
   its logic is unit-tested.
+
+### Two preconditions for the resolution specs
+
+`challenge-resolution.spec.js`, `hitches.spec.js` and `roll-undo.spec.js` roll
+real dice rather than seeding roll records, and they need two things the older
+specs don't:
+
+- **Deterministic dice.** They switch the `testModeSelectDiceValues` world
+  setting on themselves and restore it afterwards, then wait for it to reach
+  each player's client — the picker reads it when it opens, so rolling before it
+  lands produces random dice. `setDieValues()` drives the picker to a requested
+  *multiset* of faces, not a positional list: the picker re-sorts after every
+  edit, and a die dropped to a natural 1 moves into the hitches list.
+
+- **The test GM must be Foundry's active GM.** The Hitches dialog, the roll-undo
+  snapshot and its card refresh, and challenge advancement all run on
+  `game.users.activeGM` only, so they happen once rather than once per connected
+  GM. Foundry elects the first connected GM — so if your own Gamemaster session
+  is open, it wins, and those reactions land on *your* screen instead of the
+  test's. `hitches.spec.js` and `roll-undo.spec.js` assert on that GM-side UI and
+  will **skip** with an explanatory reason (`requireActiveGM()`) unless the
+  Playwright GM holds the election. Close your own GM session to run them.
+  `challenge-resolution.spec.js` asserts on shared world state instead, so it
+  passes either way.
 
 ### Global setup: one login per role, before any test runs
 
