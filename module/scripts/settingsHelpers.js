@@ -1,5 +1,10 @@
+import { applyActorTypeInheritance } from '../actor/actorTypeInheritanceLogic.js'
 import { getLength, objectMapKeys, objectReduce, objectReindexFilter } from '../../lib/helpers.js'
 import { localizer } from './foundryHelpers.js'
+
+// removeItem/reorderItem are generic over data-setting, so actorTypes gets its inheritance
+// reconcile here rather than in ActorSettings._saveActorTypes.
+const reconciled = (setting, value) => setting === 'actorTypes' ? applyActorTypeInheritance(value) : value
 
 export const collapseToggle = function (html) {
   html.find('.collapse-toggle').click(async (event) => {
@@ -66,7 +71,7 @@ export const removeItem = async function (html) {
         } else {
           settings = groupSettingValue
         }
-        await game.settings.set('cortexprime-ext', setting, settings)
+        await game.settings.set('cortexprime-ext', setting, reconciled(setting, settings))
 
         if (setting === 'actorTypes' && !stayOnPage) {
           const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
@@ -129,7 +134,7 @@ export const reorderItem = async function (html) {
       settings = value
     }
 
-    await game.settings.set('cortexprime-ext', setting, settings)
+    await game.settings.set('cortexprime-ext', setting, reconciled(setting, settings))
     this.render(true)
   })
 }

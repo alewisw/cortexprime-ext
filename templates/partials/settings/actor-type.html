@@ -5,19 +5,39 @@
       <input class="breadcrumb-name-change input-cpt" type="text" data-target="{{concat 'actorType-' actorTypeIndex}}" name="actorTypes.{{actorTypeIndex}}.name" value="{{actorType.name}}">
     </div>
     <div class="flex-col">
-      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
-        itemKey=actorTypeIndex
-        itemName=actorType.name
-        setting="actorTypes"
-        type="trash"
-      }}
+      {{#unless actorType.hasChildren}}
+        {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
+          itemKey=actorTypeIndex
+          itemName=actorType.name
+          setting="actorTypes"
+          type="trash"
+        }}
+      {{/unless}}
     </div>
   </header>
   <div>
-    <div class="flex relative-section">
+    {{#if actorType.hasChildren}}
+      <div class="pa-2 relative-section">
+        <div class="section-background"></div>
+        <p class="my-0">{{localize 'CannotDeleteParentActorType'}}</p>
+      </div>
+    {{/if}}
+    {{#if actorType.parentId}}
+      <div class="pa-2 relative-section">
+        <div class="section-background"></div>
+        <p class="my-0">
+          <strong class="descriptor-label-cpt">{{localize 'InheritedFrom'}}:</strong>
+          {{or actorType.parentName (concat '[' (localize 'NoName') ']')}}
+        </p>
+        <p class="my-0">{{localize 'DerivedActorTypeDescription'}}</p>
+      </div>
+    {{/if}}
+    <div class="flex relative-section {{#if actorType.parentId}}inherited-fields{{/if}}">
       <div class="section-background"></div>
       <div class="flex-col col-3">
         <p class="section-secondary-title-cpt mb-1">{{localize 'DefaultImage'}}</p>
+        {{! An <img>, not a form control, so the inherited-fields sweep can't disable it - the
+            .inherited-fields .default-image rule makes it click-through instead. }}
         <img class="default-image bkg-light-grey" src="{{or actorType.defaultImage 'icons/svg/mystery-man.svg'}}"
           data-actor-type-index="{{actorTypeIndex}}" title="{{localize 'DefaultImage'}}" />
       </div>
@@ -103,7 +123,7 @@
       {{/if}}
       <ul class="list-style-none px-0 my-0">
         {{#each actorType.traitSets as |traitSet traitSetIndex|}}
-          <li class="pa-1 flex flex-ac flex-jsb relative-section">
+          <li class="pa-1 flex flex-ac flex-jsb relative-section {{#if traitSet.inherited}}inherited-row{{/if}}">
             <div class="{{ternary (eq (mod traitSetIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
             <div class="flex-col flex-row flex-ac">
               {{> "systems/cortexprime-ext/templates/partials/reorder.html"
@@ -155,7 +175,7 @@
       {{/if}}
       <ul class="list-style-none px-0 my-0">
         {{#each actorType.simpleTraits as |simpleTrait simpleTraitIndex|}}
-          <li class="pa-1 flex flex-ac flex-jsb relative-section">
+          <li class="pa-1 flex flex-ac flex-jsb relative-section {{#if simpleTrait.inherited}}inherited-row{{/if}}">
             <div class="{{ternary (eq (mod simpleTraitIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
             <div class="flex-col flex-row flex-ac">
               {{> "systems/cortexprime-ext/templates/partials/reorder.html"
@@ -210,7 +230,7 @@
       {{/if}}
       <ul class="list-style-none px-0 my-0">
         {{#each actorType.additionalTabs as |additionalTab tabIndex|}}
-          <li class="pa-1 flex flex-ac flex-jsb relative-section">
+          <li class="pa-1 flex flex-ac flex-jsb relative-section {{#if additionalTab.inherited}}inherited-row{{/if}}">
             <div class="{{ternary (eq (mod tabIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
             <div class="flex-col flex-row flex-ac">
               {{> "systems/cortexprime-ext/templates/partials/reorder.html"
@@ -232,5 +252,49 @@
         {{/each}}
       </ul>
     </section>
+    {{! Inheritance is single level, so a derived Actor Type can never be a parent itself. }}
+    {{#unless actorType.parentId}}
+      {{#if (listHasMore actorType.additionalTabs 0)}}
+        <div class="separator-cpt"></div>
+      {{/if}}
+      <section>
+        <header class="relative-section">
+          <div class="section-background-alternate"></div>
+          <div class="flex flex-ac flex-jsb py-1">
+            <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'DerivedActorTypes'}}</h3>
+            <div class="flex-col">
+              <button class="btn btn-primary-cpt btn-icon add-derived-actor-type" data-actor-type-id="{{actorType.id}}" type="button">
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          <div class="separator-cpt"></div>
+          <div class="relative-section pa-2">
+            <div class="section-background-alternate"></div>
+            <p>{{localize 'DerivedActorTypesDescription'}}</p>
+          </div>
+        </header>
+        {{#if actorType.hasChildren}}
+          <div class="separator-cpt"></div>
+        {{/if}}
+        <ul class="list-style-none px-0 my-0">
+          {{#each actorType.children as |child childIndex|}}
+            <li class="pa-1 flex flex-ac flex-jsb relative-section">
+              <div class="{{ternary (eq (mod childIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
+              <div class="flex-col flex-row flex-ac">
+                <span class="section-secondary-title-cpt flex-col">{{or child.name (concat '[' (localize 'NoName' ) ']')}}</span>
+              </div>
+              <div class="flex-col flex-row flex-ac">
+                <div class="flex-col px-0">
+                  <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{child.name}}" data-to="actorType-{{child.index}}" type="button">
+                    <i class="fa fa-edit ma-0"></i>
+                  </button>
+                </div>
+              </div>
+            </li>
+          {{/each}}
+        </ul>
+      </section>
+    {{/unless}}
   </div>
 </article>

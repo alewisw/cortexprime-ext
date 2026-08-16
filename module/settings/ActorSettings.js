@@ -1,3 +1,4 @@
+import { applyActorTypeInheritance, buildActorTypeTree } from '../actor/actorTypeInheritanceLogic.js'
 import { expandNotesFieldOnEdit, localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFindKey, objectFindValue, objectMapValues, objectReduce, objectReindexFilter } from '../../lib/helpers.js'
 import { removeItem, reorderItem } from '../scripts/settingsHelpers.js'
@@ -28,10 +29,19 @@ export default class ActorSettings extends FormApplication {
     const breadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs') ?? {}
 
     return {
-      actorTypes: game.settings.get('cortexprime-ext', 'actorTypes'),
+      // buildActorTypeTree only adds display-only fields (children/hasChildren/parentName) and
+      // leaves the storage indices alone, so every `name="actorTypes.<i>..."` binding still lines
+      // up. Nothing here is written back - every save re-reads the raw setting.
+      actorTypes: buildActorTypeTree(game.settings.get('cortexprime-ext', 'actorTypes')),
       breadcrumbs,
       goBack: breadcrumbs[getLength(breadcrumbs ?? {}) - 2]?.target ?? 0
     }
+  }
+
+  // The single write path for the actorTypes setting. Reconciling here means every derived Actor
+  // Type is rebuilt from its parent on any change, wherever that change came from.
+  async _saveActorTypes (value) {
+    await game.settings.set('cortexprime-ext', 'actorTypes', applyActorTypeInheritance(value))
   }
 
   async _updateObject(event, formData) {
@@ -39,7 +49,7 @@ export default class ActorSettings extends FormApplication {
       const expandedFormData = foundry.utils.expandObject(formData)
       const currentActorTypes = game.settings.get('cortexprime-ext', 'actorTypes') ?? {}
 
-      await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(currentActorTypes, expandedFormData.actorTypes))
+      await this._saveActorTypes(foundry.utils.mergeObject(currentActorTypes, expandedFormData.actorTypes))
 
       this.render(true)
     }
@@ -50,6 +60,7 @@ export default class ActorSettings extends FormApplication {
     html.find('#add-new-actor-type').click(this._addNewActorType.bind(this))
     html.find('.add-additional-tab').click(this._addAdditionalTab.bind(this))
     html.find('.add-default-note').click(this._addAdditionalTabDefaultNote.bind(this))
+    html.find('.add-derived-actor-type').click(this._addDerivedActorType.bind(this))
     html.find('.add-descriptor').click(this._addDescriptor.bind(this))
     html.find('.add-simple-trait').click(this._addSimpleTrait.bind(this))
     html.find('.add-sfx').click(this._addSfx.bind(this))
@@ -64,9 +75,19 @@ export default class ActorSettings extends FormApplication {
     html.find('.duplicate-item').click(this._duplicateItem.bind(this))
     html.find('.new-die').click(this._newDie.bind(this))
     html.find('.view-change').click(this._viewChange.bind(this))
+    this._lockInheritedControls(html)
     expandNotesFieldOnEdit(html)
     removeItem.call(this, html)
     reorderItem.call(this, html)
+  }
+
+  // Everything a derived Actor Type inherits is read-only: it belongs to the parent and is rebuilt
+  // from it on every save. Disabled inputs aren't serialised by the form, and _updateObject merges
+  // rather than replaces, so the omitted fields simply keep their reconciled parent values.
+  _lockInheritedControls (html) {
+    html.find('.inherited-fields').find('input, select, textarea').prop('disabled', true)
+    html.find('.inherited-fields').find('button').remove()
+    html.find('.inherited-row').find('.reorder, .duplicate-item, .remove-item').remove()
   }
 
   async _addNewActorType(event) {
@@ -82,7 +103,7 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newActorType))
+    await this._saveActorTypes(foundry.utils.mergeObject(source, newActorType))
     await this.changeView(localizer('NewActorType'), `actorType-${newKey}`)
     this.render(true)
   }
@@ -105,7 +126,7 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newAdditionalTab))
+    await this._saveActorTypes(foundry.utils.mergeObject(source, newAdditionalTab))
     await this.changeView(name, `additionalTab-${actorTypeKey}-${newKey}`)
     this.render(true)
   }
@@ -127,7 +148,29 @@ export default class ActorSettings extends FormApplication {
         }
       })
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
+    this.render(true)
+  }
+
+  async _addDerivedActorType (event) {
+    event.preventDefault()
+    const { actorTypeId } = event.currentTarget.dataset
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
+    const newKey = getLength(source ?? {})
+    const name = localizer('NewDerivedActorType')
+
+    // Only the identity and the parent link are stored - _saveActorTypes materializes the rest
+    // from the parent.
+    const newActorType = {
+      [newKey]: {
+        id: `_${Date.now()}`,
+        name,
+        parentId: actorTypeId
+      }
+    }
+
+    await this._saveActorTypes(foundry.utils.mergeObject(source, newActorType))
+    await this.changeView(name, `actorType-${newKey}`)
     this.render(true)
   }
 
@@ -147,7 +190,7 @@ export default class ActorSettings extends FormApplication {
         }
       })
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
     this.render(true)
   }
 
@@ -168,7 +211,7 @@ export default class ActorSettings extends FormApplication {
         }
       })
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
     this.render(true)
   }
 
@@ -189,7 +232,7 @@ export default class ActorSettings extends FormApplication {
         }
       })
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
     this.render(true)
   }
 
@@ -219,7 +262,7 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newSimpleTrait))
+    await this._saveActorTypes(foundry.utils.mergeObject(source, newSimpleTrait))
     await this.changeView(localizer('NewSimpleTrait'), `simpleTrait-${actorTypeKey}-${newKey}`)
     this.render(true)
   }
@@ -246,7 +289,7 @@ export default class ActorSettings extends FormApplication {
 
     foundry.utils.setProperty(source, `${path}.${traitSet}.traits`, newTraits)
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
     await this.changeView(localizer('NewTrait'), `trait-${actorType}-${traitSet}-${newKey}`)
     this.render(true)
   }
@@ -268,7 +311,7 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', foundry.utils.mergeObject(source, newTraitSet))
+    await this._saveActorTypes(foundry.utils.mergeObject(source, newTraitSet))
     await this.changeView(localizer('NewTraitSet'), `traitSet-${actorTypeKey}-${newKey}`)
     this.render(true)
   }
@@ -326,7 +369,7 @@ export default class ActorSettings extends FormApplication {
       async callback (newImage) {
         source[actorTypeIndex].defaultImage = newImage
 
-        await game.settings.set('cortexprime-ext', 'actorTypes', source)
+        await _this._saveActorTypes(source)
 
         _this.render()
       }
@@ -376,7 +419,7 @@ export default class ActorSettings extends FormApplication {
       source = foundry.utils.mergeObject(source, newTarget)
     }
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
     this.render(true)
   }
 
@@ -390,7 +433,7 @@ export default class ActorSettings extends FormApplication {
     const newValue = newKey > 0 ? values[newKey - 1] : '8'
 
     foundry.utils.setProperty(source, `${path}.value`, { ...values, [newKey]: newValue })
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
     this.render(true)
   }
 
@@ -409,7 +452,7 @@ export default class ActorSettings extends FormApplication {
       foundry.utils.setProperty(source, `${target}.value`, objectMapValues(currentDiceValues, (value, index) => parseInt(index, 10) === parseInt(targetKey, 10) ? targetValue : value))
     }
 
-    await game.settings.set('cortexprime-ext', 'actorTypes', source)
+    await this._saveActorTypes(source)
 
     await this.render(true)
   }
@@ -426,7 +469,7 @@ export default class ActorSettings extends FormApplication {
 
       foundry.utils.setProperty(source, `${target}.value`, objectReindexFilter(currentDiceValues, (_, index) => parseInt(index, 10) !== parseInt(targetKey, 10)))
 
-      await game.settings.set('cortexprime-ext', 'actorTypes', source)
+      await this._saveActorTypes(source)
 
       await this.render(true)
     }

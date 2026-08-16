@@ -31,7 +31,12 @@
             currentIndex=actorTypeIndex
             setting="actorTypes"
           }}
-          <span class="section-secondary-title-cpt flex-col">{{or actorType.name (concat '[' (localize 'NoName' ) ']')}}</span>
+          <span class="section-secondary-title-cpt flex-col">
+            {{or actorType.name (concat '[' (localize 'NoName' ) ']')}}
+            {{#if actorType.parentId}}
+              <span class="derived-actor-type-marker">({{localize 'InheritedFrom'}} {{or actorType.parentName (concat '[' (localize 'NoName') ']')}})</span>
+            {{/if}}
+          </span>
         </div>
         <div class="flex-col flex-row flex-ac">
           <div class="flex-col px-0">

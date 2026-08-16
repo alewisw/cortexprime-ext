@@ -3,6 +3,7 @@
 // and every actor's old top-level notes move under it. Idempotent by construction
 // (computeMigratedActorTypes only acts on Actor Types still carrying hasNotesPage, which it also
 // removes), so it's safe to run on every ready rather than needing a version-gate setting.
+import { applyActorTypeInheritance } from '../actor/actorTypeInheritanceLogic.js'
 import { localizer } from './foundryHelpers.js'
 import {
   computeMigratedActorNotes,
@@ -17,7 +18,9 @@ export const migrateNotesToTabs = async () => {
   const migratedActorTypes = computeMigratedActorTypes(actorTypes, localizer('Notes'))
 
   if (migratedActorTypes) {
-    await game.settings.set('cortexprime-ext', 'actorTypes', migratedActorTypes)
+    // The migration deliberately skips derived Actor Types; reconciling here is what hands them
+    // the Notes tab their parent just gained, and drops the inherited hasNotesPage flag with it.
+    await game.settings.set('cortexprime-ext', 'actorTypes', applyActorTypeInheritance(migratedActorTypes))
   }
 
   // Actor Types not migrated just now may still have been migrated on a previous run — every

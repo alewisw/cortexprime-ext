@@ -1,5 +1,7 @@
 <article class="{{viewClasses (concat 'additionalTab-' actorTypeIndex '-' tabIndex) breadcrumbs}} additional-tab">
-  <header class="flex flex-ac py-2 relative-section">
+  {{! Only the tab's own fields are locked when inherited - the Default Sections list below stays
+      open, since a derived Actor Type may add its own sections to an inherited tab. }}
+  <header class="flex flex-ac py-2 relative-section {{#if additionalTab.inherited}}inherited-fields{{/if}}">
     <div class="section-background"></div>
     <div class="flex-col col-12">
       <input class="breadcrumb-name-change input-cpt" data-target="{{concat 'additionalTab-' actorTypeIndex '-' tabIndex}}" name="{{concat 'actorTypes.' path '.' tabIndex '.name'}}" type="text" value="{{additionalTab.name}}">
@@ -36,7 +38,7 @@
     {{/if}}
     <ul class="list-style-none px-0 my-0">
       {{#each additionalTab.defaultNotes as |defaultNote noteIndex|}}
-        <li class="pa-2 relative-section">
+        <li class="pa-2 relative-section {{#if defaultNote.inherited}}inherited-fields{{/if}}">
           <div class="{{ternary (eq (mod noteIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
           <div class="flex-row flex-ae mb-1">
             <div class="flex-col col-8">
@@ -72,7 +74,7 @@
               target=(concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.value')
               button=true
               owner=true
-              editable=true
+              editable=(not defaultNote.inherited)
             }}
           </div>
         </li>

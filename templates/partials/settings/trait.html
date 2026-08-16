@@ -1,4 +1,6 @@
-<article class="{{viewClasses (concat 'trait-' actorTypeIndex '-' traitSetIndex '-' traitIndex) breadcrumbs}} trait">
+{{! An inherited Trait is locked whole - the child can add its own Traits to the set, but never
+    edit one that belongs to the parent. }}
+<article class="{{viewClasses (concat 'trait-' actorTypeIndex '-' traitSetIndex '-' traitIndex) breadcrumbs}} trait {{#if trait.inherited}}inherited-fields{{/if}}">
   <header class="flex flex-ac py-2 relative-section">
     <div class="section-background"></div>
     <div class="flex-col col-12">

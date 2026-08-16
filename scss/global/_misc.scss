@@ -15,6 +15,27 @@
   display: none;
 }
 
+// Anything a derived Actor Type inherits from its parent. ActorSettings._lockInheritedControls
+// does the real locking (disabling inputs, stripping buttons); these rules are what makes it read
+// as read-only, plus the one lock it can't do — the default image is an <img>, not a form control.
+.inherited-fields {
+  opacity: 0.75;
+
+  .default-image {
+    cursor: default;
+    pointer-events: none;
+  }
+}
+
+.inherited-row {
+  opacity: 0.75;
+}
+
+.derived-actor-type-marker {
+  font-size: 0.8em;
+  opacity: 0.75;
+}
+
 .shutdown {
   opacity: 0.5;
 

@@ -58,6 +58,26 @@ describe('computeMigratedActorTypes', () => {
     expect(computeMigratedActorTypes(actorTypes)).toBeNull()
   })
 
+  // A derived Actor Type inherits hasNotesPage from its parent; migrating it as well would leave it
+  // with a Notes tab of its own on top of the one it inherits.
+  it('skips a derived Actor Type, migrating only its parent', () => {
+    const actorTypes = {
+      0: { id: '_1', name: 'Character', hasNotesPage: true },
+      1: { id: '_2', name: 'Mage', parentId: '_1', hasNotesPage: true }
+    }
+
+    const result = computeMigratedActorTypes(actorTypes)
+
+    expect(result[0].additionalTabs).toEqual({ 0: { id: '_notes-_1', name: 'Notes' } })
+    expect(result[1]).toEqual(actorTypes[1])
+  })
+
+  it('is null when only derived Actor Types carry the old flag', () => {
+    const actorTypes = { 0: { id: '_2', name: 'Mage', parentId: '_1', hasNotesPage: true } }
+
+    expect(computeMigratedActorTypes(actorTypes)).toBeNull()
+  })
+
   it('is idempotent — a second run against its own output changes nothing', () => {
     const actorTypes = { 0: { id: '_1', name: 'Character', hasNotesPage: true } }
     const once = computeMigratedActorTypes(actorTypes)

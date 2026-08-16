@@ -222,6 +222,7 @@ traits to a dice pool, or roll — and most of the suite would skip.
 | `challenge-resolution.spec.js` | Real rolls driven through to resolution: a Contest's roles swapping and ending, Crisis Pool reduction on a player win (and *not* on a GM win), Effect-die blunting, Interference, and a Group Challenge from initiative through duelling to a winner |
 | `hitches.spec.js` | A player's natural 1 opens the Hitches dialog on the GM's client only; confirming writes the complication and awards the Plot Point onto the player |
 | `roll-undo.spec.js` | The GM's Undo button on a player's roll card restores the challenge and frees them to roll again |
+| `actor-type-inheritance.spec.js` | A derived Actor Type renders its parent's fields disabled but its own name editable, can still add a Trait Set of its own, and picks up a later parent rename without losing that addition |
 
 Deliberately **not** covered, and why:
 

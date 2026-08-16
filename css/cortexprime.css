@@ -1025,6 +1025,20 @@
 .cortexprime .hide {
   display: none;
 }
+.cortexprime .inherited-fields {
+  opacity: 0.75;
+}
+.cortexprime .inherited-fields .default-image {
+  cursor: default;
+  pointer-events: none;
+}
+.cortexprime .inherited-row {
+  opacity: 0.75;
+}
+.cortexprime .derived-actor-type-marker {
+  font-size: 0.8em;
+  opacity: 0.75;
+}
 .cortexprime .shutdown {
   opacity: 0.5;
 }

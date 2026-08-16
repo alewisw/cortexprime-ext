@@ -17,7 +17,11 @@ export const computeMigratedActorTypes = (actorTypes, notesLabel = 'Notes') => {
   const migrated = Object.keys(actorTypes ?? {}).reduce((acc, key) => {
     const actorType = actorTypes[key]
 
-    if (!actorType.hasNotesPage) return { ...acc, [key]: actorType }
+    // A derived Actor Type inherits hasNotesPage along with everything else, but its tabs come
+    // from its parent — migrating it here would give it a second Notes tab. Skipping it leaves
+    // the stale flag behind for one beat; the next inheritance reconcile takes it away with the
+    // rest of the parent's fields.
+    if (!actorType.hasNotesPage || actorType.parentId) return { ...acc, [key]: actorType }
 
     changed = true
 

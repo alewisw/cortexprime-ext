@@ -25,6 +25,41 @@ both.
 Snapshots are overwritten per roll and deleted once used — no history is kept. Everything the undo
 actually does is button-driven; see `docs/AUTOMATION.md`.
 
+## Actor Type inheritance
+
+An Actor Type can be **derived** from another: it carries a `parentId`, shows everything the parent
+has as read only, and may only add on top of it — its own Trait Sets, Traits inside any Trait Set,
+Simple Traits, Additional Tabs, and Default Sections inside any Additional Tab. Only its **name** is
+its own; the default image and every general flag come from the parent. Inheritance is **single
+level** — a derived Actor Type can never itself be a parent — and a parent can't be deleted while
+anything is derived from it (its remove button is withheld).
+
+The automatic part is propagation: any edit to a parent reaches every child with no action from the
+GM. A derived Actor Type stores a **materialized** copy of its parent, with each inherited element
+stamped `inherited: true` and the child's own additions appended after, unstamped.
+`applyActorTypeInheritance` (`module/actor/actorTypeInheritanceLogic.js`) rebuilds the stamped half
+from the parent and preserves the unstamped half, and every write to the `actorTypes` setting goes
+through it — `ActorSettings._saveActorTypes`, the shared `removeItem`/`reorderItem` helpers in
+`module/scripts/settingsHelpers.js`, the settings import, and the `migrateNotesToTabs` migration.
+It's idempotent by construction, so running it on every write is safe.
+
+Storing children materialized rather than sparsely is deliberate. The settings form renders every
+view at once and binds inputs straight to storage indices (`actorTypes.<i>.traitSets.<j>...`), so
+resolving inheritance at render time would desynchronise those indices from what `_updateObject`
+writes back. A materialized child is a complete, valid Actor Type, which is why the actor sheet,
+every settings partial, and import/export needed no changes for it.
+
+Two consequences worth knowing:
+
+- Child additions are matched back to their parent container by that container's `id`, so a parent
+  renaming or reordering a Trait Set keeps them attached — but a parent **deleting** a Trait Set or
+  Additional Tab takes the child's additions inside it along with it.
+- Read-only is enforced in the DOM, not the data: templates mark inherited blocks `inherited-fields`
+  (and inherited list rows `inherited-row`), and `ActorSettings._lockInheritedControls` disables
+  those inputs and strips their buttons on every render. Disabled inputs aren't serialised by the
+  form, and `_updateObject` merges rather than replaces, so the omitted fields simply keep their
+  reconciled parent values.
+
 ## Hitches
 
 Whenever a player's roll is recorded (`recordRollResult` in `module/scripts/rollToBeat.js` writes

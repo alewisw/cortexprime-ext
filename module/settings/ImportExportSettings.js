@@ -1,4 +1,5 @@
 import defaultThemes from "../theme/defaultThemes.js"
+import { applyActorTypeInheritance } from "../actor/actorTypeInheritanceLogic.js"
 import { localizer, setCssVars } from "../scripts/foundryHelpers.js"
 import {
   buildExportPayload,
@@ -100,7 +101,13 @@ export default class ImportExportSettings extends FormApplication {
           await game.settings.set('cortexprime-ext', 'importedSettings', { currentSetting: file.name })
 
           for (const [key, value] of buildImportValues(data)) {
-            await game.settings.set('cortexprime-ext', key, value)
+            // Reconcile on the way in, so a config exported before Actor Type inheritance existed
+            // (or one edited by hand) still lands with every derived type rebuilt from its parent.
+            await game.settings.set(
+              'cortexprime-ext',
+              key,
+              key === 'actorTypes' ? applyActorTypeInheritance(value) : value
+            )
           }
 
           const themeSettings = resolveImportedThemes(
