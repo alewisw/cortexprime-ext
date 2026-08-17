@@ -70,31 +70,49 @@ export const canHitchesStepUpParadox = (magick, outcome) => {
 //     (1 -> D6, 2 -> D8, 3 -> D10, 4 -> D12). LOST/BOTCH starts from the opposition's Effect die,
 //     plus one step per hitch.
 //   Vulgar Witnessed — WON is a flat D6 plus one step per hitch. LOST/BOTCH matches Vulgar.
-export const computeBaseParadox = ({ magick, outcome, paradoxSteps = 0, oppositionEffectDie = '4' }) => {
+// The same rules, but showing their working: which rule set the starting die, what that die was
+// before any hitches were spent, and how many steps were then applied. buildParadoxLog needs all
+// three to explain itself; computeBaseParadox is just the `die` off the end of it.
+//
+// `stepsFrom` names which hitch rule applies, because Coincidental spends its first hitch merely
+// getting to D6 while every other case steps up from the first.
+export const describeBaseParadox = ({ magick, outcome, paradoxSteps = 0, oppositionEffectDie = '4' }) => {
   if (!outcome) return null
 
   const steps = Math.max(0, paradoxSteps)
 
+  const describe = (originKey, originDie, appliedSteps, stepsFrom) => ({
+    originKey,
+    originDie: String(originDie),
+    steps: Math.max(0, appliedSteps),
+    stepsFrom,
+    die: stepUpTimes(originDie, appliedSteps)
+  })
+
   if (COINCIDENTAL.includes(magick)) {
     if (outcome !== PARADOX_OUTCOMES.BOTCH) return null
 
-    return stepUpTimes('6', steps - 1)
+    return describe('ParadoxStepBaseCoincidentalBotch', '6', steps - 1, 'beyond-first')
   }
 
   if (magick === 'vulgar') {
-    if (outcome === PARADOX_OUTCOMES.WON) return steps > 0 ? stepUpTimes('4', steps) : null
+    if (outcome === PARADOX_OUTCOMES.WON) {
+      return steps > 0 ? describe('ParadoxStepBaseVulgarWon', '4', steps, 'each') : null
+    }
 
-    return stepUpTimes(oppositionEffectDie, steps)
+    return describe('ParadoxStepBaseFromOpposition', oppositionEffectDie, steps, 'each')
   }
 
   if (magick === 'vulgar-witnessed') {
-    if (outcome === PARADOX_OUTCOMES.WON) return stepUpTimes('6', steps)
+    if (outcome === PARADOX_OUTCOMES.WON) return describe('ParadoxStepBaseVulgarWitnessedWon', '6', steps, 'each')
 
-    return stepUpTimes(oppositionEffectDie, steps)
+    return describe('ParadoxStepBaseFromOpposition', oppositionEffectDie, steps, 'each')
   }
 
   return null
 }
+
+export const computeBaseParadox = context => describeBaseParadox(context)?.die ?? null
 
 // The Scene's Shielding trait absorbing or shrinking the Paradox. Only applies when there is a
 // Paradox die, the Scene actually has a Shielding die, and the magick wasn't Witnessed.
@@ -152,10 +170,39 @@ export const computeLimitState = ({ magick, outcome, finalParadox, powersFaces =
     : LIMIT_STATES.AVAILABLE
 }
 
-// The running text log, as { key, data } pairs so the Player's client does the localizing — the
-// same convention dicePoolValidation.js uses for game.i18n.format.
+const MAGICK_LABELS = {
+  coincidental: 'MageMagickCoincidental',
+  'coincidental-witnessed': 'MageMagickCoincidentalWitnessed',
+  vulgar: 'MageMagickVulgar',
+  'vulgar-witnessed': 'MageMagickVulgarWitnessed'
+}
+
+const OUTCOME_LABELS = {
+  [PARADOX_OUTCOMES.WON]: 'Won',
+  [PARADOX_OUTCOMES.LOST]: 'Lost',
+  [PARADOX_OUTCOMES.BOTCH]: 'Botch'
+}
+
+const die = face => `D${face}`
+
+// An inputs row whose value is itself a localization key, vs. one whose value is literal text.
+const localizedRow = (label, key) => ({ label, value: { key } })
+const textRow = (label, text) => ({ label, value: { text: String(text) } })
+
+/**
+ * The reasoned account of how a Paradox was arrived at: the inputs that fed the rules, then the
+ * rules that were applied in order.
+ *
+ * Both halves stay as { key, data } pairs rather than finished strings, so the Player's client does
+ * the localizing (the same convention dicePoolValidation.js uses) — the GM's client computes this
+ * and hands it over on a flag.
+ */
 export const buildParadoxLog = ({
-  baseParadox,
+  magick,
+  outcome,
+  paradoxSteps = 0,
+  oppositionEffectDie,
+  shieldingFace,
   shieldedParadox,
   shieldingApplied,
   finalParadox,
@@ -164,29 +211,103 @@ export const buildParadoxLog = ({
   currentParadox,
   currentTrauma
 }) => {
-  const log = [{ key: 'ParadoxLogBase', data: { die: `D${baseParadox}` } }]
+  const base = describeBaseParadox({ magick, outcome, paradoxSteps, oppositionEffectDie })
+  const steps = []
 
-  if (shieldingApplied) {
-    log.push(shieldedParadox
-      ? { key: 'ParadoxLogShielded', data: { die: `D${shieldedParadox}` } }
-      : { key: 'ParadoxLogShieldedAbsorbed', data: {} })
+  // ---- Inputs ----
+
+  const inputs = [
+    localizedRow('ParadoxInputMagick', MAGICK_LABELS[magick] ?? 'None'),
+    localizedRow('ParadoxInputOutcome', OUTCOME_LABELS[outcome] ?? 'None')
+  ]
+
+  // Only shown when it actually fed the calculation — a won roll never reads the opposition's die.
+  if (base?.originKey === 'ParadoxStepBaseFromOpposition') {
+    inputs.push(textRow('ParadoxInputOppositionEffect', die(oppositionEffectDie)))
   }
 
-  // Where the Player already carries a rating, the line reads as a transition ("D6 -> D8") so it's
-  // obvious what the trait is moving from; a Player with no rating yet just gets the new die.
+  inputs.push(textRow('ParadoxInputHitchSteps', Math.max(0, paradoxSteps)))
+
+  inputs.push(WITNESSED.includes(magick)
+    ? localizedRow('ParadoxInputShielding', 'ParadoxShieldingNotApplicable')
+    : shieldingFace
+      ? textRow('ParadoxInputShielding', die(shieldingFace))
+      : localizedRow('ParadoxInputShielding', 'None'))
+
+  inputs.push(currentParadox
+    ? textRow('ParadoxInputCurrentParadox', die(currentParadox))
+    : localizedRow('ParadoxInputCurrentParadox', 'None'))
+
+  // Trauma is only ever consulted when the Paradox cascaded into it, so listing it otherwise would
+  // imply it was part of the sum.
+  if (finalTrauma) {
+    inputs.push(currentTrauma
+      ? textRow('ParadoxInputCurrentTrauma', die(currentTrauma))
+      : localizedRow('ParadoxInputCurrentTrauma', 'None'))
+  }
+
+  // ---- Steps ----
+
+  if (base) {
+    steps.push({ key: base.originKey, data: { die: die(base.originDie) } })
+
+    if (base.steps > 0) {
+      steps.push({
+        key: base.stepsFrom === 'beyond-first' ? 'ParadoxStepHitchesBeyondFirst' : 'ParadoxStepHitches',
+        data: { steps: base.steps, hitches: Math.max(0, paradoxSteps), from: die(base.originDie), die: die(base.die) }
+      })
+    }
+  }
+
+  if (WITNESSED.includes(magick)) {
+    steps.push({ key: 'ParadoxStepShieldingWitnessed', data: {} })
+  } else if (!shieldingFace) {
+    steps.push({ key: 'ParadoxStepShieldingNone', data: {} })
+  } else if (shieldingApplied && !shieldedParadox) {
+    steps.push({ key: 'ParadoxStepShieldingAbsorbed', data: { shielding: die(shieldingFace), paradox: die(base?.die) } })
+  } else if (shieldingApplied) {
+    steps.push({
+      key: 'ParadoxStepShieldingReduced',
+      data: {
+        paradox: die(base?.die),
+        shielding: die(shieldingFace),
+        rungs: ladderIndex(base?.die) - ladderIndex(shieldingFace),
+        die: die(shieldedParadox)
+      }
+    })
+  }
+
   if (finalParadox) {
-    log.push(currentParadox
-      ? { key: 'ParadoxLogFinalFrom', data: { from: `D${currentParadox}`, die: `D${finalParadox}` } }
-      : { key: 'ParadoxLogFinal', data: { die: `D${finalParadox}` } })
+    if (!currentParadox) {
+      steps.push({ key: 'ParadoxStepFinalNew', data: { die: die(finalParadox) } })
+    } else if (ladderIndex(shieldedParadox) > ladderIndex(currentParadox)) {
+      steps.push({
+        key: 'ParadoxStepFinalReplaces',
+        data: { incoming: die(shieldedParadox), current: die(currentParadox), die: die(finalParadox) }
+      })
+    } else if (currentParadox === '12') {
+      steps.push({ key: 'ParadoxStepFinalAtMax', data: { incoming: die(shieldedParadox), die: die(finalParadox) } })
+    } else {
+      steps.push({
+        key: 'ParadoxStepFinalStepUp',
+        data: { incoming: die(shieldedParadox), current: die(currentParadox), die: die(finalParadox) }
+      })
+    }
   }
 
   if (finalTrauma) {
-    log.push(currentTrauma
-      ? { key: 'ParadoxLogTraumaFrom', data: { from: `D${currentTrauma}`, die: `D${finalTrauma}` } }
-      : { key: 'ParadoxLogTrauma', data: { die: `D${finalTrauma}` } })
+    if (!currentTrauma) {
+      steps.push({ key: 'ParadoxStepTraumaNone', data: { die: die(finalTrauma) } })
+    } else if (currentTrauma === '4') {
+      steps.push({ key: 'ParadoxStepTraumaFromMinimum', data: { from: die(currentTrauma), die: die(finalTrauma) } })
+    } else if (currentTrauma === '12') {
+      steps.push({ key: 'ParadoxStepTraumaAtMax', data: { die: die(finalTrauma) } })
+    } else {
+      steps.push({ key: 'ParadoxStepTraumaStepUp', data: { from: die(currentTrauma), die: die(finalTrauma) } })
+    }
   }
 
-  if (descendIntoQuiet) log.push({ key: 'ParadoxLogQuiet', data: {} })
+  if (descendIntoQuiet) steps.push({ key: 'ParadoxStepQuiet', data: {} })
 
-  return log
+  return { inputs, steps }
 }

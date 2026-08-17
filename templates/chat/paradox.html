@@ -1,6 +1,17 @@
 <div>
   <h3>{{localize 'Paradox'}}</h3>
-  {{#each lines as |line|}}
-    <p>{{line}}</p>
-  {{/each}}
+  {{#if log.inputs.length}}
+    <p class="mb-0"><b>{{localize 'ParadoxInputs'}}</b></p>
+    {{#each log.inputs as |row|}}
+      <div>{{row.label}}: <b>{{row.value}}</b></div>
+    {{/each}}
+  {{/if}}
+  {{#if log.steps.length}}
+    <p class="mb-0"><b>{{localize 'ParadoxCalculation'}}</b></p>
+    <ol>
+      {{#each log.steps as |step|}}
+        <li>{{step}}</li>
+      {{/each}}
+    </ol>
+  {{/if}}
 </div>

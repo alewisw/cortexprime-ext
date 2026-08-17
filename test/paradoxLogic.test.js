@@ -9,6 +9,7 @@ import {
   computeFinalParadox,
   computeFinalTrauma,
   computeLimitState,
+  describeBaseParadox,
   getParadoxOutcome,
   largestFace
 } from '../module/mage/paradoxLogic.js'
@@ -247,89 +248,190 @@ describe('computeLimitState', () => {
   })
 })
 
+describe('describeBaseParadox', () => {
+  it('shows a failed Vulgar roll starting from the opposition Effect die, unstepped', () => {
+    expect(describeBaseParadox({
+      magick: 'vulgar', outcome: PARADOX_OUTCOMES.LOST, paradoxSteps: 0, oppositionEffectDie: '8'
+    })).toEqual({
+      originKey: 'ParadoxStepBaseFromOpposition', originDie: '8', steps: 0, stepsFrom: 'each', die: '8'
+    })
+  })
+
+  it('counts every hitch for Vulgar, and every hitch beyond the first for Coincidental', () => {
+    expect(describeBaseParadox({
+      magick: 'vulgar', outcome: PARADOX_OUTCOMES.LOST, paradoxSteps: 2, oppositionEffectDie: '4'
+    })).toMatchObject({ originDie: '4', steps: 2, stepsFrom: 'each', die: '8' })
+
+    expect(describeBaseParadox({
+      magick: 'coincidental', outcome: PARADOX_OUTCOMES.BOTCH, paradoxSteps: 3
+    })).toMatchObject({
+      originKey: 'ParadoxStepBaseCoincidentalBotch', originDie: '6', steps: 2, stepsFrom: 'beyond-first', die: '10'
+    })
+  })
+
+  it('never reports negative steps when a Coincidental botch had no hitches', () => {
+    expect(describeBaseParadox({
+      magick: 'coincidental', outcome: PARADOX_OUTCOMES.BOTCH, paradoxSteps: 0
+    })).toMatchObject({ steps: 0, die: '6' })
+  })
+
+  it('agrees with computeBaseParadox everywhere, including where there is nothing to earn', () => {
+    const cases = [
+      { magick: 'vulgar', outcome: PARADOX_OUTCOMES.WON, paradoxSteps: 0 },
+      { magick: 'vulgar', outcome: PARADOX_OUTCOMES.WON, paradoxSteps: 2 },
+      { magick: 'vulgar-witnessed', outcome: PARADOX_OUTCOMES.WON, paradoxSteps: 1 },
+      { magick: 'coincidental', outcome: PARADOX_OUTCOMES.LOST, paradoxSteps: 3 },
+      { magick: 'none', outcome: PARADOX_OUTCOMES.BOTCH, paradoxSteps: 1 },
+      { magick: 'vulgar', outcome: null, paradoxSteps: 1 }
+    ]
+
+    cases.forEach(context => {
+      expect(describeBaseParadox(context)?.die ?? null).toBe(computeBaseParadox(context))
+    })
+  })
+})
+
 describe('buildParadoxLog', () => {
-  it('logs just the base and final Paradox when Shielding did not apply', () => {
-    expect(buildParadoxLog({
-      baseParadox: '6', shieldedParadox: '6', shieldingApplied: false, finalParadox: '6'
-    })).toEqual([
-      { key: 'ParadoxLogBase', data: { die: 'D6' } },
-      { key: 'ParadoxLogFinal', data: { die: 'D6' } }
+  // The screenshot case: Vulgar magick, roll lost against a D4 Effect die, no Shielding, and a
+  // character already carrying D10 — the one whose arithmetic was previously unexplained.
+  const lostAgainstD4 = {
+    magick: 'vulgar',
+    outcome: PARADOX_OUTCOMES.LOST,
+    paradoxSteps: 0,
+    oppositionEffectDie: '4',
+    shieldingFace: null,
+    shieldedParadox: '4',
+    shieldingApplied: false,
+    finalParadox: '12',
+    currentParadox: '10'
+  }
+
+  it('lists the inputs that fed the calculation', () => {
+    expect(buildParadoxLog(lostAgainstD4).inputs).toEqual([
+      { label: 'ParadoxInputMagick', value: { key: 'MageMagickVulgar' } },
+      { label: 'ParadoxInputOutcome', value: { key: 'Lost' } },
+      { label: 'ParadoxInputOppositionEffect', value: { text: 'D4' } },
+      { label: 'ParadoxInputHitchSteps', value: { text: '0' } },
+      { label: 'ParadoxInputShielding', value: { key: 'None' } },
+      { label: 'ParadoxInputCurrentParadox', value: { text: 'D10' } }
     ])
   })
 
-  it('logs the shielded value when Shielding shrank the Paradox', () => {
-    expect(buildParadoxLog({
-      baseParadox: '10', shieldedParadox: '6', shieldingApplied: true, finalParadox: '6'
-    })).toEqual([
-      { key: 'ParadoxLogBase', data: { die: 'D10' } },
-      { key: 'ParadoxLogShielded', data: { die: 'D6' } },
-      { key: 'ParadoxLogFinal', data: { die: 'D6' } }
+  it('explains each step, including why an existing rating steps up rather than being replaced', () => {
+    expect(buildParadoxLog(lostAgainstD4).steps).toEqual([
+      { key: 'ParadoxStepBaseFromOpposition', data: { die: 'D4' } },
+      { key: 'ParadoxStepShieldingNone', data: {} },
+      { key: 'ParadoxStepFinalStepUp', data: { incoming: 'D4', current: 'D10', die: 'D12' } }
     ])
   })
 
-  it('logs an absorbed Paradox with no final line', () => {
-    expect(buildParadoxLog({
-      baseParadox: '6', shieldedParadox: null, shieldingApplied: true, finalParadox: null
-    })).toEqual([
-      { key: 'ParadoxLogBase', data: { die: 'D6' } },
-      { key: 'ParadoxLogShieldedAbsorbed', data: {} }
+  it('omits the opposition Effect die from the inputs when the roll was won', () => {
+    const inputs = buildParadoxLog({
+      ...lostAgainstD4, outcome: PARADOX_OUTCOMES.WON, paradoxSteps: 1, shieldedParadox: '6', finalParadox: '12'
+    }).inputs
+
+    expect(inputs.map(({ label }) => label)).not.toContain('ParadoxInputOppositionEffect')
+  })
+
+  it('accounts for the hitches that stepped the base die up', () => {
+    const steps = buildParadoxLog({ ...lostAgainstD4, paradoxSteps: 2, shieldedParadox: '8' }).steps
+
+    expect(steps[0]).toEqual({ key: 'ParadoxStepBaseFromOpposition', data: { die: 'D4' } })
+    expect(steps[1]).toEqual({
+      key: 'ParadoxStepHitches', data: { steps: 2, hitches: 2, from: 'D4', die: 'D8' }
+    })
+  })
+
+  it('says the first Coincidental hitch only bought the base die', () => {
+    const steps = buildParadoxLog({
+      ...lostAgainstD4,
+      magick: 'coincidental',
+      outcome: PARADOX_OUTCOMES.BOTCH,
+      paradoxSteps: 2,
+      shieldedParadox: '8'
+    }).steps
+
+    expect(steps[1]).toEqual({
+      key: 'ParadoxStepHitchesBeyondFirst', data: { steps: 1, hitches: 2, from: 'D6', die: 'D8' }
+    })
+  })
+
+  it('reports how far above the Shielding the Paradox was when it was reduced', () => {
+    const steps = buildParadoxLog({
+      ...lostAgainstD4, oppositionEffectDie: '12', shieldingFace: '6', shieldedParadox: '10', shieldingApplied: true
+    }).steps
+
+    expect(steps[1]).toEqual({
+      key: 'ParadoxStepShieldingReduced', data: { paradox: 'D12', shielding: 'D6', rungs: 3, die: 'D10' }
+    })
+  })
+
+  it('reports an outright absorption, and has no final line to show', () => {
+    const log = buildParadoxLog({
+      ...lostAgainstD4,
+      oppositionEffectDie: '6',
+      shieldingFace: '8',
+      shieldedParadox: null,
+      shieldingApplied: true,
+      finalParadox: null,
+      currentParadox: null
+    })
+
+    expect(log.steps).toEqual([
+      { key: 'ParadoxStepBaseFromOpposition', data: { die: 'D6' } },
+      { key: 'ParadoxStepShieldingAbsorbed', data: { shielding: 'D8', paradox: 'D6' } }
     ])
   })
 
-  it('logs Trauma and QUIET when they apply', () => {
+  it('says Shielding is off the table entirely for Witnessed magick', () => {
+    const steps = buildParadoxLog({ ...lostAgainstD4, magick: 'vulgar-witnessed', shieldingFace: '8' }).steps
+
+    expect(steps[1]).toEqual({ key: 'ParadoxStepShieldingWitnessed', data: {} })
+    expect(buildParadoxLog({ ...lostAgainstD4, magick: 'vulgar-witnessed', shieldingFace: '8' }).inputs)
+      .toContainEqual({ label: 'ParadoxInputShielding', value: { key: 'ParadoxShieldingNotApplicable' } })
+  })
+
+  it('explains a brand new Paradox, and an incoming die large enough to replace one', () => {
+    expect(buildParadoxLog({ ...lostAgainstD4, currentParadox: null, finalParadox: '4' }).steps)
+      .toContainEqual({ key: 'ParadoxStepFinalNew', data: { die: 'D4' } })
+
     expect(buildParadoxLog({
-      baseParadox: '8',
-      shieldedParadox: '8',
-      shieldingApplied: false,
+      ...lostAgainstD4, oppositionEffectDie: '12', shieldedParadox: '12', finalParadox: '12'
+    }).steps).toContainEqual({
+      key: 'ParadoxStepFinalReplaces', data: { incoming: 'D12', current: 'D10', die: 'D12' }
+    })
+  })
+
+  it('explains the spill into Trauma when Paradox is already capped, and the descent into QUIET', () => {
+    const log = buildParadoxLog({
+      ...lostAgainstD4,
+      currentParadox: '12',
       finalParadox: '12',
       finalTrauma: '12',
+      currentTrauma: '12',
       descendIntoQuiet: true
-    })).toEqual([
-      { key: 'ParadoxLogBase', data: { die: 'D8' } },
-      { key: 'ParadoxLogFinal', data: { die: 'D12' } },
-      { key: 'ParadoxLogTrauma', data: { die: 'D12' } },
-      { key: 'ParadoxLogQuiet', data: {} }
+    })
+
+    expect(log.inputs).toContainEqual({ label: 'ParadoxInputCurrentTrauma', value: { text: 'D12' } })
+    expect(log.steps.slice(2)).toEqual([
+      { key: 'ParadoxStepFinalAtMax', data: { incoming: 'D4', die: 'D12' } },
+      { key: 'ParadoxStepTraumaAtMax', data: { die: 'D12' } },
+      { key: 'ParadoxStepQuiet', data: {} }
     ])
   })
 
-  it('shows the Final Paradox as a transition when the Player already carries a rating', () => {
-    expect(buildParadoxLog({
-      baseParadox: '6', shieldedParadox: '6', shieldingApplied: false, finalParadox: '8', currentParadox: '6'
-    })).toEqual([
-      { key: 'ParadoxLogBase', data: { die: 'D6' } },
-      { key: 'ParadoxLogFinalFrom', data: { from: 'D6', die: 'D8' } }
-    ])
+  it('distinguishes a first Trauma from one stepping up off the minimum, or off a rating', () => {
+    const traumaStep = currentTrauma => buildParadoxLog({
+      ...lostAgainstD4, currentParadox: '12', finalParadox: '12', finalTrauma: '6', currentTrauma
+    }).steps.at(-1)
+
+    expect(traumaStep(null)).toEqual({ key: 'ParadoxStepTraumaNone', data: { die: 'D6' } })
+    expect(traumaStep('4')).toEqual({ key: 'ParadoxStepTraumaFromMinimum', data: { from: 'D4', die: 'D6' } })
+    expect(traumaStep('8')).toEqual({ key: 'ParadoxStepTraumaStepUp', data: { from: 'D8', die: 'D6' } })
   })
 
-  it('shows the Final Trauma as a transition when the Player already carries a Trauma rating', () => {
-    expect(buildParadoxLog({
-      baseParadox: '8',
-      shieldedParadox: '8',
-      shieldingApplied: false,
-      finalParadox: '12',
-      finalTrauma: '10',
-      currentParadox: '12',
-      currentTrauma: '8'
-    })).toEqual([
-      { key: 'ParadoxLogBase', data: { die: 'D8' } },
-      { key: 'ParadoxLogFinalFrom', data: { from: 'D12', die: 'D12' } },
-      { key: 'ParadoxLogTraumaFrom', data: { from: 'D8', die: 'D10' } }
-    ])
-  })
-
-  it('keeps the plain form for a Player with no existing rating on either trait', () => {
-    expect(buildParadoxLog({
-      baseParadox: '8',
-      shieldedParadox: '8',
-      shieldingApplied: false,
-      finalParadox: '8',
-      finalTrauma: '6',
-      currentParadox: null,
-      currentTrauma: null
-    })).toEqual([
-      { key: 'ParadoxLogBase', data: { die: 'D8' } },
-      { key: 'ParadoxLogFinal', data: { die: 'D8' } },
-      { key: 'ParadoxLogTrauma', data: { die: 'D6' } }
-    ])
+  it('leaves Trauma out of the inputs entirely when the Paradox never reached it', () => {
+    expect(buildParadoxLog(lostAgainstD4).inputs.map(({ label }) => label))
+      .not.toContain('ParadoxInputCurrentTrauma')
   })
 })

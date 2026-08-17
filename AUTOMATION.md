@@ -234,8 +234,13 @@ Because Coincidental magick can only earn Paradox on a BOTCH, the **Step up Para
 hidden from the Hitches dialog entirely for Coincidental rolls that aren't a BOTCH — the GM can't
 spend a Plot Point on a choice that would do nothing.
 
-Recorded in the log as `Base Paradox: <die>`. If there is no Base Paradox die, nothing further
-happens — no log, no dialog.
+If there is no Base Paradox die, nothing further happens — no log, no dialog.
+
+`describeBaseParadox` returns this step's working rather than just its answer — which rule set the
+starting die, what that die was before hitches, and how many steps were then applied —
+and `computeBaseParadox` is simply the `die` off the end of it. The log needs all three to explain
+itself, and routing both through one function is what stops the explanation drifting from the
+arithmetic it describes.
 
 #### 2. Shielding
 
@@ -248,9 +253,8 @@ or shrink the Paradox. Shielding applies only when there **is** a Paradox die an
 - Paradox **two rungs** above → becomes **D8**.
 - **Three or more rungs** above → becomes **D10**.
 
-Recorded as `Shielded Paradox: <die>`, or `Shielded Paradox: absorbed by Shielding`. If Shielding
-absorbed the Paradox completely there's no dialog, but the log is still posted to chat so the table
-can see the Shielding did its job.
+If Shielding absorbed the Paradox completely there's no dialog, but the log is still posted to chat
+so the table can see the Shielding did its job.
 
 #### 3. Final Paradox
 
@@ -274,10 +278,26 @@ Trait:
 | D10 | D12 |
 | D12 | D12, and **Descend into QUIET** |
 
-Recorded as `Final Paradox: <die>`, then `Final Trauma: <die>` and `Descend into QUIET` when they
-apply. Where the Player already carries a rating on the trait, the line reads as a transition
-instead — `Final Paradox: D6 → D8`, `Final Trauma: D8 → D10` — so it's clear what the trait is
-moving from as well as to.
+#### The log
+
+`buildParadoxLog` turns all of the above into `{ inputs, steps }`, where both halves are
+`{ key, data }` pairs rather than finished strings — the GM's client computes them, and the
+Player's client localizes them (the same convention `dicePoolValidation.js` uses). The same log
+renders in the Player's dialog and in the chat card.
+
+**Inputs** are the values that fed the rules: Magick, Outcome, the Opposition's Effect die (listed
+only when a rule actually read it — a won roll never does), hitch steps, Shielding (the die, `none`,
+or `not applicable (Witnessed)`), the current Paradox, and the current Trauma (only once the
+cascade reached it).
+
+**Steps** are the rules that fired, in order, each stating its reason and its result — which base
+rule applied and at what die, what the hitches did to it, what Shielding did or why it didn't
+apply, and crucially *why* the Final Paradox landed where it did: replaced because the incoming die
+was larger, stepped up because it wasn't, or capped at D12 and spilled into Trauma. Every branch of
+every step above has its own line, so a reader can always reconstruct the arithmetic.
+
+Adding a rule branch means adding a step key alongside it — the localization keys are
+`ParadoxStep*` and `ParadoxInput*` in `lang/en.json`.
 
 #### 5. The Player's dialog
 

@@ -14,9 +14,23 @@
       <div class="section-image"></div>
       <div class="section-background"></div>
       <div class="section-content">
-        {{#each lines as |line|}}
-          <p>{{line}}</p>
-        {{/each}}
+        {{#if log.inputs.length}}
+          <div class="input-label-cpt">{{localize 'ParadoxInputs'}}</div>
+          {{#each log.inputs as |row|}}
+            <div class="flex flex-jsb flex-ac">
+              <span>{{row.label}}</span>
+              <b>{{row.value}}</b>
+            </div>
+          {{/each}}
+        {{/if}}
+        {{#if log.steps.length}}
+          <div class="input-label-cpt mt-2">{{localize 'ParadoxCalculation'}}</div>
+          <ol class="pl-4">
+            {{#each log.steps as |step|}}
+              <li>{{step}}</li>
+            {{/each}}
+          </ol>
+        {{/if}}
       </div>
     </div>
 

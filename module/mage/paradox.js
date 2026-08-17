@@ -86,23 +86,25 @@ const resolveParadox = async (context, paradoxSteps) => {
 
   const { magick, outcome } = context
 
-  const baseParadox = computeBaseParadox({
-    magick,
-    outcome,
-    paradoxSteps,
-    oppositionEffectDie: largestFace(context.oppositionEffectDice) ?? '4'
-  })
+  const oppositionEffectDie = largestFace(context.oppositionEffectDice) ?? '4'
+
+  const baseParadox = computeBaseParadox({ magick, outcome, paradoxSteps, oppositionEffectDie })
 
   // No Paradox earned at all — nothing to shield, log or show.
   if (!baseParadox) return
 
+  const shieldingFace = getShieldingFace()
+
   const { paradox: shieldedParadox, applied: shieldingApplied } =
-    applyShielding(baseParadox, getShieldingFace(), magick)
+    applyShielding(baseParadox, shieldingFace, magick)
+
+  // Everything the log needs to show its working, whichever way the rest of this goes.
+  const logInputs = { magick, outcome, paradoxSteps, oppositionEffectDie, shieldingFace }
 
   // Shielding absorbed it outright. There's no dialog to show, but the table should still see that
   // the Scene's Shielding did its job, so the log goes straight to chat.
   if (!shieldedParadox) {
-    await postParadoxLog(buildParadoxLog({ baseParadox, shieldedParadox, shieldingApplied }))
+    await postParadoxLog(buildParadoxLog({ ...logInputs, shieldedParadox, shieldingApplied }))
     return
   }
 
@@ -133,7 +135,7 @@ const resolveParadox = async (context, paradoxSteps) => {
   const pending = {
     rolledAt: context.rolledAt,
     log: buildParadoxLog({
-      baseParadox,
+      ...logInputs,
       shieldedParadox,
       shieldingApplied,
       finalParadox,
@@ -242,12 +244,20 @@ const onPendingParadox = async (actor, data) => {
   new ParadoxDialog({ actor, pending }).render(true)
 }
 
-export const localizeParadoxLog = log => (log ?? []).map(line => game.i18n.format(line.key, line.data ?? {}))
+// Both halves arrive as { key, data } pairs (see buildParadoxLog); an inputs row's value is either
+// a key of its own or literal text such as a die face.
+export const localizeParadoxLog = log => ({
+  inputs: (log?.inputs ?? []).map(row => ({
+    label: game.i18n.localize(row.label),
+    value: row.value?.key ? game.i18n.localize(row.value.key) : row.value?.text ?? ''
+  })),
+  steps: (log?.steps ?? []).map(step => game.i18n.format(step.key, step.data ?? {}))
+})
 
 const postParadoxLog = async log => {
   const content = await foundry.applications.handlebars.renderTemplate(
     'systems/cortexprime-ext/templates/chat/paradox.html',
-    { lines: localizeParadoxLog(log) }
+    { log: localizeParadoxLog(log) }
   )
 
   await ChatMessage.create({ content })

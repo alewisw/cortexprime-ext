@@ -32,7 +32,7 @@ export class ParadoxDialog extends FormApplication {
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
     return {
-      lines: localizeParadoxLog(this.pending.log),
+      log: localizeParadoxLog(this.pending.log),
       // Exactly one of these three is shown: two dead-end explanations, or the offer to limit.
       cannotLimitVulgarBotch: this.pending.limitState === LIMIT_STATES.VULGAR_BOTCH,
       tooLargeToLimit: this.pending.limitState === LIMIT_STATES.TOO_LARGE,
