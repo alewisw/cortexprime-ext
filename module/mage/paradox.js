@@ -1,6 +1,6 @@
 // "Mage: The Ascension Engine" — Paradox/Trauma integration. All the rules themselves live in the
-// pure paradoxLogic.js; this file only does the Foundry parts: reading the configured traits,
-// deciding when a roll qualifies, and handing the result across clients.
+// pure paradoxLogic.js; this file only does the Foundry parts: resolving the System Traits off the
+// actor's own Actor Type, deciding when a roll qualifies, and handing the result across clients.
 //
 // The work is split across two clients out of necessity. The GM's client is the only one that
 // knows how many hitches were spent on "Step up Paradox" (the Hitches dialog lives there) and is
@@ -22,10 +22,9 @@ import {
   largestFace
 } from './paradoxLogic.js'
 import { isMageRuleSetActive } from './mageAscensionLogic.js'
+import { getSystemSimpleTraitIndex, getTaggedTraitSetIds } from '../settings/systemTraits.js'
 
 const CHALLENGE_TYPES = ['test', 'contest', 'group']
-
-const getMageSettings = () => game.settings.get('cortexprime-ext', 'mageSettings')
 
 const getMagick = () => {
   const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
@@ -37,17 +36,17 @@ const getMagick = () => {
 
 // ---- Simple Trait resolution ----
 
-// A configured Simple Trait on an actor, by its stable id — the same resolve-by-id approach
-// mageAscension.js uses, so reordering traits can't silently repoint at a different one. Returns
-// the trait's index (needed to write to it) alongside its largest effective face, honouring any
-// temporary step up/down the way "Add to Pool" does.
-const getSimpleTrait = (actor, traitId) => {
-  if (!actor || !traitId) return null
+// The Simple Trait on an actor claiming the given System Trait — resolved off the actor's own
+// Actor Type, so any number of Actor Types can each carry their own Paradox. Returns the trait's
+// index (needed to write to it) alongside its largest effective face, honouring any temporary step
+// up/down the way "Add to Pool" does.
+const getSystemSimpleTrait = (actor, systemKey) => {
+  if (!actor) return null
 
   const simpleTraits = actor.system.actorType?.simpleTraits ?? {}
-  const index = Object.keys(simpleTraits).find(key => simpleTraits[key].id === traitId)
+  const index = getSystemSimpleTraitIndex(actor, systemKey)
 
-  if (index === undefined) return null
+  if (index === null) return null
 
   const trait = simpleTraits[index]
   const effective = getLength(trait.dice?.value ?? {})
@@ -63,15 +62,14 @@ const getLinkedLocationActor = () => {
   return actorId ? game.actors.get(actorId) : null
 }
 
-// The Scene's Shielding die, or null when there's no linked Location actor of the configured type
-// or it has no Shielding value.
-const getShieldingFace = mageSettings => {
+// The Scene's Shielding die, or null when there's no linked actor or it has no Simple Trait tagged
+// as the 'shielding' System Trait. Carrying the tag is what makes an actor a Location.
+const getShieldingFace = () => {
   const locationActor = getLinkedLocationActor()
 
   if (!locationActor) return null
-  if (locationActor.system.actorType?.id !== mageSettings.locationActorTypeId) return null
 
-  return getSimpleTrait(locationActor, mageSettings.shieldingTraitId)?.face ?? null
+  return getSystemSimpleTrait(locationActor, 'shielding')?.face ?? null
 }
 
 // ---- GM side: compute and hand over ----
@@ -86,7 +84,6 @@ const resolveParadox = async (context, paradoxSteps) => {
 
   if (!actor) return
 
-  const mageSettings = getMageSettings()
   const { magick, outcome } = context
 
   const baseParadox = computeBaseParadox({
@@ -100,7 +97,7 @@ const resolveParadox = async (context, paradoxSteps) => {
   if (!baseParadox) return
 
   const { paradox: shieldedParadox, applied: shieldingApplied } =
-    applyShielding(baseParadox, getShieldingFace(mageSettings), magick)
+    applyShielding(baseParadox, getShieldingFace(), magick)
 
   // Shielding absorbed it outright. There's no dialog to show, but the table should still see that
   // the Scene's Shielding did its job, so the log goes straight to chat.
@@ -109,24 +106,28 @@ const resolveParadox = async (context, paradoxSteps) => {
     return
   }
 
-  const paradoxTrait = getSimpleTrait(actor, mageSettings.paradoxTraitId)
+  const paradoxTrait = getSystemSimpleTrait(actor, 'paradox')
 
   // Without a Paradox trait to write to there's nothing this can do — better to say so once in the
   // console than to show the Player a dialog whose Confirm silently fails.
   if (!paradoxTrait) {
-    console.warn('CP | Paradox: the configured Paradox Simple Trait is missing on', actor.name)
+    console.warn('CP | Paradox: no Simple Trait is tagged as the Paradox System Trait on', actor.name)
     return
   }
 
   const { finalParadox, needsTrauma } = computeFinalParadox(shieldedParadox, paradoxTrait.face)
 
-  const traumaTrait = needsTrauma ? getSimpleTrait(actor, mageSettings.traumaTraitId) : null
+  const traumaTrait = needsTrauma ? getSystemSimpleTrait(actor, 'trauma') : null
   const { finalTrauma, descendIntoQuiet } = needsTrauma && traumaTrait
     ? computeFinalTrauma(traumaTrait.face)
     : { finalTrauma: null, descendIntoQuiet: false }
 
+  // Resolved through the Trait Set id the roll record already carries, so records made before a
+  // re-tag still read correctly.
+  const powersTraitSetIds = getTaggedTraitSetIds('powers')
+
   const powersFaces = (context.poolEntries ?? [])
-    .filter(entry => entry.traitSetId === mageSettings.powersTraitSetId)
+    .filter(entry => powersTraitSetIds.includes(entry.traitSetId))
     .flatMap(entry => entry.faces ?? [])
 
   const pending = {
@@ -266,13 +267,12 @@ export const applyParadoxOutcome = async ({ actor, pending, limitApplied }) => {
   if (limitApplied) {
     await ChatMessage.create({ content: `<div>${localizer('ParadoxLimitApplied')}</div>` })
   } else {
-    const mageSettings = getMageSettings()
-    const paradoxTrait = getSimpleTrait(actor, mageSettings.paradoxTraitId)
+    const paradoxTrait = getSystemSimpleTrait(actor, 'paradox')
 
     if (paradoxTrait) await setSimpleTraitDie(actor, paradoxTrait.index, pending.finalParadox)
 
     if (pending.finalTrauma) {
-      const traumaTrait = getSimpleTrait(actor, mageSettings.traumaTraitId)
+      const traumaTrait = getSystemSimpleTrait(actor, 'trauma')
 
       if (traumaTrait) await setSimpleTraitDie(actor, traumaTrait.index, pending.finalTrauma)
     }

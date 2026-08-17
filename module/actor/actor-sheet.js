@@ -2,7 +2,8 @@
  * Extend the basic ActorSheet with some very simple modifications
  * @extends {foundry.appv1.sheets.ActorSheet}
  */
-import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReduce, objectSome } from '../../lib/helpers.js'
+import { getLength, objectFindKey, objectMapValues, objectFindValue, objectSome } from '../../lib/helpers.js'
+import { computeActorTypeChange, mergeActorTypeData } from './actorTypeChangeLogic.js'
 import { expandNotesFieldOnEdit, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
@@ -43,10 +44,19 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       }
     }
 
+    const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
+    const currentActorTypeId = this.actor.system.actorType?.id
+
     return {
       ...data,
-      actorTypeOptions: objectMapValues(game.settings.get('cortexprime-ext', 'actorTypes'), val => val.name),
+      actorTypeOptions: objectMapValues(actorTypes, val => val.name),
+      // The picker's <option> values are keys into the actorTypes setting, so the current type has
+      // to be identified the same way to preselect it.
+      currentActorTypeIndex: objectFindKey(actorTypes, actorType => actorType.id === currentActorTypeId) ?? null,
       canAddToPool: this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER),
+      isGM: game.user.isGM,
+      // Either the actor has no type yet (first-time selection) or a GM asked to change it.
+      showActorTypePicker: !this.actor.system.actorType || !!this._actorTypeEdit,
       theme,
     }
   }
@@ -57,6 +67,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     super.activateListeners(html)
     html.find('.update-actor-settings').click(this._updateActorSettings.bind(this))
     html.find('.actor-type-confirm').click(this._actorTypeConfirm.bind(this))
+    html.find('.actor-type-edit').click(this._actorTypeEditStart.bind(this))
     html.find('.add-pp').click(() => { this.actor.changePpBy(1) })
     html.find('.add-asset').click(this._addAsset.bind(this))
     html.find('.add-complication').click(this._addComplication.bind(this))
@@ -115,15 +126,71 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   async _actorTypeConfirm (event) {
     event.preventDefault()
     const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
-    const actorTypeIndex = $('.actor-type-select').val()
+    // Scoped to this sheet: with a second sheet showing the picker (now possible, since a GM can
+    // reopen it on an already-configured actor) a bare $('.actor-type-select') reads whichever one
+    // happens to be first in the DOM.
+    const actorTypeIndex = this.element.find('.actor-type-select').val()
 
     const actorType = actorTypes[actorTypeIndex]
 
-    await this.actor.update({
-      'img': actorType.defaultImage,
-      'system.actorType': actorType,
-      'system.pp.value': actorType.hasPlotPoints ? 1 : 0
-    })
+    if (!actorType) return
+
+    const currentActorType = this.actor.system.actorType
+
+    if (!currentActorType) {
+      await this.actor.update({
+        'img': actorType.defaultImage,
+        'system.actorType': actorType,
+        'system.pp.value': actorType.hasPlotPoints ? 1 : 0
+      })
+
+      return
+    }
+
+    await this._actorTypeChange(currentActorType, actorType)
+  }
+
+  // Changing the type of an actor that already has one. GM-only, and separate from first-time
+  // selection because an existing actor has data worth keeping: the merge preserves everything the
+  // old and new type have in common (matched on id), the portrait stays as it is, and Plot Points
+  // are only zeroed when the new type has none.
+  async _actorTypeChange (currentActorType, newActorType) {
+    if (!game.user.isGM) return
+
+    const { actorType, ppValue } = computeActorTypeChange(
+      currentActorType,
+      newActorType,
+      this.actor.system.pp?.value
+    )
+
+    this._actorTypeEdit = false
+
+    // Unset-then-set, so trait sets and tabs the new type doesn't have actually disappear rather
+    // than surviving Foundry's update() merge - see the comment above _resetDataPoints.
+    await this._resetDataPoint('system', 'actorType', actorType)
+
+    if (ppValue !== null) await this.actor.update({ 'system.pp.value': ppValue })
+  }
+
+  /** @override */
+  async close (options) {
+    // Foundry caches the sheet instance on the document, so without this a GM who opens the picker
+    // and closes the window without confirming reopens straight back into the picker.
+    this._actorTypeEdit = false
+
+    return super.close(options)
+  }
+
+  _actorTypeEditStart (event) {
+    event.preventDefault()
+
+    if (!game.user.isGM) return
+
+    // Deliberately sheet-instance state rather than a flag on the actor: writing it to the document
+    // (as _traitSetEdit does) would broadcast, dropping every other client with this sheet open
+    // into the picker too.
+    this._actorTypeEdit = true
+    this.render()
   }
 
   async _addAsset (event) {
@@ -540,71 +607,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       return
     }
 
-    const newData = {
-      ...actorData,
-      ...objectMapValues(actorTypeSettings, (propValue, key) => {
-        if (key === 'simpleTraits') {
-          return objectMapValues(propValue, ({ dice, hasDescription, id, label, settings }) => {
-            const matchingSetting = objectFindValue((actorData.simpleTraits ?? {}), ({ id: matchId }) => matchId === id) ?? {}
-
-            return {
-              ...matchingSetting,
-              dice: {
-                ...matchingSetting.dice,
-                consumable: dice.consumable
-              },
-              hasDescription,
-              id,
-              label,
-              settings
-            }
-          })
-        }
-
-        if (key === 'additionalTabs') {
-          return objectMapValues(propValue, ({ id, name, defaultNotes }) => {
-            const matchingSetting = objectFindValue((actorData.additionalTabs ?? {}), ({ id: matchId }) => matchId === id) ?? {}
-            const existingNotes = matchingSetting.notes ?? {}
-
-            const notes = objectReduce(defaultNotes ?? {}, (acc, defaultNote) => {
-              const matchKey = objectFindKey(acc, note => note.label === defaultNote.label)
-
-              return matchKey !== undefined
-                ? { ...acc, [matchKey]: { ...acc[matchKey], locked: !!defaultNote.locked } }
-                : { ...acc, [getLength(acc)]: { label: defaultNote.label, value: defaultNote.value, locked: !!defaultNote.locked } }
-            }, existingNotes)
-
-            return { ...matchingSetting, id, name, notes }
-          })
-        }
-
-        if (key === 'traitSets') {
-          return objectMapValues(propValue, ({ hasDescription, id, label, settings, traits }) => {
-            const matchingSetting = objectFindValue((actorData.traitSets ?? {}), ({ id: matchId }) => matchId === id) ?? {}
-
-            return {
-              ...matchingSetting,
-              description: matchingSetting.description,
-              hasDescription,
-              id,
-              label,
-              shutdown: matchingSetting.shutdown,
-              settings,
-              traits: objectMapValues(traits ?? {}, trait => {
-                const matchingTraitSetting = objectFindValue(matchingSetting.traits ?? {}, ({ id: matchId }) => matchId === trait.id) ?? {}
-                return {
-                  ...matchingTraitSetting,
-                  id: trait.id,
-                  name: trait.name
-                }
-              })
-            }
-          })
-        }
-
-        return propValue
-      })
-    }
+    const newData = mergeActorTypeData(actorData, actorTypeSettings)
 
     // Awaited, so a failure surfaces instead of becoming an unhandled rejection — and so the
     // unset/set pair lands as the two consecutive updates _resetDataPoint depends on. It used to

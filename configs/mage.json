@@ -28,7 +28,8 @@
             "editable": true,
             "valueType": "dice",
             "consumableDice": false,
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTrait": "realityReinforcement"
           },
           "hasDescription": true,
           "text": {
@@ -48,7 +49,8 @@
             "editable": true,
             "valueType": "dice",
             "consumableDice": false,
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTrait": "shielding"
           },
           "hasDescription": false,
           "text": {
@@ -76,7 +78,8 @@
             "diceConsumable": false,
             "limitOnePerDicePool": false,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": true
+            "hasMultipleDice": true,
+            "systemTraitSet": ""
           }
         }
       },
@@ -84,7 +87,7 @@
     },
     "1": {
       "id": "_1767322477683",
-      "name": "Player",
+      "name": "Tradition Mage",
       "showProfileImage": true,
       "hasPlotPoints": true,
       "hasAssets": true,
@@ -97,7 +100,7 @@
           "hasDescription": true,
           "settings": {
             "hasDescription": true,
-            "hasLabel": true,
+            "hasLabel": false,
             "hasDescriptors": false,
             "hasSfx": false,
             "hasSubTraits": false,
@@ -112,12 +115,12 @@
         "1": {
           "id": "_1767322484291",
           "label": "Values",
-          "hasDescription": false,
+          "hasDescription": true,
           "settings": {
             "hasDescription": true,
             "hasLabel": true,
             "hasDescriptors": false,
-            "hasSfx": true,
+            "hasSfx": false,
             "hasSubTraits": false,
             "hasDice": true,
             "diceConsumable": false,
@@ -235,14 +238,14 @@
               }
             }
           },
-          "description": ""
+          "description": "Challenge: When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice."
         },
         "2": {
           "id": "_1784978960886",
           "label": "Skills",
-          "hasDescription": true,
+          "hasDescription": false,
           "settings": {
-            "hasDescription": true,
+            "hasDescription": false,
             "hasLabel": false,
             "hasDescriptors": false,
             "hasSfx": false,
@@ -250,7 +253,7 @@
             "hasDice": true,
             "diceConsumable": false,
             "limitOnePerDicePool": true,
-            "mutuallyExclusiveWith": "_1784980285420",
+            "mutuallyExclusiveWith": "",
             "hasMultipleDice": false
           },
           "description": "",
@@ -391,7 +394,8 @@
             "diceConsumable": false,
             "limitOnePerDicePool": true,
             "mutuallyExclusiveWith": "_1784978960886",
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTraitSet": "powers"
           }
         }
       },
@@ -406,7 +410,8 @@
             "editable": true,
             "valueType": "dice",
             "consumableDice": false,
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTrait": "paradox"
           },
           "hasDescription": false,
           "text": {
@@ -424,7 +429,8 @@
             "editable": true,
             "valueType": "dice",
             "consumableDice": false,
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTrait": "trauma"
           },
           "hasDescription": false,
           "text": {
@@ -436,38 +442,44 @@
       "assetsHaveMultipleDice": true,
       "additionalTabs": {
         "0": {
-          "id": "_notes-_1767322477683",
-          "name": "Rules"
-        },
-        "1": {
           "id": "_1786624926271",
           "name": "Values Log",
           "defaultNotes": {
             "0": {
               "label": "Advancement",
-              "value": null
+              "value": null,
+              "locked": true
             },
             "1": {
               "label": "Will",
-              "value": null
+              "value": null,
+              "locked": true
             },
             "2": {
               "label": "Loyalty",
-              "value": null
+              "value": null,
+              "locked": true
             },
             "3": {
               "label": "The World",
-              "value": null
+              "value": null,
+              "locked": true
             },
             "4": {
               "label": "Truth",
-              "value": null
+              "value": null,
+              "locked": true
             },
             "5": {
               "label": "Connection",
-              "value": null
+              "value": null,
+              "locked": true
             }
           }
+        },
+        "1": {
+          "id": "_notes-_1767322477683",
+          "name": "Rules"
         },
         "2": {
           "id": "_1786624946207",
@@ -478,7 +490,7 @@
     "2": {
       "hasNotesPage": false,
       "id": "_1785043193027",
-      "name": "GM",
+      "name": "Doom Pool",
       "showProfileImage": true,
       "hasPlotPoints": false,
       "hasAssets": false,
@@ -495,7 +507,8 @@
             "editable": true,
             "valueType": "dice",
             "consumableDice": true,
-            "hasMultipleDice": true
+            "hasMultipleDice": true,
+            "systemTrait": ""
           },
           "hasDescription": false,
           "text": {
@@ -528,7 +541,8 @@
             "diceConsumable": false,
             "limitOnePerDicePool": false,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": true
+            "hasMultipleDice": true,
+            "systemTraitSet": ""
           },
           "description": ""
         }
@@ -544,7 +558,8 @@
           "label": "Organisation",
           "settings": {
             "editable": true,
-            "valueType": "text"
+            "valueType": "text",
+            "systemTrait": ""
           },
           "hasDescription": false,
           "text": {
@@ -561,7 +576,8 @@
           "label": "Title",
           "settings": {
             "editable": true,
-            "valueType": "text"
+            "valueType": "text",
+            "systemTrait": ""
           },
           "hasDescription": false,
           "text": {
@@ -578,7 +594,8 @@
           "label": "Type",
           "settings": {
             "editable": true,
-            "valueType": "text"
+            "valueType": "text",
+            "systemTrait": ""
           },
           "hasDescription": false,
           "text": {
@@ -595,7 +612,8 @@
           "label": "Characteristics",
           "settings": {
             "editable": true,
-            "valueType": "text"
+            "valueType": "text",
+            "systemTrait": ""
           },
           "hasDescription": false,
           "text": {
@@ -609,18 +627,449 @@
           "name": "Notes"
         }
       }
+    },
+    "4": {
+      "id": "_1786869352782",
+      "name": "The Akashic Brotherhood",
+      "showProfileImage": true,
+      "hasPlotPoints": true,
+      "hasAssets": true,
+      "hasComplications": true,
+      "hasHidableTraits": false,
+      "traitSets": {
+        "0": {
+          "id": "_1784978821236",
+          "label": "Distinctions",
+          "hasDescription": true,
+          "settings": {
+            "hasDescription": true,
+            "hasLabel": false,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "",
+            "hasMultipleDice": false
+          },
+          "description": "Hinder: gain a plot point, switch this Distinction for a (D4)",
+          "inherited": true,
+          "traits": {}
+        },
+        "1": {
+          "id": "_1767322484291",
+          "label": "Values",
+          "hasDescription": true,
+          "settings": {
+            "hasDescription": true,
+            "hasLabel": true,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "",
+            "hasMultipleDice": false
+          },
+          "traits": {
+            "0": {
+              "id": "_1767322516075",
+              "name": "Advancement",
+              "dice": {
+                "value": {
+                  "0": "10"
+                }
+              },
+              "description": "Your value statement here.",
+              "descriptors": {
+                "0": {
+                  "label": "Ambition",
+                  "value": "The world advances through collective effort and patient work."
+                }
+              },
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              },
+              "inherited": true
+            },
+            "1": {
+              "id": "_1767322528847",
+              "name": "Will",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              },
+              "inherited": true
+            },
+            "2": {
+              "id": "_1784978402850",
+              "name": "Loyalty",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              },
+              "inherited": true
+            },
+            "3": {
+              "id": "_1784978411115",
+              "name": "The World",
+              "dice": {
+                "value": {
+                  "0": "6"
+                }
+              },
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              },
+              "inherited": true
+            },
+            "4": {
+              "id": "_1784978418028",
+              "name": "Truth",
+              "dice": {
+                "value": {
+                  "0": "6"
+                }
+              },
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              },
+              "inherited": true
+            },
+            "5": {
+              "id": "_1784978423752",
+              "name": "Connection",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "Your value statement here.",
+              "sfx": {
+                "0": {
+                  "description": "When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.  Rewrite the value statement or Keep the new dice at the end of the session.",
+                  "label": "Challenge Value Statement",
+                  "unlocked": true
+                }
+              },
+              "inherited": true
+            }
+          },
+          "description": "Challenge: When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice.",
+          "inherited": true
+        },
+        "2": {
+          "id": "_1784978960886",
+          "label": "Skills",
+          "hasDescription": false,
+          "settings": {
+            "hasDescription": false,
+            "hasLabel": false,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "",
+            "hasMultipleDice": false
+          },
+          "description": "",
+          "traits": {
+            "0": {
+              "id": "_1784978980648",
+              "name": "Academics",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "1": {
+              "id": "_1784979215991",
+              "name": "Athletics",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "2": {
+              "id": "_1784979225709",
+              "name": "Deceive",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "3": {
+              "id": "_1784979239405",
+              "name": "Drive",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "4": {
+              "id": "_1784979251060",
+              "name": "Fight",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "5": {
+              "id": "_1784979263188",
+              "name": "Notice",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "6": {
+              "id": "_1784979271896",
+              "name": "Persuade",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "7": {
+              "id": "_1784979282500",
+              "name": "Resources",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "8": {
+              "id": "_1784979294131",
+              "name": "Shoot",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "9": {
+              "id": "_1784979302855",
+              "name": "Stealth",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "10": {
+              "id": "_1784979313723",
+              "name": "Streetwise",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            },
+            "11": {
+              "id": "_1784979322258",
+              "name": "Tech",
+              "dice": {
+                "value": {
+                  "0": "4"
+                }
+              },
+              "description": "",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "3": {
+          "id": "_1784980285420",
+          "label": "Powers",
+          "hasDescription": false,
+          "settings": {
+            "hasDescription": true,
+            "hasLabel": false,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "limitOnePerDicePool": true,
+            "mutuallyExclusiveWith": "_1784978960886",
+            "hasMultipleDice": false,
+            "systemTraitSet": "powers"
+          },
+          "inherited": true,
+          "traits": {}
+        }
+      },
+      "simpleTraits": {
+        "0": {
+          "dice": {
+            "value": {}
+          },
+          "id": "_1784980204269",
+          "label": "Paradox",
+          "settings": {
+            "editable": true,
+            "valueType": "dice",
+            "consumableDice": false,
+            "hasMultipleDice": false,
+            "systemTrait": "paradox"
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          },
+          "description": "",
+          "inherited": true
+        },
+        "1": {
+          "dice": {
+            "value": {}
+          },
+          "id": "_1784980229635",
+          "label": "Trauma",
+          "settings": {
+            "editable": true,
+            "valueType": "dice",
+            "consumableDice": false,
+            "hasMultipleDice": false,
+            "systemTrait": "trauma"
+          },
+          "hasDescription": false,
+          "text": {
+            "value": ""
+          },
+          "description": "",
+          "inherited": true
+        }
+      },
+      "assetsHaveMultipleDice": true,
+      "additionalTabs": {
+        "0": {
+          "id": "_1786624926271",
+          "name": "Values Log",
+          "defaultNotes": {
+            "0": {
+              "label": "Advancement",
+              "value": null,
+              "locked": true,
+              "inherited": true
+            },
+            "1": {
+              "label": "Will",
+              "value": null,
+              "locked": true,
+              "inherited": true
+            },
+            "2": {
+              "label": "Loyalty",
+              "value": null,
+              "locked": true,
+              "inherited": true
+            },
+            "3": {
+              "label": "The World",
+              "value": null,
+              "locked": true,
+              "inherited": true
+            },
+            "4": {
+              "label": "Truth",
+              "value": null,
+              "locked": true,
+              "inherited": true
+            },
+            "5": {
+              "label": "Connection",
+              "value": null,
+              "locked": true,
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "1": {
+          "id": "_notes-_1767322477683",
+          "name": "Rules",
+          "inherited": true,
+          "defaultNotes": {}
+        },
+        "2": {
+          "id": "_1786624946207",
+          "name": "Notes",
+          "inherited": true,
+          "defaultNotes": {}
+        }
+      },
+      "parentId": "_1767322477683"
     }
   },
   "customRuleSet": "mage",
-  "mageSettings": {
-    "locationActorTypeId": "_2",
-    "realityReinforcementTraitId": "_1785156233574",
-    "shieldingTraitId": "_1786623924572",
-    "playerCharacterActorTypeId": "_1767322477683",
-    "paradoxTraitId": "_1784980204269",
-    "traumaTraitId": "_1784980229635",
-    "powersTraitSetId": "_1784980285420"
-  },
   "plotPointUses": {
     "general": {
       "0": {
@@ -650,6 +1099,10 @@
       "6": {
         "id": "_7",
         "label": "Resume a contest after successful interference"
+      },
+      "7": {
+        "id": "_1786862007101",
+        "label": "Any other reason"
       }
     },
     "opportunity": {

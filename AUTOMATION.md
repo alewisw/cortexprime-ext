@@ -25,6 +25,50 @@ both.
 Snapshots are overwritten per roll and deleted once used — no history is kept. Everything the undo
 actually does is button-driven; see `docs/AUTOMATION.md`.
 
+## System Traits
+
+A Custom Rule Set needs to find particular traits to do its job — Mage can't apply Paradox without
+knowing which Simple Trait *is* Paradox. Each rule set declares a fixed list of **System Trait Sets**
+and **System Simple Traits** in `module/settings/systemTraitsLogic.js`; for Mage those are the
+`powers` Trait Set and the `realityReinforcement`, `shielding`, `paradox` and `trauma` Simple Traits.
+
+The GM claims one on the trait itself: every Trait Set and Simple Trait in Actor Settings carries a
+**System Trait Set** / **System Trait** dropdown, listing the active rule set's roles. It is hidden
+entirely when Custom Rule Set is `none`. Within one Actor Type a role already claimed drops out of
+its siblings' dropdowns, so two traits can never both be Paradox; across Actor Types there is no
+such limit, which is what lets a Player and an NPC each have their own.
+
+The tag is stored on the entry's existing `settings` sub-object
+(`settings.systemTraitSet` / `settings.systemTrait`), which is what makes this nearly free:
+`ActorSettings._updateObject` already persists any `actorTypes.<a>.…settings.<field>` binding,
+`_updateActorSettings` already copies `settings` onto actors, and derived Actor Types already
+deep-clone it. The option lists themselves are built in `getData` rather than the template, because
+the registered Handlebars helpers are all binary and can't express "is this role taken by a sibling".
+
+Resolution has one wrinkle worth knowing, because getting it wrong is silent. An actor's
+`system.actorType` is a **snapshot** copied when its type was assigned, so a tag added in Actor
+Settings afterwards is *not* on it until the sheet's "Update Settings" is run. Resolving off the
+actor's own copy would therefore leave every existing actor unwired until it was individually
+re-synced. So `getSystemSimpleTraitIndex` (`module/settings/systemTraits.js`) takes the
+configuration from the **settings** side — the Actor Type matched by id, the way
+`_updateActorSettings` does — and uses the actor only to locate the trait's *position*, matched on
+its stable `id`, which every snapshot already carries. Tagging reaches every existing actor
+immediately. It falls back to a tag on the actor's own copy for an actor whose Actor Type has since
+been deleted from settings.
+
+The index rather than the trait is returned because callers write back to
+`system.actorType.simpleTraits.<index>.dice`.
+
+Trait Sets need none of that: `getTaggedTraitSetIds` collects the tagged ids from settings, and Dice
+Pool entries and roll records carry a `traitSetId` drawn from those same ids. That also means roll
+records made before a re-tag keep reading correctly. The ids are deduplicated, since a derived Actor
+Type inherits its parent's Trait Set id verbatim.
+
+This replaced a `mageSettings` world setting and its own dialog, which held ids pointing *at* those
+traits. That scheme allowed exactly one Player Character Actor Type and one Location Actor Type, and
+kept the wiring nowhere near the thing it described. There is no migration: re-tag by hand, or
+re-import `configs/mage.json`, which ships pre-tagged.
+
 ## Actor Type inheritance
 
 An Actor Type can be **derived** from another: it carries a `parentId`, shows everything the parent
@@ -86,13 +130,13 @@ The decision logic is pure and unit-tested in `module/scripts/hitchesLogic.js`;
 ## Mage: The Ascension Engine
 
 Enabled via the **Custom Rule Set** dropdown in Foundry's System Configuration (Settings →
-Configure Settings), set to "Mage: The Ascension Engine". Configured via the **Mage Settings**
-dialog (also in System Configuration), which maps:
+Configure Settings), set to "Mage: The Ascension Engine". Wired up through **System Traits** — see
+that section below — by tagging Simple Traits as **Reality Reinforcement**, **Shielding**,
+**Paradox** and **Trauma**, and a Trait Set as **Powers**.
 
-- The Actor Type used for a **Location**, and which Simple Trait on it represents **Reality
-  Reinforcement** and **Shielding**.
-- The Actor Type used for a **Player Character**, and which Simple Trait on it represents
-  **Paradox** and **Trauma**, plus which Trait Set defines **Powers**.
+An actor is a **Location** simply by carrying a trait tagged Reality Reinforcement or Shielding;
+there is no separate Location Actor Type to nominate. Likewise any number of Actor Types can each
+have their own Paradox and Powers, so an NPC mage works exactly like a player one.
 
 All of this feature's logic is isolated in `module/mage/` — `mageAscensionLogic.js` and
 `paradoxLogic.js` for the pure decisions, `mageAscension.js` and `paradox.js` for the Foundry/hook

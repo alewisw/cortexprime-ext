@@ -1,8 +1,8 @@
 <form class="{{cssClass}} sheet-cpt" autocomplete="off">
   <div class="sheet-background"></div>
   <div class="sheet-image"></div>
-  <div class="sheet-content pa-2{{ternary data.system.actorType '' ' actor-selection'}}">
-    {{#unless data.system.actorType}}
+  <div class="sheet-content pa-2{{ternary showActorTypePicker ' actor-selection' ''}}">
+    {{#if showActorTypePicker}}
       <div class="flex-row flex-c" style="height: 100%">
         <div class="flex-col section-cpt pa-4">
           <div class="section-image"></div>
@@ -11,7 +11,7 @@
             <label class="section-primary-title-cpt col-12">{{localize 'ActorType'}}</label>
             <select class="actor-type-select input-cpt col-12 my-2">
               {{#each actorTypeOptions as |actorType actorTypeIndex|}}
-                <option value="{{actorTypeIndex}}">{{or actorType (concat '[' (localize 'NoName') ']')}}</option>
+                <option value="{{actorTypeIndex}}"{{#if (eq actorTypeIndex ../currentActorTypeIndex)}} selected{{/if}}>{{or actorType (concat '[' (localize 'NoName') ']')}}</option>
               {{/each}}
             </select>
             <button class="btn btn-primary-cpt {{ternary (eq theme.buttonStyle 'square') 'btn-square-cpt ' ''}}actor-type-confirm col-12" type="button">{{localize 'Confirm'}}</button>
@@ -41,6 +41,7 @@
               {{> "systems/cortexprime-ext/templates/partials/actor-sheet/sidebar.html"
                 actor=actor
                 actorType=data.system.actorType
+                isGM=isGM
                 pp=data.system.pp
               }}
               <section class="flex-col col-9">
@@ -83,6 +84,6 @@
           {{/each}}
         </div>
       {{/if}}
-    {{/unless}}
+    {{/if}}
   </div>
 </form>

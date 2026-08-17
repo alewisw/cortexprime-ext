@@ -6,6 +6,7 @@
 import { getLength } from '../../lib/helpers.js'
 import { localizer, onSettingChanged } from '../scripts/foundryHelpers.js'
 import { flattenPoolEntries } from '../scripts/dicePoolValidation.js'
+import { getSystemSimpleTraitIndex, getTaggedTraitSetIds } from '../settings/systemTraits.js'
 import { getEffectiveDiceMap } from '../scripts/traitDiceTemporary.js'
 import { getActiveChallenge, getRollToBeatTargets, hasInitiatorRolled } from '../scripts/rollToBeat.js'
 import {
@@ -104,10 +105,10 @@ const injectPoolValidation = (app, html) => {
   if (!myId || !rollerIds.includes(myId)) return
 
   const { magick } = getMageChallengeState()
-  const mageSettings = game.settings.get('cortexprime-ext', 'mageSettings')
   const poolEntries = flattenPoolEntries(game.user.getFlag('cortexprime-ext', 'dicePool')?.pool)
+  const powersTraitSetIds = getTaggedTraitSetIds('powers')
 
-  const reasonKey = computeMagePoolInvalidReason(magick, poolEntries, mageSettings.powersTraitSetId)
+  const reasonKey = computeMagePoolInvalidReason(magick, poolEntries, powersTraitSetIds)
 
   if (!reasonKey) return
 
@@ -182,16 +183,20 @@ const getLinkedLocationActor = () => {
 }
 
 // The Reality Reinforcement trait's current effective {index: face} dice map, or null if the
-// Scene's linked actor isn't of the configured Location Actor Type, or the configured Simple
-// Trait can't be found or has no dice.
-const getRealityReinforcementDiceValue = mageSettings => {
+// Scene's linked actor has no Simple Trait tagged as the 'realityReinforcement' System Trait, or
+// that trait has no dice. Carrying the tag is what makes an actor a Location — there's no separate
+// Location Actor Type to check against.
+const getRealityReinforcementDiceValue = () => {
   const locationActor = getLinkedLocationActor()
 
   if (!locationActor) return null
-  if (locationActor.system.actorType?.id !== mageSettings.locationActorTypeId) return null
 
-  const simpleTraits = Object.values(locationActor.system.actorType?.simpleTraits ?? {})
-  const trait = simpleTraits.find(simpleTrait => simpleTrait.id === mageSettings.realityReinforcementTraitId)
+  const simpleTraits = locationActor.system.actorType?.simpleTraits ?? {}
+  const index = getSystemSimpleTraitIndex(locationActor, 'realityReinforcement')
+
+  if (index === null) return null
+
+  const trait = simpleTraits[index]
 
   if (!trait?.dice?.value || getLength(trait.dice.value) === 0) return null
 
@@ -236,12 +241,11 @@ const syncRealityReinforcement = async () => {
 
   if (!isMageRuleSetActive(customRuleSet)) return
 
-  const mageSettings = game.settings.get('cortexprime-ext', 'mageSettings')
   const activeChallenge = getActiveChallenge()
   const targets = getRollToBeatTargets()
   const rollerIds = getCurrentRollerIds(activeChallenge, targets, hasInitiatorRolled(activeChallenge))
 
-  const diceValue = getRealityReinforcementDiceValue(mageSettings)
+  const diceValue = getRealityReinforcementDiceValue()
   const { magick, realityReinforcement } = getMageChallengeState()
   const applicable = magick !== 'none' && !!activeChallenge.type && !!diceValue
 
@@ -279,7 +283,10 @@ export const registerMageAscension = () => {
     'cortexprime-ext.activeChallenge',
     'cortexprime-ext.lastGmRoll',
     'cortexprime-ext.mageChallengeState',
-    'cortexprime-ext.customRuleSet'
+    'cortexprime-ext.customRuleSet',
+    // The System Trait tags live in actorTypes, so re-tagging which Simple Trait is Reality
+    // Reinforcement has to resync the pools and re-render the tray.
+    'cortexprime-ext.actorTypes'
   ]
 
   onSettingChanged(async setting => {

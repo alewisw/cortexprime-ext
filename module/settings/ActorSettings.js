@@ -1,4 +1,5 @@
 import { applyActorTypeInheritance, buildActorTypeTree } from '../actor/actorTypeInheritanceLogic.js'
+import { buildSystemTraitOptions } from './systemTraitsLogic.js'
 import { expandNotesFieldOnEdit, localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFindKey, objectFindValue, objectMapValues, objectReduce, objectReindexFilter } from '../../lib/helpers.js'
 import { removeItem, reorderItem } from '../scripts/settingsHelpers.js'
@@ -27,12 +28,19 @@ export default class ActorSettings extends FormApplication {
 
   getData() {
     const breadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs') ?? {}
+    const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
+
+    // Both augmentations only add display-only fields - buildActorTypeTree the inheritance ones
+    // (children/hasChildren/parentName), buildSystemTraitOptions the System Trait dropdown options -
+    // and leave the storage indices alone, so every `name="actorTypes.<i>..."` binding still lines
+    // up. Nothing here is written back: every save re-reads the raw setting.
+    const actorTypes = objectMapValues(
+      buildActorTypeTree(game.settings.get('cortexprime-ext', 'actorTypes')),
+      actorType => buildSystemTraitOptions(actorType, customRuleSet)
+    )
 
     return {
-      // buildActorTypeTree only adds display-only fields (children/hasChildren/parentName) and
-      // leaves the storage indices alone, so every `name="actorTypes.<i>..."` binding still lines
-      // up. Nothing here is written back - every save re-reads the raw setting.
-      actorTypes: buildActorTypeTree(game.settings.get('cortexprime-ext', 'actorTypes')),
+      actorTypes,
       breadcrumbs,
       goBack: breadcrumbs[getLength(breadcrumbs ?? {}) - 2]?.target ?? 0
     }

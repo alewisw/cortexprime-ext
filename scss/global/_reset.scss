@@ -17,15 +17,8 @@
   }
 }
 
-// Mage Settings has no sheet-background overlay of its own (unlike ActorSettings/ThemeSettings),
+// Doom Pool Settings has no sheet-background overlay of its own (unlike ActorSettings/ThemeSettings),
 // so it needs the plain white window background restored instead of the "none" set above.
-&.mage-settings.window-app {
-  .window-content {
-    background: #ffffff;
-  }
-}
-
-// Same reasoning as Mage Settings above — Doom Pool Settings has no sheet-background overlay.
 &.doom-pool-settings.window-app {
   .window-content {
     background: #ffffff;

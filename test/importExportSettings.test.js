@@ -17,7 +17,6 @@ describe('SYNCED_SETTINGS', () => {
     expect(SYNCED_SETTINGS.map(s => s.key)).toEqual([
       'actorTypes',
       'customRuleSet',
-      'mageSettings',
       'plotPointUses',
       'doomPoolActorId',
       'doomPoolTraitId',

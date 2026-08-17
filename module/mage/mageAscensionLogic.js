@@ -59,13 +59,14 @@ export const getCurrentRollerIds = (challenge, targets, initiatorHasRolled) => {
 }
 
 // Pure. poolEntries: the current roller's flattened Dice Pool entries (same {traitSetId, ...}
-// shape already established by dicePoolValidation.js / traitDiceTemporary.js). Magick 'none'
-// forbids any entry sourced from the configured Powers Trait Set; any other Magick value requires
-// one. Returns a lang key or null.
-export const computeMagePoolInvalidReason = (magick, poolEntries, powersTraitSetId) => {
-  if (!powersTraitSetId) return null
+// shape already established by dicePoolValidation.js / traitDiceTemporary.js). powersTraitSetIds:
+// every Trait Set id tagged as the 'powers' System Trait Set — a list, since each Actor Type may
+// tag its own. Magick 'none' forbids any entry sourced from one of them; any other Magick value
+// requires one. Returns a lang key or null.
+export const computeMagePoolInvalidReason = (magick, poolEntries, powersTraitSetIds) => {
+  if (!powersTraitSetIds?.length) return null
 
-  const hasPowerTrait = poolEntries.some(entry => entry.traitSetId === powersTraitSetId)
+  const hasPowerTrait = poolEntries.some(entry => powersTraitSetIds.includes(entry.traitSetId))
 
   if (magick === 'none') return hasPowerTrait ? 'MageNonMagicalPowerTraitInvalid' : null
 
@@ -73,8 +74,8 @@ export const computeMagePoolInvalidReason = (magick, poolEntries, powersTraitSet
 }
 
 // Pure decision table for where the Reality Reinforcement trait's die should live right now.
-// `applicable` is false whenever the Scene's linked actor isn't of the configured Location Actor
-// Type or has no resolvable Reality Reinforcement trait value — in that case both sides resolve
+// `applicable` is false whenever the Scene's linked actor has no Simple Trait tagged as the
+// 'realityReinforcement' System Trait, or that trait has no value — in that case both sides resolve
 // to 'remove', cleaning up anything added while it previously was applicable.
 export const computeRealityReinforcementSync = (realityReinforcement, applicable) => {
   if (!applicable) return { gm: 'remove', roller: 'remove' }

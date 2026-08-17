@@ -115,6 +115,21 @@
               </select>
             </label>
           </div>
+          {{! Only rendered when the active Custom Rule Set declares System Trait Sets - the options
+              are built (and already-claimed ones filtered out) in systemTraitsLogic.js. }}
+          {{#if traitSet.systemTraitSetOptions}}
+            <div class="flex-col col-6">
+              <label>
+                <span class="input-label-cpt mb-0 mr-1">{{localize 'SystemTraitSet'}}</span>
+                <select class="input-cpt" name="{{concat 'actorTypes.' path '.' traitSetIndex '.settings.systemTraitSet'}}">
+                  <option value=""{{ternary (not traitSet.settings.systemTraitSet) ' selected' ''}}>{{localize 'None'}}</option>
+                  {{#each traitSet.systemTraitSetOptions as |option|}}
+                    <option value="{{option.key}}"{{ternary option.selected ' selected' ''}}>{{localize option.label}}</option>
+                  {{/each}}
+                </select>
+              </label>
+            </div>
+          {{/if}}
         </div>
       </div>
       <div class="flex">

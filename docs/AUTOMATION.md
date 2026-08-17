@@ -320,3 +320,27 @@ and dice, so the GM can add dice (escalating it), remove some, or rename it. Fro
   everyone) opens and closes its sheet.
 - **Scene Journal** — visible only to the GM; opens the journal page linked to the active scene.
 - **My Character** — visible only to players; opens the player's own assigned character sheet.
+
+## Changing an actor's Actor Type
+
+An actor's Actor Type is normally chosen once, when the sheet is first opened. A GM can change it
+afterwards: next to **Actor Type** in the sheet's sidebar there's a pencil, visible only to the GM,
+which brings back the same picker with the actor's current type already selected. Choosing a
+different type and clicking **Confirm** applies the change straight away — there's no separate
+Cancel, because confirming the type that's already selected does nothing.
+
+What survives the change:
+
+- **Anything the two types have in common is kept** — trait sets, traits, simple traits and tabs
+  are matched up by their underlying id, so their dice, descriptions, SFX, shutdown state and tab
+  notes carry over. Because a derived Actor Type inherits its parent's ids, switching between a
+  parent and one of its children keeps essentially everything.
+- **Anything the new type doesn't have is dropped**, and anything only the new type has arrives at
+  the defaults configured in Actor Settings.
+- **The portrait is never touched** — unlike first-time selection, which sets the type's default
+  image.
+- **Plot Points are left alone**, unless the new type has no Plot Points at all, in which case the
+  pool is zeroed rather than left hidden but non-empty.
+
+**Update Settings** (the button just above) is unrelated and unchanged: it re-syncs an actor
+against its *own* Actor Type after that type has been edited in Actor Settings.

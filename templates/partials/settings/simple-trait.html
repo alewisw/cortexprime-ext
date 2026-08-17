@@ -41,6 +41,21 @@
         </select>
       </label>
     </div>
+    {{! Only rendered when the active Custom Rule Set declares System Simple Traits - the options are
+        built (and already-claimed ones filtered out) in systemTraitsLogic.js. }}
+    {{#if simpleTrait.systemTraitOptions}}
+      <div class="mt-2">
+        <label>
+          <span class="input-label-cpt mr-1">{{localize 'SystemTrait'}}</span>
+          <select class="input-cpt" name="{{concat 'actorTypes.' path '.' simpleTraitIndex '.settings.systemTrait'}}">
+            <option value=""{{ternary (not simpleTrait.settings.systemTrait) ' selected' ''}}>{{localize 'None'}}</option>
+            {{#each simpleTrait.systemTraitOptions as |option|}}
+              <option value="{{option.key}}"{{ternary option.selected ' selected' ''}}>{{localize option.label}}</option>
+            {{/each}}
+          </select>
+        </label>
+      </div>
+    {{/if}}
   </div>
   {{> (concat "systems/cortexprime-ext/templates/partials/settings/value-types/" (?? simpleTrait.settings.valueType 'text') ".html")
     consumableOption=true

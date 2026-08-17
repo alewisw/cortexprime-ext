@@ -81,34 +81,48 @@ describe('getCurrentRollerIds', () => {
 })
 
 describe('computeMagePoolInvalidReason', () => {
+  // Powers Trait Set ids arrive as a list: each Actor Type tags its own 'powers' Trait Set, so a
+  // Player's and an NPC's both count.
+  const powersIds = ['powers-id']
+
   it('is invalid when Magick is none and a Powers-trait entry is present', () => {
     const poolEntries = [{ traitSetId: 'powers-id' }]
-    expect(computeMagePoolInvalidReason('none', poolEntries, 'powers-id')).toBe('MageNonMagicalPowerTraitInvalid')
+    expect(computeMagePoolInvalidReason('none', poolEntries, powersIds)).toBe('MageNonMagicalPowerTraitInvalid')
   })
 
   it('is valid when Magick is none but no Powers-trait entry is present', () => {
     const poolEntries = [{ traitSetId: 'other-id' }]
-    expect(computeMagePoolInvalidReason('none', poolEntries, 'powers-id')).toBeNull()
+    expect(computeMagePoolInvalidReason('none', poolEntries, powersIds)).toBeNull()
   })
 
   it('is valid whenever Magick is not none and a Powers-trait entry is present', () => {
     const poolEntries = [{ traitSetId: 'powers-id' }]
-    expect(computeMagePoolInvalidReason('vulgar', poolEntries, 'powers-id')).toBeNull()
-    expect(computeMagePoolInvalidReason('coincidental-witnessed', poolEntries, 'powers-id')).toBeNull()
+    expect(computeMagePoolInvalidReason('vulgar', poolEntries, powersIds)).toBeNull()
+    expect(computeMagePoolInvalidReason('coincidental-witnessed', poolEntries, powersIds)).toBeNull()
   })
 
   it('is invalid when Magick is not none and no Powers-trait entry is present', () => {
     const poolEntries = [{ traitSetId: 'other-id' }]
-    expect(computeMagePoolInvalidReason('vulgar', poolEntries, 'powers-id')).toBe('MageMagicalPowerTraitRequired')
-    expect(computeMagePoolInvalidReason('coincidental', poolEntries, 'powers-id')).toBe('MageMagicalPowerTraitRequired')
-    expect(computeMagePoolInvalidReason('vulgar-witnessed', [], 'powers-id')).toBe('MageMagicalPowerTraitRequired')
+    expect(computeMagePoolInvalidReason('vulgar', poolEntries, powersIds)).toBe('MageMagicalPowerTraitRequired')
+    expect(computeMagePoolInvalidReason('coincidental', poolEntries, powersIds)).toBe('MageMagicalPowerTraitRequired')
+    expect(computeMagePoolInvalidReason('vulgar-witnessed', [], powersIds)).toBe('MageMagicalPowerTraitRequired')
   })
 
-  it('is valid when no Powers Trait Set is configured, regardless of Magick', () => {
+  it('matches an entry from any tagged Powers Trait Set', () => {
+    const bothIds = ['pc-powers-id', 'npc-powers-id']
+
+    expect(computeMagePoolInvalidReason('vulgar', [{ traitSetId: 'npc-powers-id' }], bothIds)).toBeNull()
+    expect(computeMagePoolInvalidReason('none', [{ traitSetId: 'pc-powers-id' }], bothIds))
+      .toBe('MageNonMagicalPowerTraitInvalid')
+    expect(computeMagePoolInvalidReason('vulgar', [{ traitSetId: 'other-id' }], bothIds))
+      .toBe('MageMagicalPowerTraitRequired')
+  })
+
+  it('is valid when no Powers Trait Set is tagged, regardless of Magick', () => {
     const poolEntries = [{ traitSetId: 'powers-id' }]
-    expect(computeMagePoolInvalidReason('none', poolEntries, '')).toBeNull()
+    expect(computeMagePoolInvalidReason('none', poolEntries, [])).toBeNull()
     expect(computeMagePoolInvalidReason('none', poolEntries, undefined)).toBeNull()
-    expect(computeMagePoolInvalidReason('vulgar', [], '')).toBeNull()
+    expect(computeMagePoolInvalidReason('vulgar', [], [])).toBeNull()
     expect(computeMagePoolInvalidReason('vulgar', [], undefined)).toBeNull()
   })
 })

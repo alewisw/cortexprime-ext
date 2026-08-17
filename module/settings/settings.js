@@ -1,10 +1,8 @@
 import ActorSettings from './ActorSettings.js'
 import DoomPoolSettings from './DoomPoolSettings.js'
 import ImportExportSettings from './ImportExportSettings.js'
-import MageSettings from './MageSettings.js'
 import PlotPointUsesSettings from './PlotPointUsesSettings.js'
 import defaultActorTypes from '../actor/defaultActorTypes.js'
-import defaultMageSettings from './defaultMageSettings.js'
 import defaultPlotPointUses from '../actor/defaultPlotPointUses.js'
 import defaultThemes from '../theme/defaultThemes.js'
 import ThemeSettings from './ThemeSettings.js'
@@ -131,23 +129,6 @@ export const registerSettings = () => {
       mage: 'CustomRuleSetMage'
     },
     default: 'none'
-  })
-
-  game.settings.registerMenu('cortexprime-ext', 'MageSettings', {
-    hint: localizer('MageSettingsHint'),
-    icon: 'fa-solid fa-hat-wizard',
-    label: localizer('MageSettings'),
-    name: localizer('MageSettings'),
-    restricted: true,
-    type: MageSettings
-  })
-
-  game.settings.register('cortexprime-ext', 'mageSettings', {
-    name: localizer('MageSettings'),
-    default: defaultMageSettings,
-    scope: 'world',
-    type: Object,
-    config: false,
   })
 
   game.settings.register('cortexprime-ext', 'rollResultSourceCollapsed', {

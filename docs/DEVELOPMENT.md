@@ -223,6 +223,7 @@ traits to a dice pool, or roll — and most of the suite would skip.
 | `hitches.spec.js` | A player's natural 1 opens the Hitches dialog on the GM's client only; confirming writes the complication and awards the Plot Point onto the player |
 | `roll-undo.spec.js` | The GM's Undo button on a player's roll card restores the challenge and frees them to roll again |
 | `actor-type-inheritance.spec.js` | A derived Actor Type renders its parent's fields disabled but its own name editable, can still add a Trait Set of its own, and picks up a later parent rename without losing that addition |
+| `actor-type-change.spec.js` | The change-actor-type pencil is GM-only; it reopens the picker preselected to the actor's current type; confirming rewrites `system.actorType`, keeps the dice both types share, leaves the portrait and Plot Points alone, and zeroes Plot Points when the new type has none |
 
 Deliberately **not** covered, and why:
 

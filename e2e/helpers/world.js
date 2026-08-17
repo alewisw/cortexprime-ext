@@ -31,15 +31,28 @@ export async function requireActor(page, name) {
   return exists ? null : `No actor named "${name}" exists in this world`
 }
 
-/** Skip reason unless the Mage rule set is active and mapped. */
+/**
+ * Skip reason unless the Mage rule set is active and its System Traits are tagged.
+ *
+ * The rule set finds what it needs by reading the System Trait tag off an Actor Type's own Simple
+ * Traits and Trait Sets (see module/settings/systemTraitsLogic.js), so "is Mage set up?" means "does
+ * some Actor Type claim the Paradox System Trait?" — nothing else can stand in for it, since the
+ * whole Paradox chain aborts without one.
+ */
 export async function requireMageRuleSet(page) {
-  const state = await page.evaluate(() => ({
-    ruleSet: window.game.settings.get('cortexprime-ext', 'customRuleSet'),
-    mage: window.game.settings.get('cortexprime-ext', 'mageSettings')
-  }))
+  const state = await page.evaluate(() => {
+    const actorTypes = Object.values(window.game.settings.get('cortexprime-ext', 'actorTypes') ?? {})
+
+    return {
+      ruleSet: window.game.settings.get('cortexprime-ext', 'customRuleSet'),
+      hasParadox: actorTypes.some(actorType =>
+        Object.values(actorType.simpleTraits ?? {})
+          .some(simpleTrait => simpleTrait.settings?.systemTrait === 'paradox'))
+    }
+  })
 
   if (state.ruleSet !== 'mage') return 'Custom Rule Set is not set to "mage"'
-  if (!state.mage?.playerCharacterActorTypeId) return 'Mage Settings has no Player Character actor type mapped'
+  if (!state.hasParadox) return 'No Actor Type has a Simple Trait tagged as the Paradox System Trait'
 
   return null
 }

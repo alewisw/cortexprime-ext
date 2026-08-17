@@ -1,5 +1,4 @@
 import defaultActorTypes from "../actor/defaultActorTypes.js"
-import defaultMageSettings from "./defaultMageSettings.js"
 import defaultPlotPointUses from "../actor/defaultPlotPointUses.js"
 
 // Every world-scope, GM-authored setting that the Import/Export tool should sync. Add new
@@ -11,7 +10,6 @@ import defaultPlotPointUses from "../actor/defaultPlotPointUses.js"
 export const SYNCED_SETTINGS = [
   { key: 'actorTypes', default: defaultActorTypes },
   { key: 'customRuleSet', default: 'none' },
-  { key: 'mageSettings', default: defaultMageSettings },
   { key: 'plotPointUses', default: defaultPlotPointUses },
   { key: 'doomPoolActorId', default: '' },
   { key: 'doomPoolTraitId', default: '' },
