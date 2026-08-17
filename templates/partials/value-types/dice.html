@@ -2,7 +2,7 @@
   {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
     addToPool=addToPool
     dice=data.dice.value
-    minDice=(ternary (eq data.settings.hasMultipleDice false) 1 0)
+    minDice=(?? minDice (ternary (eq data.settings.hasMultipleDice false) 1 0))
     maxDice=(ternary (eq data.settings.hasMultipleDice false) 1 -1)
     label=label
     path=path
