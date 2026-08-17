@@ -60,7 +60,10 @@ const onRollRecorded = async (actor, data) => {
 
   if (!CHALLENGE_TYPES.includes(challenge.type)) return
 
-  const record = foundry.utils.getProperty(data, 'flags.cortexprime-ext.lastRoll')
+  // Off the actor, not out of `data` — that's the update diff and drops unchanged keys (see the
+  // note in module/mage/paradox.js). Only `rolledAt` is read here, which always changes, but the
+  // same read everywhere is one less trap for whoever needs another field later.
+  const record = actor.getFlag('cortexprime-ext', 'lastRoll')
 
   if (!record?.rolledAt) return
 

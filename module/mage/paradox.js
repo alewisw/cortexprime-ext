@@ -170,7 +170,12 @@ const onRollRecorded = async (actor, data) => {
 
   if (!CHALLENGE_TYPES.includes(challenge.type)) return
 
-  const record = foundry.utils.getProperty(data, 'flags.cortexprime-ext.lastRoll')
+  // Read off the actor, NOT out of `data`. The hook's `data` is the update *diff*: Foundry strips
+  // every key whose value didn't change, so a roll that lost right after another roll that lost
+  // arrives with no `won` at all (and no `poolEntries` when they were empty both times). Reading
+  // the diff made Paradox fire only when the outcome happened to flip between consecutive rolls.
+  // The document is already updated by the time this fires, so the flag is the whole, current record.
+  const record = actor.getFlag('cortexprime-ext', 'lastRoll')
 
   if (!record?.rolledAt || handledRolls[actor.id] === record.rolledAt) return
 

@@ -140,7 +140,10 @@ export const registerHitches = () => {
 
     if (!CHALLENGE_TYPES.includes(challenge.type)) return
 
-    const record = foundry.utils.getProperty(data, 'flags.cortexprime-ext.lastRoll')
+    // Off the actor, not out of `data` — that's the update diff, which drops any key the write
+    // didn't actually change (see the same note in module/mage/paradox.js). Two consecutive rolls
+    // producing identical dice would otherwise arrive here with no `dice` and never open a dialog.
+    const record = actor.getFlag('cortexprime-ext', 'lastRoll')
 
     if (!record?.rolledAt || handledRolls[actor.id] === record.rolledAt) return
 
