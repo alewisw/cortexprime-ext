@@ -87,7 +87,11 @@ export const mergeActorTypeData = (actorData, actorTypeSettings) => ({
             return {
               ...matchingTraitSetting,
               id: trait.id,
-              name: trait.name
+              name: trait.name,
+              // A config field, not a per-actor value - like label/settings above it, it has to
+              // come from settings every time or Update Settings (and a change of Actor Type)
+              // could never turn Hinder on for an actor that already exists.
+              enableHinder: trait.enableHinder
             }
           })
         }

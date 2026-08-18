@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
 import { SHEET, openActorSheet, closeAllSheets, getActorPath, updateActor } from './helpers/sheet.js'
+import { clearPool, getPool } from './helpers/dicePool.js'
 
 const ACTOR = 'Amanda Singh'
 
@@ -191,6 +192,73 @@ test('the Help link has been removed from the sheet tabs', async ({ browser }) =
     await expect(sheet.locator('nav.sheet-tabs a[href]')).toHaveCount(0)
     await expect(sheet.locator('nav.sheet-tabs a.item', { hasText: 'Help' })).toHaveCount(0)
   } finally {
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})
+
+// Enable Hinder: a trait so flagged gets a small X icon nested inside its own add-to-pool span,
+// between the dice glyph and the trait's name (see traits.html). Clicking it puts the trait in the
+// pool as a flat d4; clicking the trait's name itself (the same span, elsewhere in its bounding
+// box) puts it back at its real value. Both are exercised on the SAME trait/pool entry to prove
+// applyTraitToPool's "exactly one instance, wrong value -> replace in place" rule actually governs
+// the sheet, not just the pure logic test - see dicePoolTraitLogic.js.
+test('a Hinder-enabled trait swaps into the pool as a d4, and its dice control swaps it back', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const sheet = await openActorSheet(gm.page, ACTOR)
+
+  const traitSetIndex = await findPoolableTraitSetIndex(sheet)
+  test.skip(traitSetIndex === null, `${ACTOR} has no trait set with poolable traits`)
+
+  // The poolable trait's own dice path, read straight off its add-to-pool span rather than
+  // guessed at, so this works for whichever trait/index the world happens to have configured.
+  // Scoped to a TOP-LEVEL trait's dice path specifically (not a sub-trait's, which the same class
+  // also decorates) by requiring the path end in "traits.<i>.dice" with nothing after it.
+  const dicePath = await blockFor(gm.page, traitSetIndex).evaluate(block => {
+    const candidates = [...block.querySelectorAll('.add-to-pool[data-path]')]
+    const match = candidates.find(el => /^system\.actorType\.traitSets\.\d+\.traits\.\d+\.dice$/.test(el.dataset.path))
+
+    return match?.dataset.path ?? null
+  })
+  test.skip(dicePath === null, `${ACTOR}'s poolable trait set has no top-level poolable trait`)
+
+  const traitPath = dicePath.replace(/\.dice$/, '')
+  const enableHinderPath = `${traitPath}.enableHinder`
+  const realValue = await getActorPath(gm.page, ACTOR, `${dicePath}.value`)
+  const hinderBefore = await getActorPath(gm.page, ACTOR, enableHinderPath)
+
+  const entriesFor = async page => {
+    const pool = await getPool(page)
+    return Object.values(pool?.pool ?? {})
+      .flatMap(source => Object.values(source ?? {}))
+      .filter(entry => entry.traitPath === dicePath)
+  }
+
+  try {
+    await clearPool(gm.page)
+    await updateActor(gm.page, ACTOR, { [enableHinderPath]: true })
+
+    const hinderIcon = gm.page.locator(`${SHEET} .hinder-to-pool[data-path="${dicePath}"]`)
+    await expect(hinderIcon).toHaveCount(1)
+
+    await hinderIcon.click()
+
+    await expect.poll(() => entriesFor(gm.page)).toEqual([
+      expect.objectContaining({ value: { 0: '4' }, hindered: true, traitPath: dicePath })
+    ])
+
+    // The plain dice control replaces that same single instance rather than adding a second one -
+    // still exactly one entry, now at the trait's real value and no longer hindered.
+    const diceControl = gm.page.locator(`${SHEET} .add-to-pool[data-path="${dicePath}"]`)
+    await diceControl.click()
+
+    await expect.poll(() => entriesFor(gm.page)).toEqual([
+      expect.objectContaining({ value: realValue, hindered: false, traitPath: dicePath })
+    ])
+  } finally {
+    await clearPool(gm.page)
+    await updateActor(gm.page, ACTOR, { [enableHinderPath]: hinderBefore ?? false })
     await closeAllSheets(gm.page)
     await gm.context.close()
   }

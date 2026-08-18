@@ -29,6 +29,15 @@
         path=(concat path '.' traitIndex)
         data=trait
       }}
+      <div class="pa-2">
+        <label class="flex flex-ac">
+          <div class="checkmark-container">
+            <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' path '.' traitIndex '.enableHinder'}}" type="checkbox" {{checked trait.enableHinder}}>
+            <div class="checkmark-cpt"></div>
+          </div>
+          <span class="input-label-cpt mb-0 ml-2">{{localize 'EnableHinder'}}</span>
+        </label>
+      </div>
     {{/if}}
     {{#if settings.hasSubTraits}}
       <div class="separator-cpt"></div>

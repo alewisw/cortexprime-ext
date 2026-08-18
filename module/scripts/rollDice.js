@@ -1,6 +1,7 @@
 import { localizer, onSettingChanged, showPlotPointSpendAnimation } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
 import { flattenPoolEntries } from './dicePoolValidation.js'
+import { getHinderRewards } from './dicePoolTraitLogic.js'
 import { getBestNExcluding, getDiceByEffect, getDiceByTotal, getPickerCase, getRollFormula, sortHitches, sortResults } from './rollDiceLogic.js'
 import { applyContestEffectStepDown, computeHeroicStepUp, getActiveChallenge, getDiceByTargetTotal, getMyBeatTargetId, getMyChallengeTarget, getMyResponderId, getTargetRecord, getTargetTotal, recordRollResult } from './rollToBeat.js'
 
@@ -395,12 +396,20 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
   const rolledAt = Date.now()
   const rollActorId = game.user.isGM ? 'gm' : game.user.character?.id ?? null
 
+  // Read now, before recordRollResult below fires the hooks that advance or clear the active
+  // challenge (the same ordering trap documented in hitches.js and paradox.js) — a Hinder reward
+  // only counts for a Test/Contest/Group, and by the time recordRollResult returns the challenge
+  // this roll belonged to may already be gone.
+  const challengeType = getActiveChallenge().type
+
   // Captured before _clearDicePool below wipes the tray: which Trait Set each pooled trait came
   // from, and its faces. The roll record keeps this so rule sets can ask "was a die from Trait Set
   // X in this roll?" after the fact (module/mage/paradox.js does, for the Powers Trait Set). The
   // `pool` argument is a by-value snapshot that _clearDicePool doesn't mutate, so this stays valid
   // for the whole function either way.
-  const poolEntries = flattenPoolEntries(pool)
+  const flatPoolEntries = flattenPoolEntries(pool)
+
+  const poolEntries = flatPoolEntries
     .filter(entry => entry.traitSetId)
     .map(entry => ({ traitSetId: entry.traitSetId, faces: Object.values(entry.value ?? {}).map(String) }))
 
@@ -510,4 +519,13 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     poolEntries,
     rolledAt
   })
+
+  // One Plot Point per hindered trait actually rolled, during a Test/Contest/Group only. Only a
+  // player has a Plot Point pool to award into - a GM rolling a hindered trait (e.g. an NPC's)
+  // earns nothing, same as every other Plot Point award in this file.
+  if (!game.user.isGM && game.user.character) {
+    for (const { label } of getHinderRewards(flatPoolEntries, challengeType)) {
+      await game.user.character.changePpBy(1, false, game.i18n.format('HinderPlotPointReason', { trait: label }))
+    }
+  }
 }

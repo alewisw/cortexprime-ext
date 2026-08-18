@@ -76,6 +76,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.add-sfx').click(this._addSfx.bind(this))
     html.find('.add-sub-trait').click(this._addSubTrait.bind(this))
     html.find('.add-to-pool').click(this._addToPool.bind(this))
+    html.find('.hinder-to-pool').click(this._hinderToPool.bind(this))
     html.find('.add-trait').click(this._addTrait.bind(this))
     html.find('.close-trait-set-edit').click(this._closeTraitSetEdit.bind(this))
     html.find('.die-select').change(this._onDieChange.bind(this))
@@ -323,13 +324,49 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     }
 
     if (getLength(value)) {
-      const traitSetMatch = path.match(/^system\.actorType\.traitSets\.(\d+)\./)
-      const traitSetId = traitSetMatch
-        ? foundry.utils.getProperty(this.actor, `system.actorType.traitSets.${traitSetMatch[1]}.id`)
-        : null
-
-      await game.cortexprime.UserDicePool._addTraitToPool(this.actor.name, label, value, path, traitSetId)
+      // hindered: false so this also un-hinders a stray instance left over from a Hinder click -
+      // see applyTraitToPool in dicePoolTraitLogic.js for the exact "one instance vs several" rule.
+      await game.cortexprime.UserDicePool._setTraitInPool(this.actor.name, {
+        label,
+        value,
+        traitPath: path,
+        traitSetId: this._traitSetIdFor(path),
+        hindered: false
+      })
     }
+  }
+
+  // The Hinder control next to a trait's dice (only rendered when the trait has Enable Hinder set -
+  // see traits.html). Always a flat d4, and deliberately skips the consumable-dice prompt _addToPool
+  // goes through: hindering contributes a fresh d4, not one of the trait's own dice.
+  async _hinderToPool (event) {
+    // Sits nested inside the trait name's own .add-to-pool span (see traits.html) so it can render
+    // right between the dice icon and the name, rather than as a separate control elsewhere in the
+    // row - so its click must not bubble up into that span's own _addToPool handler.
+    event.stopPropagation()
+
+    if (!this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return
+
+    const { path, label } = event.currentTarget.dataset
+
+    await game.cortexprime.UserDicePool._setTraitInPool(this.actor.name, {
+      label,
+      value: { 0: '4' },
+      traitPath: path,
+      traitSetId: this._traitSetIdFor(path),
+      hindered: true
+    })
+  }
+
+  // The Trait Set id a trait's dice `path` belongs to, or null for a path outside any Trait Set
+  // (a Simple Trait, an Asset, ...). Shared by _addToPool and _hinderToPool so both identify the
+  // same trait's pool entries identically.
+  _traitSetIdFor (path) {
+    const traitSetMatch = path.match(/^system\.actorType\.traitSets\.(\d+)\./)
+
+    return traitSetMatch
+      ? foundry.utils.getProperty(this.actor, `system.actorType.traitSets.${traitSetMatch[1]}.id`)
+      : null
   }
 
   async _addTrait (event) {

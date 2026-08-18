@@ -102,6 +102,28 @@ describe('mergeActorTypeData', () => {
     expect(merged.traitSets[1].traits[0]).toEqual({ id: '_151', name: 'Forces' })
   })
 
+  it('takes enableHinder from settings every time - Update Settings can turn it on, or back off, for an existing actor', () => {
+    // The trap this guards: enableHinder is a config field like label/settings, not a per-actor
+    // value like dice/description - if the trait mapper only ever took id/name from settings (as
+    // it did before this was added), ticking Enable Hinder on an existing Actor Type would never
+    // reach any actor already using it.
+    const settingsWithHinder = newTypeSettings()
+    settingsWithHinder.traitSets[0].traits[0].enableHinder = true
+
+    const enabled = mergeActorTypeData(actorSnapshot(), settingsWithHinder).traitSets[0].traits[0]
+    expect(enabled.enableHinder).toBe(true)
+    // The actor's own dice/sfx are still untouched by turning the option on.
+    expect(enabled.dice).toEqual({ value: { 0: '8' } })
+
+    // Actor previously had it on; the GM unticks it in settings - Update Settings must turn it
+    // back off rather than leaving the actor's last-known value in place.
+    const actorWithHinder = actorSnapshot()
+    actorWithHinder.traitSets[0].traits[0].enableHinder = true
+
+    const disabled = mergeActorTypeData(actorWithHinder, newTypeSettings()).traitSets[0].traits[0]
+    expect(disabled.enableHinder).toBeUndefined()
+  })
+
   it('drops entries the new type does not define', () => {
     const traitSets = mergeActorTypeData(actorSnapshot(), newTypeSettings()).traitSets
 

@@ -3,6 +3,7 @@ import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '.
 import rollDice from '../scripts/rollDice.js'
 import { getCrisisPool } from '../scripts/crisisPool.js'
 import { getDicePoolInvalidReason } from '../scripts/dicePoolValidation.js'
+import { applyTraitToPool } from '../scripts/dicePoolTraitLogic.js'
 import { getChallengeDisplayData, getEligibleRollerIds, getGroupDisplayData } from './userDicePoolLogic.js'
 import {
   canCurrentUserRoll,
@@ -226,10 +227,14 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _addTraitToPool (source, label, value, traitPath = null, traitSetId = null) {
+  // Every trait control on the actor sheet (the plain "add to pool" click and the Hinder click)
+  // routes through this: they differ only in the value/hindered state they ask for.
+  // applyTraitToPool decides whether that lands as a fresh entry or a correction to whatever's
+  // already in the pool for this trait — see dicePoolTraitLogic.js for the exact rule.
+  async _setTraitInPool (source, { label, value, traitPath = null, traitSetId = null, hindered = false }) {
     const currentDice = readDicePool()
-    const currentDiceLength = getLength(currentDice.pool[source] || {})
-    foundry.utils.setProperty(currentDice, `pool.${source}.${currentDiceLength}`, { label, value, traitPath, traitSetId })
+
+    currentDice.pool = applyTraitToPool(currentDice.pool, { source, traitPath, label, value, traitSetId, hindered })
 
     await game.user.setFlag('cortexprime-ext', 'dicePool', null)
 

@@ -1052,6 +1052,27 @@
   font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free";
   content: "\f522";
 }
+.cortexprime .hinder-to-pool {
+  display: inline-block;
+  position: relative;
+  width: 1em;
+}
+.cortexprime .hinder-to-pool::before {
+  font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free";
+  content: "\f522";
+}
+.cortexprime .hinder-to-pool::after {
+  color: var(--cp-button-secondary-color, #b30044);
+  content: "\f00d";
+  font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free";
+  font-size: 1.3em;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
 .cortexprime #controls ol.cortexprime-controls {
   padding-left: 20px;
 }

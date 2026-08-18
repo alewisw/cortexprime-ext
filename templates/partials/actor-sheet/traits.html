@@ -14,6 +14,11 @@
             data-label="{{ternary (and ../settings.hasLabel trait.label) (ternary (and trait.label trait.name) (concat trait.label ' (' trait.name ')')) trait.name}}"
             data-path="{{concat ../path '.' ../target '.' traitIndex '.dice'}}" {{{ternary
             ../settings.diceConsumable 'data-consumable="true"' '' }}}>
+            {{#if (and trait.enableHinder (and ../canAddToPool (and (and (not ../traitSetShutdown) (not trait.shutdown)) (and ../settings.hasDice trait.dice.value.[0]))))}}
+              <i class="hinder-to-pool mx-1" title="{{localize 'Hinder'}}"
+                 data-label="{{ternary (and ../settings.hasLabel trait.label) (ternary (and trait.label trait.name) (concat trait.label ' (' trait.name ')')) trait.name}}"
+                 data-path="{{concat ../path '.' ../target '.' traitIndex '.dice'}}"></i>
+            {{/if}}
             {{ternary (and ../settings.hasLabel trait.label) trait.label trait.name}}
           </span>
           {{#if ../settings.hasDice}}

@@ -57,6 +57,30 @@
   }
 }
 
+// Same dice glyph as .add-to-pool, with a large X overlaid dead center, covering it — the
+// "hinder this" version of the icon it sits beside, rather than an unrelated symbol.
+.hinder-to-pool {
+  display: inline-block;
+  position: relative;
+  width: 1em;
+
+  &::before {
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free";
+    content: "\f522";
+  }
+
+  &::after {
+    color: var(--cp-button-secondary-color, #b30044);
+    content: "\f00d";
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free";
+    font-size: 1.3em;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
 #controls {
   ol.cortexprime-controls {
     padding-left: 20px;
