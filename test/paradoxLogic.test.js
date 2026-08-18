@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   LIMIT_STATES,
@@ -433,5 +435,94 @@ describe('buildParadoxLog', () => {
   it('leaves Trauma out of the inputs entirely when the Paradox never reached it', () => {
     expect(buildParadoxLog(lostAgainstD4).inputs.map(({ label }) => label))
       .not.toContain('ParadoxInputCurrentTrauma')
+  })
+})
+
+// Every line buildParadoxLog emits is a lang key plus the data to format it with, resolved on the
+// Player's client. A key that doesn't exist renders as the raw key in front of the table, and a
+// placeholder the data doesn't supply renders as a literal "{die}" — neither throws, so nothing
+// else would notice. This walks every branch and checks both.
+describe('the lang keys buildParadoxLog emits', () => {
+  const en = JSON.parse(
+    readFileSync(fileURLToPath(new URL('../lang/en.json', import.meta.url)), 'utf8')
+  )
+
+  // Enough combinations to reach every branch: each magick, each outcome, hitches on and off,
+  // Shielding absent / reducing / absorbing, a Paradox that is new / replaced / stepped up / capped,
+  // and Trauma from none / the D4 minimum / a rating / already capped.
+  const scenarios = () => {
+    const magicks = ['coincidental', 'coincidental-witnessed', 'vulgar', 'vulgar-witnessed']
+    const outcomes = Object.values(PARADOX_OUTCOMES)
+    const shieldings = [
+      { shieldingFace: null, shieldedParadox: '6', shieldingApplied: false },
+      { shieldingFace: '4', shieldedParadox: '6', shieldingApplied: true },
+      { shieldingFace: '12', shieldedParadox: null, shieldingApplied: true }
+    ]
+    const traits = [
+      { currentParadox: null, finalParadox: '6' },
+      { currentParadox: '4', finalParadox: '6' },
+      { currentParadox: '10', finalParadox: '12' },
+      { currentParadox: '12', finalParadox: '12', finalTrauma: '6', currentTrauma: null },
+      { currentParadox: '12', finalParadox: '12', finalTrauma: '6', currentTrauma: '4' },
+      { currentParadox: '12', finalParadox: '12', finalTrauma: '10', currentTrauma: '8' },
+      { currentParadox: '12', finalParadox: '12', finalTrauma: '12', currentTrauma: '12', descendIntoQuiet: true }
+    ]
+
+    return magicks.flatMap(magick =>
+      outcomes.flatMap(outcome =>
+        [0, 2].flatMap(paradoxSteps =>
+          shieldings.flatMap(shielding =>
+            traits.map(trait => ({
+              magick, outcome, paradoxSteps, oppositionEffectDie: '6', ...shielding, ...trait
+            }))
+          )
+        )
+      )
+    )
+  }
+
+  const emitted = () => {
+    const steps = []
+    const labels = new Set()
+
+    scenarios().forEach(scenario => {
+      const log = buildParadoxLog(scenario)
+
+      log.steps.forEach(step => steps.push(step))
+      log.inputs.forEach(row => {
+        labels.add(row.label)
+        if (row.value?.key) labels.add(row.value.key)
+      })
+    })
+
+    return { steps, labels: [...labels] }
+  }
+
+  it('covers a broad spread of branches, so this is worth asserting on', () => {
+    const keys = new Set(emitted().steps.map(step => step.key))
+
+    // Every distinct step key the builder can produce; if a branch is added without extending the
+    // scenarios above, this number stops matching and the coverage gap is visible.
+    expect(keys.size).toBe(19)
+  })
+
+  it('emits only keys that exist in lang/en.json', () => {
+    const { steps, labels } = emitted()
+    const used = [...new Set([...steps.map(step => step.key), ...labels])]
+
+    expect(used.filter(key => !(key in en)).sort()).toEqual([])
+  })
+
+  it('supplies every placeholder the matching string interpolates', () => {
+    const missing = emitted().steps.flatMap(step => {
+      const template = en[step.key] ?? ''
+      const placeholders = [...template.matchAll(/\{(\w+)\}/g)].map(match => match[1])
+
+      return placeholders
+        .filter(name => (step.data ?? {})[name] === undefined)
+        .map(name => `${step.key} interpolates {${name}}, which its data does not supply`)
+    })
+
+    expect([...new Set(missing)].sort()).toEqual([])
   })
 })

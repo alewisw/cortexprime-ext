@@ -104,6 +104,24 @@ Two consequences worth knowing:
   form, and `_updateObject` merges rather than replaces, so the omitted fields simply keep their
   reconciled parent values.
 
+## Reading a roll record in a hook
+
+Every reactor below is driven by `updateActor`, and its `data` argument is the update **diff**, not
+the document: Foundry strips any key whose value did not change before the handler ever sees it. So
+`data` is only ever safe to ask *"did this update touch the roll record?"* — via
+`hasProperty(data, 'flags.cortexprime-ext.lastRoll')`. The record itself must be read off the
+document, which is already updated by the time the hook fires:
+
+```js
+const record = actor.getFlag('cortexprime-ext', 'lastRoll')
+```
+
+This is not theoretical. Reading the record out of the diff meant a roll that lost immediately
+after another roll that lost arrived with no `won` at all, so Paradox saw "no opposition" and
+silently did nothing — it fired only when the outcome flipped between consecutive rolls.
+`test/hookDiffReads.test.js` fails the build if a diff read reappears, and
+`e2e/paradox.spec.js` reproduces the two-losses-in-a-row case end to end.
+
 ## Hitches
 
 Whenever a player's roll is recorded (`recordRollResult` in `module/scripts/rollToBeat.js` writes

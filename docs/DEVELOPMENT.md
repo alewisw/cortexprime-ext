@@ -161,6 +161,12 @@ drives the browser tab.
 npx playwright install chromium
 ```
 
+**Disable modules that render their own floating windows** in the test world. The suite clicks
+real controls, and a module window parked over the Dice Pool tray silently intercepts those
+clicks — the button underneath stays in the DOM, so the spec hangs until it times out rather than
+failing with anything useful. `yendors-scene-actors` is the known offender; `00-preflight.spec.js`
+fails up front if any window is open right after login.
+
 ### Running the tests
 
 1. Start your local Foundry instance and **launch a world that uses this
@@ -208,6 +214,7 @@ traits to a dice pool, or roll — and most of the suite would skip.
 
 | Spec | Covers |
 |---|---|
+| `00-preflight.spec.js` | Runs first: fails loudly when the world itself is unfit — the Playwright GM isn't Foundry's active GM, a challenge or crisis is still running, Magick is armed, a module window is open over the UI, or the test actors aren't linked |
 | `smoke.spec.js` | Harness proof-of-life: login → `game.ready` → read live system state |
 | `multi-session.spec.js` | GM + both players logged in simultaneously, correctly linked and unpaused |
 | `floating-panel.spec.js` | Role gating: My Character (player-only), Scene Journal (GM-only), Crisis toggle (GM-only), Doom Pool (both) |
@@ -224,6 +231,7 @@ traits to a dice pool, or roll — and most of the suite would skip.
 | `roll-undo.spec.js` | The GM's Undo button on a player's roll card restores the challenge and frees them to roll again |
 | `actor-type-inheritance.spec.js` | A derived Actor Type renders its parent's fields disabled but its own name editable, can still add a Trait Set of its own, and picks up a later parent rename without losing that addition |
 | `actor-type-change.spec.js` | The change-actor-type pencil is GM-only; it reopens the picker preselected to the actor's current type; confirming rewrites `system.actorType`, keeps the dice both types share, leaves the portrait and Plot Points alone, and zeroes Plot Points when the new type has none |
+| `paradox.spec.js` | A losing magickal roll earns Paradox **even when the roll before it also lost** — the regression guard for reading the roll record out of the `updateActor` diff; also covers the Paradox dialog's rendered breakdown |
 
 Deliberately **not** covered, and why:
 

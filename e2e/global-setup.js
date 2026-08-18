@@ -52,6 +52,20 @@ export default async function globalSetup() {
 
     // Clear the spotlight (no character highlighted).
     await game.settings.set('cortexprime-ext', 'spotlightActorId', '')
+
+    // No challenge in progress, so a spec's first assertion isn't measured against someone
+    // else's half-finished Test.
+    await game.settings.set('cortexprime-ext', 'activeChallenge', {})
+
+    // Back to the registered default. Magick left armed at anything other than 'none' makes the
+    // Mage rule set disable the roll buttons of any current roller whose pool has no Powers trait
+    // (see injectPoolValidation in module/mage/mageAscension.js) — and almost every spec rolls a
+    // pool of plain custom dice. A human leaving "Vulgar" set after a session at the table would
+    // otherwise fail seven specs with no hint as to why.
+    await game.settings.set('cortexprime-ext', 'mageChallengeState', {
+      magick: 'none',
+      realityReinforcement: 'opposes'
+    })
   }, { player1User: ROLE_USERS.player1, player2User: ROLE_USERS.player2 })
 
   await gm.context.storageState({ path: authFile('gm') })

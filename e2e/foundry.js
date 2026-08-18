@@ -32,6 +32,33 @@ function foundryUrl() {
 // with anything the test does afterward. Uses a short timeout rather than
 // an instant check, since the dialog can render a beat after game.ready
 // fires; harmless/near-instant when it never shows up.
+// Closes every application window that is on screen at login.
+//
+// Nothing this suite drives is open yet at this point, so whatever is showing was put there by
+// Foundry or by an installed module restoring its own state — and a floating window parked over
+// the system's UI swallows the clicks aimed at what's underneath it. That is not hypothetical:
+// a module window sitting on the Dice Pool tray intercepted the click on "Resume Contest" and
+// hung challenge-resolution.spec.js until its six-minute timeout, with the button present in the
+// DOM the whole time.
+//
+// Deliberately closes whatever is open rather than naming any module: the next one to do this
+// will have a different class, and the suite shouldn't need updating to survive it.
+async function closeLeftoverWindows(page) {
+  try {
+    await page.evaluate(async () => {
+      for (const app of Object.values(window.ui.windows ?? {})) {
+        try {
+          await app.close()
+        } catch {
+          // A window that refuses to close is still better than failing login here.
+        }
+      }
+    })
+  } catch {
+    // No window layer yet — nothing to close.
+  }
+}
+
 async function closeYendorsChangelogIfPresent(page) {
   try {
     await page.locator('.window-app.yendors-dialog .header-button.close').click({ timeout: 3_000 })
@@ -81,6 +108,7 @@ export async function joinAs(browser, { user = ROLE_USERS.gm, password = '' } = 
   })
 
   await closeYendorsChangelogIfPresent(page)
+  await closeLeftoverWindows(page)
 
   return { context, page }
 }
@@ -110,6 +138,7 @@ export async function openAs(browser, role) {
   })
 
   await closeYendorsChangelogIfPresent(page)
+  await closeLeftoverWindows(page)
 
   return { context, page }
 }
