@@ -149,6 +149,28 @@ describe('mergeActorTypeData', () => {
     expect(notes[1]).toEqual({ label: 'Paradox', value: 'Track it here', locked: true })
   })
 
+  it('takes an Additional Tab\'s description from settings every time - Update Settings can add one, or change it, for an existing actor', () => {
+    // The trap this guards: description is a config field like name, not a per-actor value like
+    // notes - if the tab mapper only ever took id/name/notes from settings (as it did before this
+    // was added), writing a description after actors already have this Actor Type would never
+    // reach any of them.
+    const settingsWithDescription = newTypeSettings()
+    settingsWithDescription.additionalTabs[0].description = '<p>New guidance.</p>'
+
+    const added = mergeActorTypeData(actorSnapshot(), settingsWithDescription).additionalTabs[0]
+    expect(added.description).toBe('<p>New guidance.</p>')
+    // The actor's own notes are still untouched by adding a description.
+    expect(added.notes[0]).toEqual({ label: 'Background', value: 'Grew up on Mars', locked: false })
+
+    // Actor previously had a description; the GM changes it in settings - Update Settings must
+    // pick up the new text rather than leaving the actor's last-known copy in place.
+    const actorWithDescription = actorSnapshot()
+    actorWithDescription.additionalTabs[0].description = '<p>Old guidance.</p>'
+
+    const changed = mergeActorTypeData(actorWithDescription, settingsWithDescription).additionalTabs[0]
+    expect(changed.description).toBe('<p>New guidance.</p>')
+  })
+
   it('syncs locked on a defaultNote whose label the actor already has, without touching its value', () => {
     const settings = newTypeSettings()
     settings.additionalTabs[0].defaultNotes[0] = { label: 'Background', value: 'ignored', locked: true }

@@ -71,6 +71,20 @@ describe('computeDerivedActorType', () => {
     })
   })
 
+  it('carries an Additional Tab\'s description onto the stamped child untouched', () => {
+    const parent = {
+      ...parentType(),
+      additionalTabs: {
+        0: { id: '_ptab1', name: 'Notes', description: '<p>Track your character history here.</p>' }
+      }
+    }
+
+    const result = computeDerivedActorType(parent, bareChild())
+
+    expect(result.additionalTabs[0].description).toBe('<p>Track your character history here.</p>')
+    expect(result.additionalTabs[0].inherited).toBe(true)
+  })
+
   it('keeps the child name and id, taking every other field from the parent', () => {
     const parent = { ...parentType(), hasPlotPoints: true, name: 'NPC' }
     const child = { ...bareChild(), hasPlotPoints: false, defaultImage: 'icons/svg/eye.svg' }

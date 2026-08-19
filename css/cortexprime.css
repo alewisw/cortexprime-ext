@@ -1165,6 +1165,10 @@
 .cortexprime .notes-field .editor {
   min-height: 2.5rem;
 }
+.cortexprime.actor-sheet .additional-tab-description .editor, .cortexprime.actor-sheet .additional-tab-description .editor-content {
+  background: none !important;
+  border: none !important;
+}
 .cortexprime nav.sheet-tabs {
   height: auto;
   margin: 0 -0.25rem 0.5rem;

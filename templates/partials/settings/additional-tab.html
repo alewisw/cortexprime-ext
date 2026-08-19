@@ -16,6 +16,20 @@
       }}
     </div>
   </header>
+  <div class="additional-tab-description relative-section pa-2 {{#if additionalTab.inherited}}inherited-fields{{/if}}">
+    <div class="section-background-alternate"></div>
+    <label class="input-label-cpt">{{localize 'Description'}}</label>
+    <div class="notes-field">
+      {{editor
+        additionalTab.description
+        content=additionalTab.description
+        target=(concat 'actorTypes.' path '.' tabIndex '.description')
+        button=true
+        owner=true
+        editable=(not additionalTab.inherited)
+      }}
+    </div>
+  </div>
   <section>
     <header class="relative-section">
       <div class="section-background-alternate"></div>
