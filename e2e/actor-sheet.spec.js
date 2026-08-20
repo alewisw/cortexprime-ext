@@ -263,3 +263,61 @@ test('a Hinder-enabled trait swaps into the pool as a d4, and its dice control s
     await gm.context.close()
   }
 })
+
+// Regression guard: getData() used to capture super.getData() BEFORE running the
+// dice-normalization fix (computeTraitDiceNormalization) and return that stale, over-full
+// snapshot regardless of the fix landing moments later on the actual document. A render that
+// needed trimming therefore always painted the WRONG (2+ dice) data first, self-correcting only
+// once a second, reactive render caught up — visible as a torn/misaligned row for that window.
+// See module/actor/actor-sheet.js getData(): super.getData() must run AFTER the fix, not before.
+test('a trait needing its dice trimmed renders correctly on its very first paint, not one render late', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const traitSets = await getActorPath(gm.page, ACTOR, 'system.actorType.traitSets')
+  const hit = Object.entries(traitSets ?? {}).find(([, ts]) =>
+    ts.settings?.hasMultipleDice === false && Object.keys(ts.traits ?? {}).length > 0
+  )
+  test.skip(!hit, `${ACTOR} has no hasMultipleDice:false trait set to reproduce with`)
+
+  const [tsIndex, ts] = hit
+  const [traitIndex, trait] = Object.entries(ts.traits)[0]
+  const dicePath = `system.actorType.traitSets.${tsIndex}.traits.${traitIndex}.dice`
+  const before = trait.dice?.value
+
+  try {
+    // A trait that already needs trimming when its sheet next renders - exactly the state a
+    // settings merge (Update Settings, Change Actor Type) can transiently leave behind.
+    await updateActor(gm.page, ACTOR, { [`${dicePath}.value`]: { 0: '4', 1: '6' } })
+
+    const firstCallDice = await gm.page.evaluate(async ({ name, tsIdx, tIdx }) => {
+      const actor = window.game.actors.getName(name)
+      const proto = Object.getPrototypeOf(actor.sheet)
+      const orig = proto.getData
+
+      let captured = null
+      proto.getData = async function (...args) {
+        const result = await orig.apply(this, args)
+        if (captured === null) {
+          captured = result?.data?.system?.actorType?.traitSets?.[tsIdx]?.traits?.[tIdx]?.dice?.value
+        }
+        return result
+      }
+
+      try {
+        actor.sheet.render(true)
+        await new Promise(resolve => setTimeout(resolve, 800))
+        return captured
+      } finally {
+        proto.getData = orig
+      }
+    }, { name: ACTOR, tsIdx: tsIndex, tIdx: traitIndex })
+
+    // The FIRST getData() call this render performs must already reflect the corrected single
+    // die - not the stale 2-die value that used to be returned while the fix was still in flight.
+    expect(Object.keys(firstCallDice ?? {}).length).toBe(1)
+  } finally {
+    await updateActor(gm.page, ACTOR, { [`${dicePath}.value`]: before })
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})

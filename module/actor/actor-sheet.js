@@ -31,7 +31,6 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   }
 
   async getData (options) {
-    const data = super.getData(options)
     const themes = game.settings.get('cortexprime-ext', 'themes')
     const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
 
@@ -43,6 +42,14 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
         await this.actor.update(normalization.set)
       }
     }
+
+    // Read AFTER the fix above, not before: super.getData() snapshots the actor's CURRENT state,
+    // so capturing it first (as this used to) meant a render that needed normalizing painted the
+    // stale, over-full dice value anyway — the fix landed on the document a moment too late to be
+    // reflected in THIS render, only showing up once the corrective update's own reactive
+    // re-render caught up. That gap between a briefly-wrong render and the correction arriving
+    // moments later is what showed up as a torn/misaligned row on a skill needing the trim.
+    const data = super.getData(options)
 
     const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentActorTypeId = this.actor.system.actorType?.id
