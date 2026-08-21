@@ -2,12 +2,14 @@
  * Extend the basic ActorSheet with some very simple modifications
  * @extends {foundry.appv1.sheets.ActorSheet}
  */
-import { getLength, objectFindKey, objectMapValues, objectFindValue, objectSome } from '../../lib/helpers.js'
+import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReindexFilter, objectSome } from '../../lib/helpers.js'
 import { computeActorTypeChange, mergeActorTypeData } from './actorTypeChangeLogic.js'
 import { expandNotesFieldOnEdit, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
 import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, reindexDiceAfterRemoval, stepFaceDown, stepFaceUp } from '../scripts/traitDiceTemporary.js'
+import { pushDeletedSection } from '../scripts/deletedSectionsLogic.js'
+import { DeletedSectionsDialog } from '../applications/DeletedSectionsDialog.js'
 import {
   removeItems,
   toggleItems
@@ -89,7 +91,9 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.die-select').change(this._onDieChange.bind(this))
     html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
     html.find('.new-die').click(this._newDie.bind(this))
+    html.find('.open-deleted-sections').click(this._openDeletedSections.bind(this))
     html.find('.pp-number-field').change(this._ppNumberChange.bind(this))
+    html.find('.remove-note').click(this._removeNote.bind(this))
     html.find('.spend-pp').click(this._spendPp.bind(this))
     html.find('.step-die-down').click(this._stepDieDown.bind(this))
     html.find('.step-die-up').click(this._stepDieUp.bind(this))
@@ -263,9 +267,51 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       ...currentNotes,
       [getLength(currentNotes)]: {
         label: localizer('Notes'),
-        value: ''
+        value: '',
+        allowRename: true,
+        allowDeletion: true,
+        allowEdit: true
       }
     })
+  }
+
+  // Bespoke rather than the shared remove-item/removeDataPoint mechanism (see removeItems in
+  // sheetHelpers.js): a note's content has to be captured into the tab's deletedSections queue
+  // before it's removed, which is specific to notes and shouldn't leak into that generic partial.
+  async _removeNote (event) {
+    event.preventDefault()
+    const { tabIndex, noteIndex, noteLabel } = event.currentTarget.dataset
+
+    let confirmed
+
+    await Dialog.confirm({
+      title: localizer('AreYouSure'),
+      content: `${localizer('Remove')} ${noteLabel}?`,
+      yes: () => { confirmed = true },
+      no: () => { confirmed = false },
+      defaultYes: false
+    })
+
+    if (!confirmed) return
+
+    const path = `system.actorType.additionalTabs.${tabIndex}`
+    const currentNotes = foundry.utils.getProperty(this.actor, `${path}.notes`) ?? {}
+    const removedNote = currentNotes[noteIndex]
+
+    if (!removedNote) return
+
+    const newNotes = objectReindexFilter(currentNotes, (_, currentKey) => parseInt(currentKey, 10) !== parseInt(noteIndex, 10))
+    const currentDeletedSections = foundry.utils.getProperty(this.actor, `${path}.deletedSections`) ?? {}
+    const newDeletedSections = pushDeletedSection(currentDeletedSections, removedNote)
+
+    await this._resetDataPoints(path, { notes: newNotes, deletedSections: newDeletedSections })
+  }
+
+  _openDeletedSections (event) {
+    event.preventDefault()
+    const { tabIndex } = event.currentTarget.dataset
+
+    new DeletedSectionsDialog(this.actor, tabIndex).render(true)
   }
 
   async _addSfx (event) {

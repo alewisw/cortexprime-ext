@@ -6,6 +6,15 @@
     <div class="flex-col col-12">
       <input class="breadcrumb-name-change input-cpt" data-target="{{concat 'additionalTab-' actorTypeIndex '-' tabIndex}}" name="{{concat 'actorTypes.' path '.' tabIndex '.name'}}" type="text" value="{{additionalTab.name}}">
     </div>
+    <div class="flex-col col-12">
+      <label class="flex flex-ac">
+        <div class="checkmark-container">
+          <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' path '.' tabIndex '.allowShutdown'}}" type="checkbox" {{checked additionalTab.allowShutdown}}>
+          <div class="checkmark-cpt"></div>
+        </div>
+        <span class="input-label-cpt mb-0 ml-2">{{localize 'AllowShutdown'}}</span>
+      </label>
+    </div>
     <div class="flex-col">
       {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
         group=path
@@ -55,22 +64,13 @@
         <li class="pa-2 relative-section {{#if defaultNote.inherited}}inherited-fields{{/if}}">
           <div class="{{ternary (eq (mod noteIndex 2) 0) 'section-background' 'section-background-alternate'}}"></div>
           <div class="flex-row flex-ae mb-1">
-            <div class="flex-col col-8">
+            <div class="flex-col col-9">
               <label>
                 <span class="input-label-cpt">{{localize 'Name'}}</span>
                 <input class="input-cpt" type="text" name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.label'}}" value="{{defaultNote.label}}">
               </label>
             </div>
-            <div class="flex-col col-4">
-              <label class="flex flex-ac">
-                <div class="checkmark-container">
-                  <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.locked'}}" type="checkbox" {{checked defaultNote.locked}}>
-                  <div class="checkmark-cpt"></div>
-                </div>
-                <span class="input-label-cpt mb-0 ml-2">{{localize 'LockSection'}}</span>
-              </label>
-            </div>
-            <div class="flex-col">
+            <div class="flex-col col-3">
               {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
                 group=(concat ../path '.' ../tabIndex '.defaultNotes')
                 itemKey=noteIndex
@@ -79,6 +79,35 @@
                 stayOnPage=true
                 type="trash"
               }}
+            </div>
+          </div>
+          <div class="flex-row flex-ae mb-1">
+            <div class="flex-col col-4">
+              <label class="flex flex-ac">
+                <div class="checkmark-container">
+                  <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.allowRename'}}" type="checkbox" {{checked defaultNote.allowRename}}>
+                  <div class="checkmark-cpt"></div>
+                </div>
+                <span class="input-label-cpt mb-0 ml-2">{{localize 'AllowRename'}}</span>
+              </label>
+            </div>
+            <div class="flex-col col-4">
+              <label class="flex flex-ac">
+                <div class="checkmark-container">
+                  <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.allowDeletion'}}" type="checkbox" {{checked defaultNote.allowDeletion}}>
+                  <div class="checkmark-cpt"></div>
+                </div>
+                <span class="input-label-cpt mb-0 ml-2">{{localize 'AllowDeletion'}}</span>
+              </label>
+            </div>
+            <div class="flex-col col-4">
+              <label class="flex flex-ac">
+                <div class="checkmark-container">
+                  <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.allowEdit'}}" type="checkbox" {{checked defaultNote.allowEdit}}>
+                  <div class="checkmark-cpt"></div>
+                </div>
+                <span class="input-label-cpt mb-0 ml-2">{{localize 'AllowEdit'}}</span>
+              </label>
             </div>
           </div>
           <div class="notes-field">

@@ -321,3 +321,238 @@ test('a trait needing its dice trimmed renders correctly on its very first paint
     await gm.context.close()
   }
 })
+
+// Allow Shutdown on an Additional Tab: a player-toggleable read-only switch per section, reusing
+// the same toggle-item/shutdown-toggle mechanism Trait Set shutdown already uses (see
+// trait-set-edit.html). A section with allowEdit: false (GM-provided, already fully non-editable)
+// never offers the toggle at all - shutdown is for sections the player otherwise controls.
+// Cleans up by CONTENT (filtering the two E2E-labelled notes back out and reindexing what's left),
+// not by remembered index - a note collection is a plain index-keyed object, not an array, and
+// nothing here guarantees the indices captured at setup are still the right ones to delete by the
+// time this runs (another spec's own note, added and removed around the same actor, shifts what
+// "the next free index" means). Mirrors the unset-then-set write _resetDataPoint uses elsewhere in
+// this codebase, since a plain merge would leave a trimmed-away key sitting in place.
+async function removeNotesByLabel(page, actorName, tabPath, labels) {
+  const tab = await getActorPath(page, actorName, tabPath)
+  const kept = Object.values(tab.notes ?? {}).filter(note => !labels.includes(note.label))
+  const reindexed = Object.fromEntries(kept.map((note, i) => [i, note]))
+
+  await updateActor(page, actorName, { [`${tabPath}.-=notes`]: null })
+  await updateActor(page, actorName, { [`${tabPath}.notes`]: reindexed })
+}
+
+// Allow Shutdown on an Additional Tab: a player-toggleable read-only switch per section, reusing
+// the same toggle-item/shutdown-toggle mechanism Trait Set shutdown already uses (see
+// trait-set-edit.html). A section with allowEdit: false (GM-provided, already fully non-editable)
+// never offers the toggle at all - shutdown is for sections the player otherwise controls.
+test('a shutdown-enabled tab lets the player shut down and restore a section, and never offers it on a fully restricted one', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const tabs = await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs')
+  const tabEntries = Object.entries(tabs ?? {})
+  test.skip(tabEntries.length === 0, `${ACTOR}'s actor type has no additional tabs configured`)
+
+  const [tabIndex, tab] = tabEntries[0]
+  const tabPath = `system.actorType.additionalTabs.${tabIndex}`
+  const allowShutdownBefore = tab.allowShutdown
+
+  try {
+    const baseIndex = Object.keys(tab.notes ?? {}).length
+    const normalPath = `${tabPath}.notes.${baseIndex}`
+    const lockedPath = `${tabPath}.notes.${baseIndex + 1}`
+
+    await updateActor(gm.page, ACTOR, {
+      [`${tabPath}.allowShutdown`]: true,
+      [`${normalPath}.label`]: 'E2E Shutdown Toggle',
+      [`${normalPath}.value`]: '<p>Toggle me.</p>',
+      [`${lockedPath}.label`]: 'E2E Locked Section',
+      [`${lockedPath}.value`]: '<p>Locked.</p>',
+      [`${lockedPath}.allowRename`]: false,
+      [`${lockedPath}.allowDeletion`]: false,
+      [`${lockedPath}.allowEdit`]: false
+    })
+
+    // Read back the actual indices the writes landed at, rather than assuming they match what
+    // was computed before the write - the same defensive stance the cleanup below takes.
+    const written = await getActorPath(gm.page, ACTOR, `${tabPath}.notes`)
+    const normalIndex = Object.keys(written).find(i => written[i].label === 'E2E Shutdown Toggle')
+    const shutdownPath = `${tabPath}.notes.${normalIndex}.shutdown`
+
+    const sheet = await openActorSheet(gm.page, ACTOR)
+    await sheet.locator(`nav.sheet-tabs a.item[data-tab="${tab.id}"]`).click()
+
+    // A note's label lives in an <input value="...">, not as text content - {hasText: ...} only
+    // matches rendered text nodes, so it can never find these. Filter on the input's value instead.
+    const normalArticle = sheet.locator(`section.tab[data-tab="${tab.id}"] article`)
+      .filter({ has: gm.page.locator('input[value="E2E Shutdown Toggle"]') })
+    const lockedArticle = sheet.locator(`section.tab[data-tab="${tab.id}"] article`)
+      .filter({ has: gm.page.locator('input[value="E2E Locked Section"]') })
+
+    // Locked never gets the toggle, however Allow Shutdown is configured on the tab.
+    await expect(lockedArticle.locator('.shutdown-toggle')).toHaveCount(0)
+
+    const toggle = normalArticle.locator('.shutdown-toggle')
+    await expect(toggle).toHaveCount(1)
+    await expect(normalArticle).not.toHaveClass(/shutdown/)
+    await expect(normalArticle.locator('input.input-cpt').first()).toBeEnabled()
+    await expect(normalArticle.locator('.remove-note')).toHaveCount(1)
+    await expect(normalArticle.locator('.editor-edit')).toHaveCount(1)
+
+    await toggle.click()
+
+    await expect
+      .poll(() => getActorPath(gm.page, ACTOR, shutdownPath))
+      .toBe(true)
+
+    await expect(normalArticle).toHaveClass(/shutdown/)
+    await expect(normalArticle.locator('input.input-cpt').first()).toHaveAttribute('readonly', '')
+    await expect(normalArticle.locator('.remove-note')).toHaveCount(0)
+    await expect(normalArticle.locator('.editor-edit')).toHaveCount(0)
+
+    // The player can always toggle it back - shutdown is reversible, not a one-way lock.
+    await toggle.click()
+
+    await expect
+      .poll(() => getActorPath(gm.page, ACTOR, shutdownPath))
+      .toBe(false)
+
+    await expect(normalArticle).not.toHaveClass(/shutdown/)
+    await expect(normalArticle.locator('input.input-cpt').first()).toBeEnabled()
+  } finally {
+    await removeNotesByLabel(gm.page, ACTOR, tabPath, ['E2E Shutdown Toggle', 'E2E Locked Section'])
+    await updateActor(gm.page, ACTOR, { [`${tabPath}.allowShutdown`]: allowShutdownBefore ?? false })
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})
+
+// allowRename is independent of allowDeletion/allowEdit: a section can have its name pinned down
+// while everything else about it - deleting it, writing in it - stays fully available.
+test('a section with allowRename:false only still allows deletion and editing content', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const tabs = await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs')
+  const tabEntries = Object.entries(tabs ?? {})
+  test.skip(tabEntries.length === 0, `${ACTOR}'s actor type has no additional tabs configured`)
+
+  const [tabIndex, tab] = tabEntries[0]
+  const tabPath = `system.actorType.additionalTabs.${tabIndex}`
+
+  try {
+    const baseIndex = Object.keys(tab.notes ?? {}).length
+    const notePath = `${tabPath}.notes.${baseIndex}`
+
+    await updateActor(gm.page, ACTOR, {
+      [`${notePath}.label`]: 'E2E Rename Restricted',
+      [`${notePath}.value`]: '<p>Edit me.</p>',
+      [`${notePath}.allowRename`]: false,
+      [`${notePath}.allowDeletion`]: true,
+      [`${notePath}.allowEdit`]: true
+    })
+
+    const sheet = await openActorSheet(gm.page, ACTOR)
+    await sheet.locator(`nav.sheet-tabs a.item[data-tab="${tab.id}"]`).click()
+
+    const article = sheet.locator(`section.tab[data-tab="${tab.id}"] article`)
+      .filter({ has: gm.page.locator('input[value="E2E Rename Restricted"]') })
+
+    await expect(article.locator('input.input-cpt').first()).toHaveAttribute('readonly', '')
+    await expect(article.locator('.remove-note')).toHaveCount(1)
+    await expect(article.locator('.editor-edit')).toHaveCount(1)
+  } finally {
+    await removeNotesByLabel(gm.page, ACTOR, tabPath, ['E2E Rename Restricted'])
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})
+
+// Deleting a section is no longer a one-way door: it lands in that tab's Deleted Sections queue,
+// and the Deleted Sections button (hidden while the queue is empty) opens a dialog that can
+// restore it - by content, not just by label, since the whole point is nothing was lost.
+test('deleting a section moves it to Deleted Sections, and Restore brings it back with its content', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const tabs = await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs')
+  const tabEntries = Object.entries(tabs ?? {})
+  test.skip(tabEntries.length === 0, `${ACTOR}'s actor type has no additional tabs configured`)
+
+  const [tabIndex, tab] = tabEntries[0]
+  const tabPath = `system.actorType.additionalTabs.${tabIndex}`
+  const deletedSectionsBefore = await getActorPath(gm.page, ACTOR, `${tabPath}.deletedSections`)
+
+  try {
+    const baseIndex = Object.keys(tab.notes ?? {}).length
+    const notePath = `${tabPath}.notes.${baseIndex}`
+
+    await updateActor(gm.page, ACTOR, {
+      [`${notePath}.label`]: 'E2E Delete Restore',
+      [`${notePath}.value`]: '<p>Do not lose me.</p>',
+      [`${notePath}.allowRename`]: true,
+      [`${notePath}.allowDeletion`]: true,
+      [`${notePath}.allowEdit`]: true
+    })
+
+    const sheet = await openActorSheet(gm.page, ACTOR)
+    await sheet.locator(`nav.sheet-tabs a.item[data-tab="${tab.id}"]`).click()
+
+    const article = sheet.locator(`section.tab[data-tab="${tab.id}"] article`)
+      .filter({ has: gm.page.locator('input[value="E2E Delete Restore"]') })
+
+    await article.locator('.remove-note').click()
+    await gm.page.locator('.dialog .dialog-buttons button[data-button="yes"]').click()
+
+    await expect
+      .poll(() => getActorPath(gm.page, ACTOR, `${tabPath}.deletedSections.0.label`))
+      .toBe('E2E Delete Restore')
+    await expect(article).toHaveCount(0)
+
+    const openDeletedSections = sheet.locator(`.open-deleted-sections[data-tab-index="${tabIndex}"]`)
+    await expect(openDeletedSections).toBeVisible()
+    await openDeletedSections.click()
+
+    const dialog = gm.page.locator('#deleted-sections-dialog')
+    await dialog.waitFor({ state: 'visible' })
+    const row = dialog.locator('li').filter({ hasText: 'E2E Delete Restore' })
+    await expect(row).toHaveCount(1)
+
+    await row.locator('.restore-section').click()
+
+    await expect
+      .poll(async () => Object.keys((await getActorPath(gm.page, ACTOR, `${tabPath}.deletedSections`)) ?? {}).length)
+      .toBe(Object.keys(deletedSectionsBefore ?? {}).length)
+
+    const restoredArticle = sheet.locator(`section.tab[data-tab="${tab.id}"] article`)
+      .filter({ has: gm.page.locator('input[value="E2E Delete Restore"]') })
+    await expect(restoredArticle).toHaveCount(1)
+    await expect(restoredArticle.locator('.notes-field')).toContainText('Do not lose me.')
+  } finally {
+    await removeNotesByLabel(gm.page, ACTOR, tabPath, ['E2E Delete Restore'])
+    await updateActor(gm.page, ACTOR, { [`${tabPath}.-=deletedSections`]: null })
+    await updateActor(gm.page, ACTOR, { [`${tabPath}.deletedSections`]: deletedSectionsBefore ?? {} })
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})
+
+// Nothing to restore, nothing to click - the button only appears once a tab actually has a
+// deletion history.
+test('the Deleted Sections button is absent on a tab that has never had a deletion', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const tabs = await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs')
+  const tabEntries = Object.entries(tabs ?? {})
+    .filter(([, tab]) => !Object.keys(tab.deletedSections ?? {}).length)
+  test.skip(tabEntries.length === 0, `${ACTOR} has no additional tab with an empty Deleted Sections queue`)
+
+  const [tabIndex, tab] = tabEntries[0]
+
+  try {
+    const sheet = await openActorSheet(gm.page, ACTOR)
+    await sheet.locator(`nav.sheet-tabs a.item[data-tab="${tab.id}"]`).click()
+
+    await expect(sheet.locator(`.open-deleted-sections[data-tab-index="${tabIndex}"]`)).toHaveCount(0)
+  } finally {
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})

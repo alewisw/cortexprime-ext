@@ -97,10 +97,10 @@
         "0": {
           "id": "_1784978821236",
           "label": "Distinctions",
-          "hasDescription": true,
+          "hasDescription": false,
           "settings": {
             "hasDescription": true,
-            "hasLabel": false,
+            "hasLabel": true,
             "hasDescriptors": false,
             "hasSfx": false,
             "hasSubTraits": false,
@@ -108,9 +108,45 @@
             "diceConsumable": false,
             "limitOnePerDicePool": true,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTraitSet": ""
           },
-          "description": "Hinder: gain a plot point, switch this Distinction for a (D4)"
+          "description": "",
+          "traits": {
+            "0": {
+              "id": "_1787051019842",
+              "name": "Concept",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "",
+              "enableHinder": true
+            },
+            "1": {
+              "id": "_1787051091422",
+              "name": "Paradigm",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "",
+              "enableHinder": true
+            },
+            "2": {
+              "id": "_1787051106002",
+              "name": "Mark",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "",
+              "enableHinder": true
+            }
+          }
         },
         "1": {
           "id": "_1767322484291",
@@ -126,7 +162,8 @@
             "diceConsumable": false,
             "limitOnePerDicePool": true,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTraitSet": ""
           },
           "traits": {
             "0": {
@@ -150,7 +187,8 @@
                   "label": "Challenge Value Statement",
                   "unlocked": true
                 }
-              }
+              },
+              "enableHinder": false
             },
             "1": {
               "id": "_1767322528847",
@@ -167,7 +205,8 @@
                   "label": "Challenge Value Statement",
                   "unlocked": true
                 }
-              }
+              },
+              "enableHinder": false
             },
             "2": {
               "id": "_1784978402850",
@@ -184,7 +223,8 @@
                   "label": "Challenge Value Statement",
                   "unlocked": true
                 }
-              }
+              },
+              "enableHinder": false
             },
             "3": {
               "id": "_1784978411115",
@@ -201,7 +241,8 @@
                   "label": "Challenge Value Statement",
                   "unlocked": true
                 }
-              }
+              },
+              "enableHinder": false
             },
             "4": {
               "id": "_1784978418028",
@@ -218,7 +259,8 @@
                   "label": "Challenge Value Statement",
                   "unlocked": true
                 }
-              }
+              },
+              "enableHinder": false
             },
             "5": {
               "id": "_1784978423752",
@@ -235,7 +277,8 @@
                   "label": "Challenge Value Statement",
                   "unlocked": true
                 }
-              }
+              },
+              "enableHinder": false
             }
           },
           "description": "Challenge: When you have the Spotlight roll three dice of this Value's size instead of the usual one.  Immediatly step down the dice."
@@ -254,7 +297,8 @@
             "diceConsumable": false,
             "limitOnePerDicePool": true,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTraitSet": ""
           },
           "description": "",
           "traits": {
@@ -266,7 +310,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "1": {
               "id": "_1784979215991",
@@ -276,7 +321,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "2": {
               "id": "_1784979225709",
@@ -286,7 +332,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "3": {
               "id": "_1784979239405",
@@ -296,7 +343,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "4": {
               "id": "_1784979251060",
@@ -306,7 +354,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "5": {
               "id": "_1784979263188",
@@ -316,7 +365,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "6": {
               "id": "_1784979271896",
@@ -326,7 +376,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "7": {
               "id": "_1784979282500",
@@ -336,7 +387,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "8": {
               "id": "_1784979294131",
@@ -346,7 +398,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "9": {
               "id": "_1784979302855",
@@ -356,7 +409,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "10": {
               "id": "_1784979313723",
@@ -366,7 +420,8 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             },
             "11": {
               "id": "_1784979322258",
@@ -376,27 +431,29 @@
                   "0": "4"
                 }
               },
-              "description": ""
+              "description": "",
+              "enableHinder": false
             }
           }
         },
         "3": {
-          "id": "_1784980285420",
-          "label": "Powers",
+          "id": "_1787047140985",
+          "label": "Signature Assets",
           "hasDescription": false,
           "settings": {
-            "hasDescription": true,
+            "hasDescription": false,
             "hasLabel": false,
             "hasDescriptors": false,
-            "hasSfx": false,
+            "hasSfx": true,
+            "limitOnePerDicePool": false,
+            "mutuallyExclusiveWith": "",
+            "systemTraitSet": "",
             "hasSubTraits": false,
             "hasDice": true,
             "diceConsumable": false,
-            "limitOnePerDicePool": true,
-            "mutuallyExclusiveWith": "_1784978960886",
-            "hasMultipleDice": false,
-            "systemTraitSet": "powers"
-          }
+            "hasMultipleDice": false
+          },
+          "description": ""
         }
       },
       "simpleTraits": {
@@ -442,6 +499,10 @@
       "assetsHaveMultipleDice": true,
       "additionalTabs": {
         "0": {
+          "id": "_notes-_1767322477683",
+          "name": "Rules"
+        },
+        "1": {
           "id": "_1786624926271",
           "name": "Values Log",
           "defaultNotes": {
@@ -475,13 +536,15 @@
               "value": null,
               "locked": true
             }
-          }
-        },
-        "1": {
-          "id": "_notes-_1767322477683",
-          "name": "Rules"
+          },
+          "description": "<p>You can challenge a Value Statement (act against your own Value) when you have the spotlight:</p>\n<ul>\n<li>Roll three dice for that Value instead of one</li>\n<li>Step the Value down</li>\n</ul>\n<p>At the end of the session either tewrite the Value Statement and recover the dice, or keep the value and:</p>\n<ul>\n<li>Step up another Value.</li>\n<li>Record the act you took against the Value you just stepped up in the Value Log.</li>\n</ul>\n<p>If you step up a Value beyond a D12 you must read to the table the Value Log.&nbsp; The other players will then reach a vote how you transcend the value.</p>"
         },
         "2": {
+          "id": "_1787056762781",
+          "name": "Session Log",
+          "description": "<p>Record key events from a session, one session per section.</p>\n<ul>\n<li><strong>Callback</strong>: reference a previously recorded session during play as you act as an in-character nod to the past.&nbsp; Gain a benfit equal to anything a Plot Point could bye (byt do not gain a Plot Point).&nbsp; Each past session can only be called back once per session.</li>\n<li><strong>Training Up</strong>: Spend recorded sessions to make improvements to your character.&nbsp; Once a session has been used for training up it can no longer be used as a Callback.</li>\n</ul>\n<table style=\"width: 91.5162%;\" border=\"1\"><colgroup><col style=\"width: 66.0356%;\"><col style=\"width: 33.9644%;\"></colgroup>\n<tbody>\n<tr>\n<td><strong>Improvement</strong></td>\n<td><strong>Cost</strong></td>\n</tr>\n<tr>\n<td>Turn a scene Asset into a Signature Asset</td>\n<td>1 session</td>\n</tr>\n<tr>\n<td>Switch out a Distinction for a new one</td>\n<td>1 session</td>\n</tr>\n<tr>\n<td>Step up a Signature Asset</td>\n<td>2 sessions</td>\n</tr>\n<tr>\n<td>Unlock a new SFX</td>\n<td>2 sessions</td>\n</tr>\n<tr>\n<td>Step up a Kill</td>\n<td>3 sessions</td>\n</tr>\n</tbody>\n</table>"
+        },
+        "3": {
           "id": "_1786624946207",
           "name": "Notes"
         }
@@ -640,10 +703,10 @@
         "0": {
           "id": "_1784978821236",
           "label": "Distinctions",
-          "hasDescription": true,
+          "hasDescription": false,
           "settings": {
             "hasDescription": true,
-            "hasLabel": false,
+            "hasLabel": true,
             "hasDescriptors": false,
             "hasSfx": false,
             "hasSubTraits": false,
@@ -651,11 +714,49 @@
             "diceConsumable": false,
             "limitOnePerDicePool": true,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTraitSet": ""
           },
-          "description": "Hinder: gain a plot point, switch this Distinction for a (D4)",
-          "inherited": true,
-          "traits": {}
+          "description": "",
+          "traits": {
+            "0": {
+              "id": "_1787051019842",
+              "name": "Concept",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "",
+              "enableHinder": true,
+              "inherited": true
+            },
+            "1": {
+              "id": "_1787051091422",
+              "name": "Paradigm",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "",
+              "enableHinder": true,
+              "inherited": true
+            },
+            "2": {
+              "id": "_1787051106002",
+              "name": "Mark",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "description": "",
+              "enableHinder": true,
+              "inherited": true
+            }
+          },
+          "inherited": true
         },
         "1": {
           "id": "_1767322484291",
@@ -671,7 +772,8 @@
             "diceConsumable": false,
             "limitOnePerDicePool": true,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTraitSet": ""
           },
           "traits": {
             "0": {
@@ -696,6 +798,7 @@
                   "unlocked": true
                 }
               },
+              "enableHinder": false,
               "inherited": true
             },
             "1": {
@@ -714,6 +817,7 @@
                   "unlocked": true
                 }
               },
+              "enableHinder": false,
               "inherited": true
             },
             "2": {
@@ -732,6 +836,7 @@
                   "unlocked": true
                 }
               },
+              "enableHinder": false,
               "inherited": true
             },
             "3": {
@@ -750,6 +855,7 @@
                   "unlocked": true
                 }
               },
+              "enableHinder": false,
               "inherited": true
             },
             "4": {
@@ -768,6 +874,7 @@
                   "unlocked": true
                 }
               },
+              "enableHinder": false,
               "inherited": true
             },
             "5": {
@@ -786,6 +893,7 @@
                   "unlocked": true
                 }
               },
+              "enableHinder": false,
               "inherited": true
             }
           },
@@ -806,7 +914,8 @@
             "diceConsumable": false,
             "limitOnePerDicePool": true,
             "mutuallyExclusiveWith": "",
-            "hasMultipleDice": false
+            "hasMultipleDice": false,
+            "systemTraitSet": ""
           },
           "description": "",
           "traits": {
@@ -819,6 +928,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "1": {
@@ -830,6 +940,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "2": {
@@ -841,6 +952,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "3": {
@@ -852,6 +964,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "4": {
@@ -863,6 +976,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "5": {
@@ -874,6 +988,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "6": {
@@ -885,6 +1000,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "7": {
@@ -896,6 +1012,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "8": {
@@ -907,6 +1024,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "9": {
@@ -918,6 +1036,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "10": {
@@ -929,6 +1048,7 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             },
             "11": {
@@ -940,30 +1060,102 @@
                 }
               },
               "description": "",
+              "enableHinder": false,
               "inherited": true
             }
           },
           "inherited": true
         },
         "3": {
-          "id": "_1784980285420",
-          "label": "Powers",
+          "id": "_1787047140985",
+          "label": "Signature Assets",
           "hasDescription": false,
           "settings": {
-            "hasDescription": true,
+            "hasDescription": false,
             "hasLabel": false,
             "hasDescriptors": false,
-            "hasSfx": false,
+            "hasSfx": true,
+            "limitOnePerDicePool": false,
+            "mutuallyExclusiveWith": "",
+            "systemTraitSet": "",
             "hasSubTraits": false,
             "hasDice": true,
             "diceConsumable": false,
-            "limitOnePerDicePool": true,
-            "mutuallyExclusiveWith": "_1784978960886",
-            "hasMultipleDice": false,
-            "systemTraitSet": "powers"
+            "hasMultipleDice": false
           },
+          "description": "",
           "inherited": true,
           "traits": {}
+        },
+        "4": {
+          "id": "_1786967373369",
+          "label": "Powers",
+          "hasDescription": false,
+          "settings": {
+            "hasDescription": false,
+            "hasLabel": false,
+            "hasDescriptors": false,
+            "hasSfx": false,
+            "limitOnePerDicePool": false,
+            "mutuallyExclusiveWith": "_1784978960886",
+            "systemTraitSet": "powers",
+            "hasSubTraits": false,
+            "hasDice": true,
+            "diceConsumable": false,
+            "hasMultipleDice": false
+          },
+          "traits": {
+            "0": {
+              "id": "_1786967401299",
+              "name": "Channel Chi",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "enableHinder": false
+            },
+            "1": {
+              "id": "_1786967428479",
+              "name": "Flesh of Bronze",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "enableHinder": false
+            },
+            "2": {
+              "id": "_1786967438126",
+              "name": "Read Intent",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "enableHinder": false
+            },
+            "3": {
+              "id": "_1786967445828",
+              "name": "Strike the Flow",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "enableHinder": false
+            },
+            "4": {
+              "id": "_1786967455975",
+              "name": "Unshakable Calm",
+              "dice": {
+                "value": {
+                  "0": "8"
+                }
+              },
+              "enableHinder": false
+            }
+          }
         }
       },
       "simpleTraits": {
@@ -1011,6 +1203,18 @@
       "assetsHaveMultipleDice": true,
       "additionalTabs": {
         "0": {
+          "id": "_notes-_1767322477683",
+          "name": "Rules",
+          "inherited": true,
+          "defaultNotes": {
+            "0": {
+              "label": "New Section",
+              "locked": false,
+              "value": null
+            }
+          }
+        },
+        "1": {
           "id": "_1786624926271",
           "name": "Values Log",
           "defaultNotes": {
@@ -1051,15 +1255,17 @@
               "inherited": true
             }
           },
+          "description": "<p>You can challenge a Value Statement (act against your own Value) when you have the spotlight:</p>\n<ul>\n<li>Roll three dice for that Value instead of one</li>\n<li>Step the Value down</li>\n</ul>\n<p>At the end of the session either tewrite the Value Statement and recover the dice, or keep the value and:</p>\n<ul>\n<li>Step up another Value.</li>\n<li>Record the act you took against the Value you just stepped up in the Value Log.</li>\n</ul>\n<p>If you step up a Value beyond a D12 you must read to the table the Value Log.&nbsp; The other players will then reach a vote how you transcend the value.</p>",
           "inherited": true
         },
-        "1": {
-          "id": "_notes-_1767322477683",
-          "name": "Rules",
+        "2": {
+          "id": "_1787056762781",
+          "name": "Session Log",
+          "description": "<p>Record key events from a session, one session per section.</p>\n<ul>\n<li><strong>Callback</strong>: reference a previously recorded session during play as you act as an in-character nod to the past.&nbsp; Gain a benfit equal to anything a Plot Point could bye (byt do not gain a Plot Point).&nbsp; Each past session can only be called back once per session.</li>\n<li><strong>Training Up</strong>: Spend recorded sessions to make improvements to your character.&nbsp; Once a session has been used for training up it can no longer be used as a Callback.</li>\n</ul>\n<table style=\"width: 91.5162%;\" border=\"1\"><colgroup><col style=\"width: 66.0356%;\"><col style=\"width: 33.9644%;\"></colgroup>\n<tbody>\n<tr>\n<td><strong>Improvement</strong></td>\n<td><strong>Cost</strong></td>\n</tr>\n<tr>\n<td>Turn a scene Asset into a Signature Asset</td>\n<td>1 session</td>\n</tr>\n<tr>\n<td>Switch out a Distinction for a new one</td>\n<td>1 session</td>\n</tr>\n<tr>\n<td>Step up a Signature Asset</td>\n<td>2 sessions</td>\n</tr>\n<tr>\n<td>Unlock a new SFX</td>\n<td>2 sessions</td>\n</tr>\n<tr>\n<td>Step up a Kill</td>\n<td>3 sessions</td>\n</tr>\n</tbody>\n</table>",
           "inherited": true,
           "defaultNotes": {}
         },
-        "2": {
+        "3": {
           "id": "_1786624946207",
           "name": "Notes",
           "inherited": true,

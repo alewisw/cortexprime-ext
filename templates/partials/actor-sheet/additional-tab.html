@@ -8,6 +8,14 @@
           <div class="flex-col">
             <h2 class="my-0 section-primary-title-cpt">{{tab.name}}</h2>
           </div>
+          {{#if (listHasMore tab.deletedSections 0)}}
+            <div class="flex-col">
+              <button class="btn btn-icon btn-icon-plain-cpt open-deleted-sections" data-tab-index="{{tabIndex}}" type="button"
+                title="{{localize 'DeletedSections'}}">
+                <i class="fa fa-undo"></i>
+              </button>
+            </div>
+          {{/if}}
           <div class="flex-col">
             <button class="btn btn-icon btn-primary-cpt add-note" data-tab-index="{{tabIndex}}" type="button">
               <i class="fa fa-plus"></i>
@@ -23,7 +31,7 @@
     </div>
   </header>
   {{#each tab.notes as |note noteIndex|}}
-    <article class="my-4 section-cpt pa-4">
+    <article class="my-4 section-cpt pa-4{{ternary note.shutdown ' shutdown' ''}}">
       <div class="section-image"></div>
       <div class="section-background"></div>
       <div class="section-content">
@@ -31,21 +39,25 @@
           <div class="flex-col col-12">
             <label class="input-label-cpt">
               {{localize 'Name'}}
-              {{#if note.locked}}
-                <i class="fa fa-lock" title="{{localize 'Locked'}}"></i>
+              {{#if (or (or (eq note.allowRename false) (eq note.allowDeletion false)) (eq note.allowEdit false))}}
+                <i class="fa fa-lock" title="{{localize 'SectionRestricted'}}"></i>
               {{/if}}
             </label>
-            <input class="input-cpt" type="text" name="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.label'}}" value="{{note.label}}"{{{ternary note.locked ' readonly' ''}}}>
+            <input class="input-cpt" type="text" name="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.label'}}" value="{{note.label}}"{{{ternary (or (eq note.allowRename false) note.shutdown) ' readonly' ''}}}>
           </div>
-          {{#unless note.locked}}
+          {{#if (and ../tab.allowShutdown (ne note.allowEdit false))}}
             <div class="flex-col">
-              {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
-                path=(concat 'system.actorType.additionalTabs.' ../tabIndex)
-                target='notes'
-                itemKey=noteIndex
-                itemName=note.label
-                type="trash"
-              }}
+              <button class="btn btn-icon btn-icon-plain-cpt toggle-item shutdown-toggle" data-path="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.shutdown'}}"
+                title="{{localize 'Shutdown'}}" type="button">
+                <i class="fa-solid {{ternary note.shutdown 'fa-toggle-off' 'fa-toggle-on'}}"></i>
+              </button>
+            </div>
+          {{/if}}
+          {{#unless (or (eq note.allowDeletion false) note.shutdown)}}
+            <div class="flex-col">
+              <button class="remove-note btn btn-icon btn-secondary-cpt" data-tab-index="{{../tabIndex}}" data-note-index="{{noteIndex}}" data-note-label="{{note.label}}" type="button">
+                <i class="fa fa-trash"></i>
+              </button>
             </div>
           {{/unless}}
         </header>
@@ -56,7 +68,7 @@
             target=(concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.value')
             button=true
             owner=owner
-            editable=true
+            editable=(not (or (eq note.allowEdit false) note.shutdown))
           }}
         </div>
       </div>

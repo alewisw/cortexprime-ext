@@ -31,7 +31,11 @@ const actorSnapshot = () => ({
     0: { id: '_1s1', label: 'Stress', hasDescription: false, dice: { value: { 0: '6' }, consumable: false } }
   },
   additionalTabs: {
-    0: { id: '_13', name: 'Notes', notes: { 0: { label: 'Background', value: 'Grew up on Mars', locked: false } } }
+    0: {
+      id: '_13',
+      name: 'Notes',
+      notes: { 0: { label: 'Background', value: 'Grew up on Mars', allowRename: true, allowDeletion: true, allowEdit: true } }
+    }
   }
 })
 
@@ -66,7 +70,11 @@ const newTypeSettings = () => ({
     0: { id: '_1s1', label: 'Quintessence', hasDescription: true, dice: { consumable: true }, settings: { hasDice: true } }
   },
   additionalTabs: {
-    0: { id: '_13', name: 'Notes', defaultNotes: { 0: { label: 'Paradox', value: 'Track it here', locked: true } } }
+    0: {
+      id: '_13',
+      name: 'Notes',
+      defaultNotes: { 0: { label: 'Paradox', value: 'Track it here', allowRename: false, allowDeletion: false, allowEdit: false } }
+    }
   }
 })
 
@@ -145,8 +153,8 @@ describe('mergeActorTypeData', () => {
   it('keeps existing tab notes and appends unmatched defaultNotes', () => {
     const notes = mergeActorTypeData(actorSnapshot(), newTypeSettings()).additionalTabs[0].notes
 
-    expect(notes[0]).toEqual({ label: 'Background', value: 'Grew up on Mars', locked: false })
-    expect(notes[1]).toEqual({ label: 'Paradox', value: 'Track it here', locked: true })
+    expect(notes[0]).toEqual({ label: 'Background', value: 'Grew up on Mars', allowRename: true, allowDeletion: true, allowEdit: true })
+    expect(notes[1]).toEqual({ label: 'Paradox', value: 'Track it here', allowRename: false, allowDeletion: false, allowEdit: false })
   })
 
   it('takes an Additional Tab\'s description from settings every time - Update Settings can add one, or change it, for an existing actor', () => {
@@ -160,7 +168,7 @@ describe('mergeActorTypeData', () => {
     const added = mergeActorTypeData(actorSnapshot(), settingsWithDescription).additionalTabs[0]
     expect(added.description).toBe('<p>New guidance.</p>')
     // The actor's own notes are still untouched by adding a description.
-    expect(added.notes[0]).toEqual({ label: 'Background', value: 'Grew up on Mars', locked: false })
+    expect(added.notes[0]).toEqual({ label: 'Background', value: 'Grew up on Mars', allowRename: true, allowDeletion: true, allowEdit: true })
 
     // Actor previously had a description; the GM changes it in settings - Update Settings must
     // pick up the new text rather than leaving the actor's last-known copy in place.
@@ -171,13 +179,42 @@ describe('mergeActorTypeData', () => {
     expect(changed.description).toBe('<p>New guidance.</p>')
   })
 
-  it('syncs locked on a defaultNote whose label the actor already has, without touching its value', () => {
+  it('takes an Additional Tab\'s allowShutdown from settings every time - Update Settings can turn it on, or off, for an existing actor', () => {
+    const settingsWithShutdown = newTypeSettings()
+    settingsWithShutdown.additionalTabs[0].allowShutdown = true
+
+    const enabled = mergeActorTypeData(actorSnapshot(), settingsWithShutdown).additionalTabs[0]
+    expect(enabled.allowShutdown).toBe(true)
+    // The actor's own notes are still untouched by turning the option on.
+    expect(enabled.notes[0]).toEqual({ label: 'Background', value: 'Grew up on Mars', allowRename: true, allowDeletion: true, allowEdit: true })
+
+    // Actor previously had it on; the GM unticks it in settings - Update Settings must turn it
+    // back off rather than leaving the actor's last-known value in place.
+    const actorWithShutdown = actorSnapshot()
+    actorWithShutdown.additionalTabs[0].allowShutdown = true
+
+    const disabled = mergeActorTypeData(actorWithShutdown, newTypeSettings()).additionalTabs[0]
+    expect(disabled.allowShutdown).toBeUndefined()
+  })
+
+  it('syncs the three permission fields on a defaultNote whose label the actor already has, without touching its value', () => {
     const settings = newTypeSettings()
-    settings.additionalTabs[0].defaultNotes[0] = { label: 'Background', value: 'ignored', locked: true }
+    settings.additionalTabs[0].defaultNotes[0] = { label: 'Background', value: 'ignored', allowRename: false, allowDeletion: false, allowEdit: false }
 
     const notes = mergeActorTypeData(actorSnapshot(), settings).additionalTabs[0].notes
 
-    expect(notes).toEqual({ 0: { label: 'Background', value: 'Grew up on Mars', locked: true } })
+    expect(notes).toEqual({
+      0: { label: 'Background', value: 'Grew up on Mars', allowRename: false, allowDeletion: false, allowEdit: false }
+    })
+  })
+
+  it('preserves an actor\'s deletedSections queue untouched across a merge - it is actor data, not settings-driven config', () => {
+    const actorData = actorSnapshot()
+    actorData.additionalTabs[0].deletedSections = { 0: { label: 'Old Section', value: 'gone', deletedAt: 1000 } }
+
+    const merged = mergeActorTypeData(actorData, newTypeSettings()).additionalTabs[0]
+
+    expect(merged.deletedSections).toEqual({ 0: { label: 'Old Section', value: 'gone', deletedAt: 1000 } })
   })
 
   it('leaves the actor\'s own data untouched when re-applying the same type (the Update Settings path)', () => {
@@ -202,7 +239,7 @@ describe('mergeActorTypeData', () => {
 
     expect(merged.traitSets[0].traits[0]).toEqual({ id: '_111', name: 'Distinction One' })
     expect(merged.simpleTraits[0].dice).toEqual({ consumable: true })
-    expect(merged.additionalTabs[0].notes[0]).toEqual({ label: 'Paradox', value: 'Track it here', locked: true })
+    expect(merged.additionalTabs[0].notes[0]).toEqual({ label: 'Paradox', value: 'Track it here', allowRename: false, allowDeletion: false, allowEdit: false })
   })
 })
 

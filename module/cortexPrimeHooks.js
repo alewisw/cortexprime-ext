@@ -8,6 +8,7 @@ import { registerHitches } from './scripts/hitches.js'
 import { registerMageAscension } from './mage/mageAscension.js'
 import { registerParadox } from './mage/paradox.js'
 import { registerMigrateNotesToTabs } from './scripts/migrateNotesToTabs.js'
+import { registerMigrateSectionPermissions } from './scripts/migrateSectionPermissions.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
 import { registerRollUndo } from './scripts/rollUndo.js'
@@ -30,6 +31,10 @@ export default () => {
   registerRollUndo()
   registerMageAscension()
   registerMigrateNotesToTabs()
+  // After registerMigrateNotesToTabs() — it reads additionalTabs, which on a world still on the
+  // old top-level-notes layout won't exist yet on this same ready. Harmless either order (both are
+  // idempotent and self-heal on the next reload), but this ordering lets a single reload catch both.
+  registerMigrateSectionPermissions()
   registerMyCharacter()
   registerRollToBeat()
   registerSceneDistinctionActor()

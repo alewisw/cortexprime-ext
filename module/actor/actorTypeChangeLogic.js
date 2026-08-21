@@ -54,22 +54,30 @@ export const mergeActorTypeData = (actorData, actorTypeSettings) => ({
     }
 
     if (key === 'additionalTabs') {
-      return objectMapValues(propValue, ({ id, name, defaultNotes, description }) => {
+      return objectMapValues(propValue, ({ id, name, defaultNotes, description, allowShutdown }) => {
         const matchingSetting = objectFindValue((actorData.additionalTabs ?? {}), ({ id: matchId }) => matchId === id) ?? {}
         const existingNotes = matchingSetting.notes ?? {}
 
         const notes = objectReduce(defaultNotes ?? {}, (acc, defaultNote) => {
           const matchKey = objectFindKey(acc, note => note.label === defaultNote.label)
+          // Config fields, taken from the Default Section every time - the same "always overwrite"
+          // treatment description/allowShutdown get above, now applied per-permission instead of
+          // as a single locked boolean.
+          const permissions = {
+            allowRename: !!defaultNote.allowRename,
+            allowDeletion: !!defaultNote.allowDeletion,
+            allowEdit: !!defaultNote.allowEdit
+          }
 
           return matchKey !== undefined
-            ? { ...acc, [matchKey]: { ...acc[matchKey], locked: !!defaultNote.locked } }
-            : { ...acc, [getLength(acc)]: { label: defaultNote.label, value: defaultNote.value, locked: !!defaultNote.locked } }
+            ? { ...acc, [matchKey]: { ...acc[matchKey], ...permissions } }
+            : { ...acc, [getLength(acc)]: { label: defaultNote.label, value: defaultNote.value, ...permissions } }
         }, existingNotes)
 
-        // A config field, not a per-actor value - like name/notes above, it has to come from
-        // settings every time or a description written after actors already have this Actor Type
-        // would never reach them (the same trap fixed for enableHinder on traits).
-        return { ...matchingSetting, id, name, notes, description }
+        // Config fields, not per-actor values - like name/notes above, they have to come from
+        // settings every time or a change made after actors already have this Actor Type would
+        // never reach them (the same trap fixed for enableHinder on traits).
+        return { ...matchingSetting, id, name, notes, description, allowShutdown }
       })
     }
 

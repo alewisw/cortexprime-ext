@@ -22,7 +22,11 @@ const parentType = () => ({
   },
   simpleTraits: { 0: { id: '_pst1', label: 'Organisation' } },
   additionalTabs: {
-    0: { id: '_ptab1', name: 'Notes', defaultNotes: { 0: { label: 'Background', locked: false, value: null } } }
+    0: {
+      id: '_ptab1',
+      name: 'Notes',
+      defaultNotes: { 0: { label: 'Background', allowRename: true, allowDeletion: true, allowEdit: true, value: null } }
+    }
   }
 })
 
@@ -65,7 +69,7 @@ describe('computeDerivedActorType', () => {
           id: '_ptab1',
           inherited: true,
           name: 'Notes',
-          defaultNotes: { 0: { label: 'Background', locked: false, value: null, inherited: true } }
+          defaultNotes: { 0: { label: 'Background', allowRename: true, allowDeletion: true, allowEdit: true, value: null, inherited: true } }
         }
       }
     })
@@ -83,6 +87,41 @@ describe('computeDerivedActorType', () => {
 
     expect(result.additionalTabs[0].description).toBe('<p>Track your character history here.</p>')
     expect(result.additionalTabs[0].inherited).toBe(true)
+  })
+
+  it('carries an Additional Tab\'s allowShutdown onto the stamped child untouched', () => {
+    const parent = {
+      ...parentType(),
+      additionalTabs: {
+        0: { id: '_ptab1', name: 'Notes', allowShutdown: true }
+      }
+    }
+
+    const result = computeDerivedActorType(parent, bareChild())
+
+    expect(result.additionalTabs[0].allowShutdown).toBe(true)
+    expect(result.additionalTabs[0].inherited).toBe(true)
+  })
+
+  it('carries a Default Section\'s allowRename/allowDeletion/allowEdit onto the stamped child untouched', () => {
+    const parent = {
+      ...parentType(),
+      additionalTabs: {
+        0: {
+          id: '_ptab1',
+          name: 'Notes',
+          defaultNotes: { 0: { label: 'Background', allowRename: false, allowDeletion: false, allowEdit: true, value: null } }
+        }
+      }
+    }
+
+    const result = computeDerivedActorType(parent, bareChild())
+    const defaultNote = result.additionalTabs[0].defaultNotes[0]
+
+    expect(defaultNote.allowRename).toBe(false)
+    expect(defaultNote.allowDeletion).toBe(false)
+    expect(defaultNote.allowEdit).toBe(true)
+    expect(defaultNote.inherited).toBe(true)
   })
 
   it('keeps the child name and id, taking every other field from the parent', () => {

@@ -151,7 +151,9 @@ export default class ActorSettings extends FormApplication {
         ...currentDefaultNotes,
         [getLength(currentDefaultNotes ?? {})]: {
           label: localizer('NewSection'),
-          locked: false,
+          allowRename: false,
+          allowDeletion: false,
+          allowEdit: false,
           value: null
         }
       })
