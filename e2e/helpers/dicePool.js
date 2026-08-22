@@ -73,6 +73,19 @@ export async function addCustomDie(page, label, face) {
   )
 
   await tray.locator('button.add-trait-to-pool').click()
+
+  // _addCustomTraitToPool does its own read-unset-set round trip against this same flag. Without
+  // waiting for THIS die to actually land before returning, buildUniformPool's next iteration can
+  // fire a die-select/label change (its own read-modify-write, via submitOnChange) while this
+  // Add's write is still in flight - whichever write lands second overwrites the other's base
+  // snapshot, silently dropping a die from the pool. Observed as "setDieValues: asked for N dice
+  // but the picker is showing N-1" in rollExactly, further down the pipeline.
+  await page.waitForFunction(
+    expected => Object.values(window.game.user.getFlag('cortexprime-ext', 'dicePool')?.pool?.custom ?? {})
+      .some(die => die.label === expected),
+    label,
+    { timeout: 15_000 }
+  )
 }
 
 /**
