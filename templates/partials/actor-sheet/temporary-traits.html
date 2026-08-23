@@ -126,64 +126,27 @@
           {{#each data.complications as |complication complicationIndex|}}
             {{#if (or ../owner (or (not ../data.hasHidableTraits) (not complication.hidden)))}}
               <div class="px-2 py-1 relative-section">
-                <div class="{{ternary (and complication.hidden (not complication.edit)) ' section-background-alternate' 'section-background'}}"></div>
+                <div class="{{ternary complication.hidden ' section-background-alternate' 'section-background'}}"></div>
                 <div class="flex-row flex-ac flex-wrap">
                   {{#if ../owner}}
                     <div class="pl-2">
-                      <button class="btn btn-icon btn-icon-plain-cpt toggle-item" data-path="{{concat ../path '.complications.' complicationIndex '.edit'}}"
+                      <button class="btn btn-icon btn-icon-plain-cpt open-complication-dialog" data-path="{{../path}}" data-index="{{complicationIndex}}"
                         type="button">
-                        <i class="fa-solid {{ternary complication.edit 'fa-check' 'fa-edit'}}"></i>
+                        <i class="fa-solid fa-edit"></i>
                       </button>
                     </div>
                   {{/if}}
-                  {{#if (and ../owner complication.edit)}}
-                    <div>
-                      {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
-                      path=../path
-                      target='complications'
-                      itemKey=complicationIndex
-                      itemName=complication.label
-                      type="trash"
-                      }}
-                    </div>
+                  {{#if complication.hidden}}
+                    <span class="flex-col pl-1">
+                      <i class="fa fa-eye-slash"></i>
+                    </span>
                   {{/if}}
-                  {{#if (and ../owner ../data.hasHidableTraits)}}
-                    {{#if complication.edit}}
-                      <div class="pr-1">
-                        <button class="btn btn-icon btn-primary-cpt toggle-item"
-                          data-path="{{concat ../path '.complications.' complicationIndex '.hidden'}}" type="button">
-                          <i class="fa {{ternary complication.hidden 'fa-eye-slash' 'fa-eye'}}"></i>
-                        </button>
-                      </div>
-                    {{else if complication.hidden}}
-                      <span class="flex-col pl-1">
-                        <i class="fa fa-eye-slash"></i>
-                      </span>
-                    {{/if}}
-                  {{/if}}
-                  {{#if (and ../owner complication.edit)}}
-                    <div class="flex-col flex-g-1 px-0">
-                      <input class="input-cpt" name="{{concat ../path '.complications.' complicationIndex '.label'}}" type="text" value="{{complication.label}}">
-                    </div>
-                  {{else}}
-                    <div class="flex-col flex-g-1">
-                      <span class="trait-title-cpt{{ternary (and ../canAddToPool complication.dice.value.[0]) ' add-to-pool' ''}}"
-                        data-label="{{complication.label}}" data-path="{{concat ../path '.complications.' complicationIndex '.dice'}}">
-                        {{complication.label}}
-                      </span>
-                    </div>
-                  {{/if}}
-                  {{#if ../owner}}
-                    <div class="flex-col flex-s-1">
-                      {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
-                      addToPool=true
-                      dice=complication.dice.value
-                      minDice=0
-                      label=complication.label
-                      selectName=(concat ../path '.complications.' complicationIndex '.dice')
-                      }}
-                    </div>
-                  {{else}}
+                  <div class="flex-col flex-g-1">
+                    <span class="trait-title-cpt{{ternary (and ../canAddToPool complication.dice.value.[0]) ' add-to-pool' ''}}"
+                      data-label="{{complication.label}}" data-path="{{concat ../path '.complications.' complicationIndex '.dice'}}">
+                      {{complication.label}}
+                    </span>
+                  </div>
                   <div class="flex-col flex-s-1">
                     <div class="flex flex-wrap flex-ac">
                       {{#each complication.dice.value as |die|}}
@@ -194,7 +157,6 @@
                       {{/each}}
                     </div>
                   </div>
-                  {{/if}}
                 </div>
               </div>
             {{/if}}

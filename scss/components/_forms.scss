@@ -28,6 +28,30 @@ input {
   }
 }
 
+// The Mild/Moderate/Severe preset-name columns in ComplicationDialog: each can hold 15-18 names,
+// so it scrolls independently rather than growing the whole dialog to fit the longest column.
+// The dialog's window height is 'auto' (see ComplicationDialog.js), which always sizes the window
+// to match its content exactly - so this max-height IS what makes the default dialog taller, not
+// a fixed window height, which would otherwise leave dead space below a shorter form.
+.picker-name-list {
+  max-height: toRem(357px);
+  overflow-y: auto;
+}
+
+.picker-name {
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover, &:focus {
+    text-decoration: underline;
+  }
+
+  &.picker-name-selected {
+    color: var(--cp-button-primary-color, #2d5931);
+    font-weight: 700;
+  }
+}
+
 // An Additional Tab's description, read-only on the actor sheet (see additional-tab.html): plain
 // text sitting inside the tab's own name box, not a boxed input area of its own - so this app's
 // own .editor-content border/padding styling (this file's :root sibling rule, further up in

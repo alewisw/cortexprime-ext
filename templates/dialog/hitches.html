@@ -56,14 +56,18 @@
                 </select>
                 <div class="mt-1{{ternary row.showComplicationName '' ' hide'}}">
                   <div class="input-label-cpt">{{localize 'HitchesComplicationName'}}</div>
-                  <input
-                    class="hitch-complication-name input-cpt"
-                    data-index="{{row.index}}"
-                    type="text"
-                    value="{{row.complicationName}}"
-                    placeholder="{{localize 'NewComplication'}}"
-                    style="width: 100%"
-                  >
+                  <div class="flex flex-ac">
+                    <input
+                      class="hitch-complication-name input-cpt flex-g-1"
+                      data-index="{{row.index}}"
+                      type="text"
+                      value="{{row.complicationName}}"
+                      placeholder="{{localize 'NewComplication'}}"
+                    >
+                    <button class="choose-complication-name btn btn-secondary-cpt ml-1" data-index="{{row.index}}" type="button">
+                      {{localize 'ChooseComplicationName'}}
+                    </button>
+                  </div>
                 </div>
                 <div class="mt-1{{ternary row.showComplicationSelect '' ' hide'}}">
                   <div class="input-label-cpt">{{localize 'HitchesComplication'}}</div>
@@ -85,14 +89,18 @@
                 </div>
                 <div class="mt-1{{ternary row.showSceneComplicationName '' ' hide'}}">
                   <div class="input-label-cpt">{{localize 'HitchesComplicationName'}}</div>
-                  <input
-                    class="hitch-complication-name input-cpt"
-                    data-index="{{row.index}}"
-                    type="text"
-                    value="{{row.complicationName}}"
-                    placeholder="{{localize 'NewComplication'}}"
-                    style="width: 100%"
-                  >
+                  <div class="flex flex-ac">
+                    <input
+                      class="hitch-complication-name input-cpt flex-g-1"
+                      data-index="{{row.index}}"
+                      type="text"
+                      value="{{row.complicationName}}"
+                      placeholder="{{localize 'NewComplication'}}"
+                    >
+                    <button class="choose-complication-name btn btn-secondary-cpt ml-1" data-index="{{row.index}}" type="button">
+                      {{localize 'ChooseComplicationName'}}
+                    </button>
+                  </div>
                 </div>
                 <div class="mt-1{{ternary row.showSceneComplicationSelect '' ' hide'}}">
                   <div class="input-label-cpt">{{localize 'HitchesComplication'}}</div>

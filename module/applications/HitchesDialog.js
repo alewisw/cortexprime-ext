@@ -1,5 +1,6 @@
 import { localizer } from '../scripts/foundryHelpers.js'
 import { applyHitchOutcomes, getComplications, getDoomPool } from '../scripts/hitches.js'
+import { ComplicationDialog } from './ComplicationDialog.js'
 import {
   DOOM_DIE_STEP_OPTIONS,
   HITCH_ACTIONS,
@@ -206,6 +207,7 @@ export class HitchesDialog extends FormApplication {
     // focus mid-word — the same trade-off CrisisPoolDialog makes for its name field.
     html.find('.hitch-complication-name').change(this._onRowChange.bind(this, 'complicationName'))
     html.find('.hitch-complication-rename').change(this._onRowChange.bind(this, 'renameComplication'))
+    html.find('.choose-complication-name').click(this._onChooseComplicationName.bind(this))
     html.find('.hitches-confirm').click(this._onConfirm.bind(this))
 
     // Revealing a sub-field grows the form after Foundry has already measured this height:'auto'
@@ -250,6 +252,27 @@ export class HitchesDialog extends FormApplication {
     this.rows[index] = { ...this.rows[index], [field]: $target.val() }
 
     this.render(true)
+  }
+
+  // Reuses ComplicationDialog's own category/subcategory/severity picker to name a newly
+  // introduced complication, rather than duplicating that library here.
+  _onChooseComplicationName (event) {
+    event.preventDefault()
+
+    const $target = $(event.currentTarget)
+    const index = parseInt($target.data('index'), 10)
+
+    if (Number.isNaN(index) || !this.rows[index]) return
+
+    new ComplicationDialog({
+      pickOnly: true,
+      initialLabel: this.rows[index].complicationName,
+      onPick: label => {
+        if (!this.rows[index]) return
+        this.rows[index] = { ...this.rows[index], complicationName: label }
+        this.render(true)
+      }
+    }).render(true)
   }
 
   async _onConfirm (event) {

@@ -1,0 +1,82 @@
+<form class="cortexprime complication-dialog sheet-cpt" autocomplete="off">
+  <div class="sheet-background"></div>
+  <div class="sheet-image"></div>
+  <div class="sheet-content pa-2">
+    <div class="section-cpt pa-2">
+      <div class="section-image"></div>
+      <div class="section-background"></div>
+      <div class="section-content">
+        <label class="flex-col mb-2">
+          <span class="input-label-cpt">{{localize 'Name'}}</span>
+          <input class="complication-label input-cpt" name="label" type="text" value="{{label}}" placeholder="{{localize 'NewComplication'}}">
+        </label>
+
+        {{#unless pickOnly}}
+          <div class="flex-col mb-2">
+            <span class="input-label-cpt">{{localize 'Dice'}}</span>
+            {{> "systems/cortexprime-ext/templates/partials/dice/select.html"
+              dice=dice
+              selectName="dice"
+              minDice=1
+            }}
+          </div>
+
+          {{#if hasHidableTraits}}
+            <label class="flex-row flex-ac mb-2">
+              <input class="complication-hidden" name="hidden" type="checkbox" {{ternary hidden 'checked' ''}}>
+              <span class="input-label-cpt ml-1">{{localize 'HiddenFromPlayers'}}</span>
+            </label>
+          {{/if}}
+
+          <div class="separator-cpt my-2"></div>
+        {{/unless}}
+
+        <div class="flex-col mb-2">
+          <span class="input-label-cpt">{{localize 'ChooseFromList'}}</span>
+          <div class="flex flex-wrap mt-1">
+            <select class="picker-category input-cpt mr-1 mb-1">
+              {{#each picker.categories as |category|}}
+                <option value="{{category.value}}"{{ternary category.selected ' selected' ''}}>{{category.value}}</option>
+              {{/each}}
+            </select>
+            <select class="picker-subcategory input-cpt mb-1">
+              {{#each picker.subCategory.options as |subCategory|}}
+                <option value="{{subCategory.value}}"{{ternary subCategory.selected ' selected' ''}}>{{subCategory.value}}</option>
+              {{/each}}
+            </select>
+          </div>
+          <div class="flex mt-1">
+            {{#each picker.severities as |severityGroup|}}
+              <div class="flex-col col-4 pr-1">
+                <span class="input-label-cpt">{{localize severityGroup.label}}</span>
+                <div class="picker-name-list">
+                  {{#each severityGroup.names as |nameOption|}}
+                    <div>
+                      <a
+                        class="picker-name{{ternary nameOption.selected ' picker-name-selected' ''}}"
+                        data-name="{{nameOption.name}}"
+                        data-severity="{{severityGroup.severity}}"
+                      >
+                        {{nameOption.name}}
+                      </a>
+                    </div>
+                  {{/each}}
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+
+        <div class="flex flex-je mt-2">
+          {{#if isEditing}}
+            <button class="delete-complication btn btn-secondary-cpt" type="button">{{localize 'Remove'}}</button>
+          {{/if}}
+          <button class="cancel-complication btn btn-secondary-cpt ml-1" type="button">{{localize 'Cancel'}}</button>
+          <button class="confirm-complication btn btn-primary-cpt ml-1" type="button">
+            {{localize (ternary pickOnly 'UseThisName' 'Confirm')}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>

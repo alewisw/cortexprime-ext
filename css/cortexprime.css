@@ -1165,6 +1165,21 @@
 .cortexprime .notes-field .editor {
   min-height: 2.5rem;
 }
+.cortexprime .picker-name-list {
+  max-height: 22.3125rem;
+  overflow-y: auto;
+}
+.cortexprime .picker-name {
+  cursor: pointer;
+  text-decoration: none;
+}
+.cortexprime .picker-name:hover, .cortexprime .picker-name:focus {
+  text-decoration: underline;
+}
+.cortexprime .picker-name.picker-name-selected {
+  color: var(--cp-button-primary-color, #2d5931);
+  font-weight: 700;
+}
 .cortexprime.actor-sheet .additional-tab-description .editor, .cortexprime.actor-sheet .additional-tab-description .editor-content {
   background: none !important;
   border: none !important;

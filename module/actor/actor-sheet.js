@@ -10,6 +10,7 @@ import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization
 import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, reindexDiceAfterRemoval, stepFaceDown, stepFaceUp } from '../scripts/traitDiceTemporary.js'
 import { pushDeletedSection } from '../scripts/deletedSectionsLogic.js'
 import { DeletedSectionsDialog } from '../applications/DeletedSectionsDialog.js'
+import { ComplicationDialog } from '../applications/ComplicationDialog.js'
 import {
   removeItems,
   toggleItems
@@ -80,6 +81,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.add-pp').click(() => { this.actor.changePpBy(1) })
     html.find('.add-asset').click(this._addAsset.bind(this))
     html.find('.add-complication').click(this._addComplication.bind(this))
+    html.find('.open-complication-dialog').click(this._openComplicationDialog.bind(this))
     html.find('.add-descriptor').click(this._addDescriptor.bind(this))
     html.find('.add-note').click(this._addNote.bind(this))
     html.find('.add-sfx').click(this._addSfx.bind(this))
@@ -225,22 +227,20 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  async _addComplication(event) {
+  _addComplication(event) {
     event.preventDefault()
     const { path } = event.currentTarget.dataset
-    const currentComplications = foundry.utils.getProperty(this.actor, `${path}.complications`) ?? {}
+    const hasHidableTraits = !!foundry.utils.getProperty(this.actor, path)?.hasHidableTraits
 
-    await this._resetDataPoint(path, 'complications', {
-      ...currentComplications,
-      [getLength(currentComplications)]: {
-        label: localizer('NewComplication'),
-        dice: {
-          value: {
-            0: '6'
-          }
-        }
-      }
-    })
+    new ComplicationDialog({ actor: this.actor, path, hasHidableTraits }).render(true)
+  }
+
+  _openComplicationDialog(event) {
+    event.preventDefault()
+    const { path, index } = event.currentTarget.dataset
+    const hasHidableTraits = !!foundry.utils.getProperty(this.actor, path)?.hasHidableTraits
+
+    new ComplicationDialog({ actor: this.actor, path, index: parseInt(index, 10), hasHidableTraits }).render(true)
   }
 
   async _addDescriptor(event) {

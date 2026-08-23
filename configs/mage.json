@@ -702,6 +702,21 @@
           "id": "_1786624946207",
           "name": "Notes",
           "allowShutdown": false
+        },
+        "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>"
+            }
+          }
         }
       }
     },
@@ -1289,6 +1304,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787232918149",
           "name": "Limits & SFX",
           "allowShutdown": false,
@@ -1904,6 +1936,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787233711488",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -2519,6 +2568,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787302094396",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -3134,6 +3200,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787302347225",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -3749,6 +3832,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787357886191",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -4434,6 +4534,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787358174147",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -5049,6 +5166,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787358332254",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -5664,6 +5798,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787358466574",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -6279,6 +6430,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787358598256",
           "name": "Limit & SFX",
           "allowShutdown": false,
@@ -6894,6 +7062,23 @@
           "defaultNotes": {}
         },
         "3": {
+          "id": "_1787461064780",
+          "name": "Rules",
+          "allowShutdown": false,
+          "description": "",
+          "defaultNotes": {
+            "0": {
+              "label": "Laws of Magick",
+              "allowRename": false,
+              "allowDeletion": false,
+              "allowEdit": false,
+              "value": "<ol>\n<li>A player's ability to solve conflict with magick is DIRECTLY PROPORTIONAL to how well the other players understand said magick.</li>\n<li>Limitations are more important than powers.</li>\n<li>Expand what you already have before you add something new.</li>\n</ol>",
+              "inherited": true
+            }
+          },
+          "inherited": true
+        },
+        "4": {
           "id": "_1787361046639",
           "name": "Limit & SFX",
           "allowShutdown": false,
