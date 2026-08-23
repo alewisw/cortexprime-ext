@@ -4,6 +4,7 @@
 // state that decides who currently has "Roll To Beat" available and who they're targeting.
 import { localizer, onSettingChanged } from './foundryHelpers.js'
 import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
+import { runExclusive } from './asyncMutex.js'
 
 const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0, dice: [], poolEntries: [] }
 const blankChallenge = { type: null, initiatorId: null, responderIds: [], updatedAt: 0, interference: null, group: null }
@@ -111,12 +112,42 @@ export const getActiveChallenge = () => {
   }
 }
 
-export const setActiveChallenge = async challenge => {
-  await game.settings.set('cortexprime-ext', 'activeChallenge', challenge)
-}
+export const getBlankChallenge = () => ({ ...blankChallenge })
 
-export const clearActiveChallenge = async () => {
-  await setActiveChallenge({ ...blankChallenge })
+const ACTIVE_CHALLENGE_KEY = 'activeChallenge'
+
+// Every action below reads the current activeChallenge, computes a new one, and writes it back
+// whole - fine for a human, who naturally waits for a re-render before the next click, but two of
+// these firing close together (e.g. automated UI actions) can interleave: the second one's read
+// lands before the first one's write has, so its write clobbers the first with a stale base and
+// silently discards whatever it just did. Routing every mutation through this queues them (see
+// asyncMutex.js) so that can't happen - `mutator` receives the current challenge and returns the
+// value to write, or `undefined` to write nothing at all. May be async, so a mutator needing its
+// own side effects first (a chat message, a Crisis Pool update) can still decide what to write
+// from state that was current at the START of its own turn.
+export const updateActiveChallenge = mutator => runExclusive(ACTIVE_CHALLENGE_KEY, async () => {
+  const next = await mutator(getActiveChallenge())
+
+  if (next !== undefined) await game.settings.set('cortexprime-ext', 'activeChallenge', next)
+
+  return next
+})
+
+export const setActiveChallenge = challenge => updateActiveChallenge(() => challenge)
+
+export const clearActiveChallenge = () => updateActiveChallenge(() => getBlankChallenge())
+
+// Bypasses the queue above — used only by processChallengeAdvancement/processGroupAdvancement
+// below. Those two are reactive (fired from onSettingChanged/updateActor hooks whenever a roll
+// lands, including recursively from within their OWN write - recording a Contest's effect-die
+// step-down rewrites lastGmRoll, which re-fires the very hook that invokes them), not user-driven
+// UI actions, and queuing them reproducibly stalled the effect-die step-down in testing. They
+// already self-guard against reprocessing the same roll via the rolledAt <= updatedAt check
+// below, so they're left on the original unsynchronized read/write rather than folded into the
+// same queue as the user-driven actions above, which is what the confirmed lost-update race
+// this module exists to fix was actually about.
+const writeActiveChallenge = async challenge => {
+  await game.settings.set('cortexprime-ext', 'activeChallenge', challenge)
 }
 
 // The id ('gm' or an actor id) the current user should act as for challenge purposes.
@@ -182,19 +213,12 @@ export const hasInterfererRolled = challenge => {
 }
 
 // GM action: pauses the Contest and designates who gets the one-time interference roll.
-export const startInterference = async interfererId => {
-  const challenge = getActiveChallenge()
-
-  await setActiveChallenge({ ...challenge, interference: { interfererId, startedAt: Date.now() } })
-}
+export const startInterference = interfererId => updateActiveChallenge(challenge =>
+  ({ ...challenge, interference: { interfererId, startedAt: Date.now() } }))
 
 // GM action: lifts the pause — used whether the interference roll won or lost, since the GM
 // always resumes manually (see canCurrentUserRoll/UserDicePool.js).
-export const endInterference = async () => {
-  const challenge = getActiveChallenge()
-
-  await setActiveChallenge({ ...challenge, interference: null })
-}
+export const endInterference = () => updateActiveChallenge(challenge => ({ ...challenge, interference: null }))
 
 const GROUP_MINIMUM_PARTICIPANTS = 3
 
@@ -309,27 +333,19 @@ export const getGroupDisplayOrder = group => [...group.queue, ...(group.champion
 
 // GM action: replaces the roster wholesale — the checkbox list, mirroring setChallengeResponders.
 // No updatedAt bump — nothing is gated on it until startGroupInitiative sets the phase clock.
-export const setGroupParticipants = async participantIds => {
-  const challenge = getActiveChallenge()
+export const setGroupParticipants = participantIds => updateActiveChallenge(challenge => {
+  if (challenge.type !== 'group' || challenge.group?.phase !== 'selecting') return undefined
 
-  if (challenge.type !== 'group' || challenge.group?.phase !== 'selecting') return
-
-  await setActiveChallenge({ ...challenge, group: { ...challenge.group, participantIds } })
-}
+  return { ...challenge, group: { ...challenge.group, participantIds } }
+})
 
 // GM action: opens the Initiative phase. updatedAt becomes the clock every participant's one
 // Initiative roll is measured against.
-export const startGroupInitiative = async () => {
-  const challenge = getActiveChallenge()
+export const startGroupInitiative = () => updateActiveChallenge(challenge => {
+  if (!canStartGroupInitiative(challenge)) return undefined
 
-  if (!canStartGroupInitiative(challenge)) return
-
-  await setActiveChallenge({
-    ...challenge,
-    group: { ...challenge.group, phase: 'initiative' },
-    updatedAt: Date.now()
-  })
-}
+  return { ...challenge, group: { ...challenge.group, phase: 'initiative' }, updatedAt: Date.now() }
+})
 
 // What the current user is allowed to do in an active group right now:
 //   'initiative' — a participant who still owes their one Initiative roll
@@ -483,7 +499,7 @@ const getDefaultContestResponderId = initiatorId => {
 // Contest interference) implicitly drops that state by omitting it here — setActiveChallenge
 // replaces the stored value wholesale, so getActiveChallenge's defaulting picks it back up as
 // null on the next read.
-export const setChallengeType = async type => {
+export const setChallengeType = type => updateActiveChallenge(() => {
   const initiatorId = 'gm'
   const responderIds = type === 'contest'
     ? [getDefaultContestResponderId(initiatorId)].filter(Boolean)
@@ -492,34 +508,30 @@ export const setChallengeType = async type => {
     ? { phase: 'selecting', participantIds: ['gm'], queue: [], championId: null }
     : null
 
-  await setActiveChallenge({ type, initiatorId, responderIds, updatedAt: Date.now(), group })
-}
+  return { type, initiatorId, responderIds, updatedAt: Date.now(), group }
+})
 
 // GM action: changes the initiator, dropping them from the responder list if they were on it.
 // If that leaves an active Contest with no responder, one is picked automatically again.
-export const setChallengeInitiator = async initiatorId => {
-  const challenge = getActiveChallenge()
+export const setChallengeInitiator = initiatorId => updateActiveChallenge(challenge => {
   const responderIds = challenge.responderIds.filter(id => id !== initiatorId)
 
   const finalResponderIds = challenge.type === 'contest' && responderIds.length === 0
     ? [getDefaultContestResponderId(initiatorId)].filter(Boolean)
     : responderIds
 
-  await setActiveChallenge({
+  return {
     ...challenge,
     initiatorId,
     responderIds: finalResponderIds,
     updatedAt: Date.now()
-  })
-}
+  }
+})
 
 // GM action: replaces the responder list wholesale (used by both the Test checkbox list and
 // the Contest single-select).
-export const setChallengeResponders = async responderIds => {
-  const challenge = getActiveChallenge()
-
-  await setActiveChallenge({ ...challenge, responderIds, updatedAt: Date.now() })
-}
+export const setChallengeResponders = responderIds => updateActiveChallenge(challenge =>
+  ({ ...challenge, responderIds, updatedAt: Date.now() }))
 
 // Pure: what should happen to the active challenge after a given responder's roll resolves.
 // Returns null to mean "clear the challenge", otherwise a full replacement for it.
@@ -589,8 +601,7 @@ export const processChallengeAdvancement = async () => {
       }
     }
 
-    if (next === null) await clearActiveChallenge()
-    else await setActiveChallenge(next)
+    await writeActiveChallenge(next === null ? getBlankChallenge() : next)
 
     return
   }
@@ -631,29 +642,27 @@ const announceGroupWinner = async championId => {
   await ChatMessage.create({ content })
 }
 
-// The group's single exit point: announce the survivor, then clear.
+// The group's single exit point: announce the survivor, then hand back the blank state for the
+// caller to write - removeGroupParticipant returns it from inside its own updateActiveChallenge
+// mutator, while processGroupAdvancement (reactive, not queued - see writeActiveChallenge above)
+// writes it directly. Deliberately never writes itself, so it works either way without risking a
+// self-deadlock re-entering updateActiveChallenge under the same key from inside a mutator that's
+// already holding it.
 const endGroup = async championId => {
   await announceGroupWinner(championId)
-  await clearActiveChallenge()
+  return getBlankChallenge()
 }
 
 // GM action: drops someone mid-duel — off the roster, out of the queue, out of the champion
 // slot if held. If that leaves the last challenger gone, the group is decided by default and
 // ends through the same announce-and-clear path a final duel takes.
-export const removeGroupParticipant = async participantId => {
-  const challenge = getActiveChallenge()
-
-  if (challenge.type !== 'group' || challenge.group?.phase !== 'dueling') return
+export const removeGroupParticipant = participantId => updateActiveChallenge(async challenge => {
+  if (challenge.type !== 'group' || challenge.group?.phase !== 'dueling') return undefined
 
   const next = removeFromGroup(challenge, participantId)
 
-  if (isGroupComplete(next)) {
-    await endGroup(next.group.championId)
-    return
-  }
-
-  await setActiveChallenge(next)
-}
+  return isGroupComplete(next) ? await endGroup(next.group.championId) : next
+})
 
 // Runs only on the elected primary GM's client, reacting to fresh rolls from Group
 // participants. During Initiative, waits for everyone to have rolled, then orders them and
@@ -678,7 +687,7 @@ export const processGroupAdvancement = async () => {
     const order = orderGroupInitiative(challenge.group.participantIds, targets, randoms)
 
     if (order.length === 0) {
-      await clearActiveChallenge()
+      await writeActiveChallenge(getBlankChallenge())
       return
     }
 
@@ -688,11 +697,11 @@ export const processGroupAdvancement = async () => {
 
     // A roster of one survivor after disconnects (rare): they win outright, no duels needed.
     if (isGroupComplete(next)) {
-      await endGroup(next.group.championId)
+      await writeActiveChallenge(await endGroup(next.group.championId))
       return
     }
 
-    await setActiveChallenge(next)
+    await writeActiveChallenge(next)
     return
   }
 
@@ -710,11 +719,11 @@ export const processGroupAdvancement = async () => {
     const next = resolveGroupDuel(challenge, challenger, Date.now())
 
     if (isGroupComplete(next)) {
-      await endGroup(next.group.championId)
+      await writeActiveChallenge(await endGroup(next.group.championId))
       return
     }
 
-    await setActiveChallenge(next)
+    await writeActiveChallenge(next)
   }
 }
 

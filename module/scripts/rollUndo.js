@@ -8,11 +8,11 @@
 // The pure decisions live in rollUndoLogic.js.
 import { localizer, onSettingChanged } from './foundryHelpers.js'
 import {
-  clearActiveChallenge,
   getActiveChallenge,
+  getBlankChallenge,
   getBlankRecord,
   getRollToBeatTargets,
-  setActiveChallenge
+  updateActiveChallenge
 } from './rollToBeat.js'
 import { computeUndoChallenge, resolveUndoState } from './rollUndoLogic.js'
 
@@ -144,14 +144,20 @@ export const undoRoll = async (actorId, rolledAt) => {
   // immediately re-advance the very thing being undone.
   await actor.setFlag('cortexprime-ext', 'lastRoll', getBlankRecord())
 
-  const nextChallenge = computeUndoChallenge({
-    snapshot: undoState.snapshot.challenge,
-    current: getActiveChallenge(),
-    actorId
-  })
+  // Computing from `current` INSIDE the mutator (rather than a getActiveChallenge() read taken
+  // before entering it) keeps this decision - and the write that follows it - queued as one
+  // atomic step against any other in-flight activeChallenge mutation (see updateActiveChallenge
+  // in rollToBeat.js), rather than deciding from a snapshot that could be stale by the time this
+  // GM action's turn actually comes up.
+  await updateActiveChallenge(current => {
+    const nextChallenge = computeUndoChallenge({
+      snapshot: undoState.snapshot.challenge,
+      current,
+      actorId
+    })
 
-  if (nextChallenge?.type) await setActiveChallenge(nextChallenge)
-  else await clearActiveChallenge()
+    return nextChallenge?.type ? nextChallenge : getBlankChallenge()
+  })
 
   const snapshots = { ...getSnapshots() }
 
