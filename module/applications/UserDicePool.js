@@ -1,4 +1,4 @@
-import { localizer } from '../scripts/foundryHelpers.js'
+import { localizer, showPlotPointAnimation } from '../scripts/foundryHelpers.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
 import { runExclusive } from '../scripts/asyncMutex.js'
@@ -19,9 +19,11 @@ import {
   getMyInterfererId,
   getMyResponderId,
   getRollToBeatTargets,
+  getTargetRecord,
   getTargetTotal,
   hasContestStarted,
   hasInitiatorRolled,
+  recordRollResult,
   removeGroupParticipant,
   setChallengeInitiator,
   setChallengeResponders,
@@ -113,6 +115,13 @@ export class UserDicePool extends FormApplication {
     const myInterfererId = getMyInterfererId()
     const myGroupRole = getMyGroupRollRole()
     const canRollToBeat = !!getMyResponderId() || !!myInterfererId || myGroupRole === 'duel'
+    // Conceding only makes sense against a single named opponent - not offered for a Test (no
+    // one opponent to give in to) or to the GM (Plot Points aren't a GM concept in this system,
+    // same reasoning as hasPlotPoints below).
+    const showGiveIn = !game.user.isGM && (
+      (activeChallenge.type === 'contest' && !!getMyResponderId()) ||
+      (activeChallenge.type === 'group' && myGroupRole === 'duel')
+    )
     const challengeTarget = getMyChallengeTarget()
     // Resolved once here and threaded into the display logic below, which is pure and can't
     // read live Foundry state for itself.
@@ -140,6 +149,10 @@ export class UserDicePool extends FormApplication {
       // with any of the other three roll types instead, AND the current pool's composition
       // being invalid to roll (Limit One / Mutually Exclusive / duplicate trait rules).
       rollButtonsDisabled: !canCurrentUserRoll() || !!dicePoolInvalidReason,
+      showGiveIn,
+      // Deliberately not rollButtonsDisabled - giving in doesn't involve rolling the pool at
+      // all, so an invalid pool composition shouldn't block it the way it blocks actually rolling.
+      giveInDisabled: !canCurrentUserRoll(),
       showChallengeTarget: !!challengeTarget,
       challengeTargetTotal: challengeTarget?.total ?? 0,
       challengeTargetEffectDice: challengeTarget?.effectDice ?? [],
@@ -188,6 +201,7 @@ export class UserDicePool extends FormApplication {
     html.find('.remove-group-participant').click(this._removeGroupParticipant.bind(this))
     html.find('.spend-plot-point-extra-die').change(this._onSpendPlotPointExtraDieChange.bind(this))
     html.find('.request-reroll').click(this._requestReroll.bind(this))
+    html.find('.give-in').click(this._giveIn.bind(this))
   }
 
   async _requestReroll (event) {
@@ -528,6 +542,59 @@ export class UserDicePool extends FormApplication {
     if (activeChallenge.type !== 'group' || activeChallenge.group?.phase !== 'dueling') return
 
     await removeGroupParticipant(event.currentTarget.dataset.id)
+
+    await this.render(true)
+  }
+
+  // Concedes the active Contest/Group without rolling: gains a Plot Point, takes the current
+  // opponent's effect dice as the consequence (the same dice already shown in the "Failure
+  // Effect Dice" preview), and records the loss exactly like a real roll would - recordRollResult
+  // fires the same updateActor/setting hooks a real roll fires, so processChallengeAdvancement/
+  // processGroupAdvancement (rollToBeat.js) resolve it on the GM's client without any extra code
+  // here. An empty effectDice array is already the floor D4 everywhere else in that pipeline
+  // (applyContestEffectStepDown), so giving in can never step down the opponent's effect die.
+  async _giveIn (event) {
+    event.preventDefault()
+
+    if (game.user.isGM) return
+
+    const actor = game.user.character
+
+    if (!actor) return
+
+    // Defense-in-depth, matching _removeGroupParticipant/_startGroupInitiative above.
+    if (!canCurrentUserRoll()) return
+
+    const opponentId = getMyBeatTargetId()
+    const effectDice = opponentId ? (getTargetRecord(opponentId)?.effectDice ?? []) : []
+
+    let confirmed
+
+    await Dialog.confirm({
+      title: localizer('AreYouSure'),
+      content: localizer('GiveInConfirm'),
+      yes: () => { confirmed = true },
+      no: () => { confirmed = false },
+      defaultYes: false
+    })
+
+    if (!confirmed) return
+
+    const content = await foundry.applications.handlebars.renderTemplate(
+      'systems/cortexprime-ext/templates/chat/give-in.html',
+      { actorName: actor.name, effectDice: effectDice.length ? effectDice : [4] }
+    )
+
+    await ChatMessage.create({ content })
+
+    try {
+      await actor.changePpBy(1, false, localizer('GiveInPlotPointReason'))
+      showPlotPointAnimation(1)
+    } catch (error) {
+      console.warn('CP | Give In: could not award Plot Point', error)
+    }
+
+    await recordRollResult({ total: 0, effectDice: [], won: false, dice: [], poolEntries: [], rolledAt: Date.now() })
 
     await this.render(true)
   }

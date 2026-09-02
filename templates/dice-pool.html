@@ -355,6 +355,17 @@
           </div>
         </div>
         {{/if}}
+        {{#if showGiveIn}}
+        <div class="separator-cpt"></div>
+        <div class="relative-section pa-2">
+          <div class="section-background"></div>
+          <div class="flex-col col-12 flex flex-je">
+            <button class="give-in btn btn-secondary-cpt" type="button" {{#if giveInDisabled}}disabled{{/if}}>
+              {{localize 'GiveIn'}}
+            </button>
+          </div>
+        </div>
+        {{/if}}
         </div>
       </div>
     </div>

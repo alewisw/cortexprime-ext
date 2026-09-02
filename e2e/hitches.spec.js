@@ -142,3 +142,117 @@ test('a player\'s hitch opens the GM\'s Hitches dialog, and confirming writes th
     await player2.context.close()
   }
 })
+
+// ComplicationDialog's pickOnly mode is reused here rather than duplicating its Category ->
+// SubCategory -> Severity picker in the Hitches dialog itself - covers that the "Choose…" button
+// opens it with no dice/hidden/delete UI, that picking a name only fills the row's free-text
+// field (never writing to any actor by itself), and that Confirm still enters the complication
+// at D6 - a hitch fixes the new complication's die regardless of which severity column the name
+// came from.
+test('the Hitches dialog\'s "Choose…" button reuses ComplicationDialog\'s picker to name a new complication', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+  const player2 = await openAs(browser, 'player2')
+
+  const notActiveGM = await requireActiveGM(gm.page)
+
+  if (notActiveGM) {
+    await gm.context.close()
+    await player2.context.close()
+    test.skip(true, notActiveGM)
+  }
+
+  const before = await snapshotSettings(gm.page, WRITES)
+  const complicationsBefore = await getActorPath(gm.page, PLAYER2_ACTOR, COMPLICATIONS)
+  const ppBefore = await getActorPath(gm.page, PLAYER2_ACTOR, PP)
+
+  try {
+    await clearChallenge(gm.page)
+    await clearRollRecord(gm.page)
+    await clearRollRecord(gm.page, PLAYER2_ACTOR)
+    await enableTestMode(gm.page)
+    await awaitSetting(player2.page, 'testModeSelectDiceValues', true)
+
+    await openTray(gm.page)
+    await openTray(player2.page)
+
+    const gmId = await challengeIdFor(gm.page, 'gm')
+    const player2Id = await challengeIdFor(gm.page, 'player2')
+
+    await setChallengeType(gm.page, 'test')
+    await setInitiator(gm.page, gmId)
+    await checkResponder(gm.page, player2Id)
+    await seedRollRecord(gm.page, { total: 6, effectDice: [8] })
+
+    await buildUniformPool(player2.page, { count: 4, face: 6, prefix: 'P2 Die' })
+    await expect.poll(() => anyRollButtonEnabled(player2.page)).toBe(true)
+    await rollExactly(player2.page, [5, 4, 3, 1])
+
+    const dialog = gm.page.locator('.window-content form.cortexprime.hitches-dialog')
+    await expect(dialog).toBeVisible({ timeout: 15_000 })
+
+    const rows = dialog.locator('.hitch-row')
+    await expect(rows).toHaveCount(1)
+
+    await rows.first().locator('select.hitch-action').selectOption('introduce-complication')
+
+    const nameField = rows.first().locator('.hitch-complication-name:visible')
+    await expect(nameField).toHaveCount(1)
+
+    await rows.first().locator('.choose-complication-name:visible').click()
+
+    const picker = gm.page.locator('.window-app.complication-dialog')
+    await picker.waitFor({ state: 'visible' })
+
+    // pickOnly mode: no dice editor, no Hidden checkbox, no Delete - just the name field and the
+    // picker, matching ComplicationDialog's own gating on `pickOnly`.
+    await expect(picker.locator('select.die-select')).toHaveCount(0)
+    await expect(picker.locator('input.complication-hidden')).toHaveCount(0)
+    await expect(picker.locator('button.delete-complication')).toHaveCount(0)
+
+    await picker.locator('select.picker-category').selectOption('Social')
+    await picker.locator('select.picker-subcategory').selectOption('Standing and Reputation')
+    await picker.locator('a.picker-name[data-name="Notorious"]').click()
+
+    await expect(picker.locator('input.complication-label')).toHaveValue('Notorious')
+    await picker.locator('button.confirm-complication').click()
+    await expect(picker).toBeHidden({ timeout: 15_000 })
+
+    // The picker only ever touches the Hitches row's own field - never the actor, and not until
+    // the Hitches dialog itself is confirmed.
+    await expect(nameField).toHaveValue('Notorious')
+    expect(await getActorPath(gm.page, PLAYER2_ACTOR, PP)).toBe(ppBefore)
+
+    await dialog.locator('.hitches-confirm').click()
+    await expect(dialog).toBeHidden({ timeout: 15_000 })
+
+    await expect
+      .poll(async () => {
+        const complications = await getActorPath(gm.page, PLAYER2_ACTOR, COMPLICATIONS)
+        return Object.values(complications ?? {}).map(entry => entry.label)
+      })
+      .toContain('Notorious')
+
+    const complications = await getActorPath(gm.page, PLAYER2_ACTOR, COMPLICATIONS)
+    const added = Object.values(complications).find(entry => entry.label === 'Notorious')
+    // A hitch always enters a new complication at D6, regardless of the picker's Severe column
+    // "Notorious" came from - the picker only ever supplied the name here.
+    expect(Object.values(added.dice.value)).toEqual(['6'])
+
+    await expect.poll(() => getActorPath(gm.page, PLAYER2_ACTOR, PP)).toBe(ppBefore + 1)
+  } finally {
+    await updateActor(gm.page, PLAYER2_ACTOR, { 'system.actorType.-=complications': null })
+    await updateActor(gm.page, PLAYER2_ACTOR, {
+      [COMPLICATIONS]: complicationsBefore ?? {},
+      [PP]: ppBefore ?? 1
+    })
+
+    await clearChallenge(gm.page)
+    await clearRollRecord(gm.page)
+    await clearRollRecord(gm.page, PLAYER2_ACTOR)
+    await clearPool(player2.page)
+    await restoreSettings(gm.page, before)
+
+    await gm.context.close()
+    await player2.context.close()
+  }
+})
