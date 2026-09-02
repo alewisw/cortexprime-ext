@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
 import { SHEET, openActorSheet, closeAllSheets, getActorPath, updateActor } from './helpers/sheet.js'
 import { clearPool, getPool } from './helpers/dicePool.js'
+import { confirmYes } from './helpers/dialog.js'
 
 const ACTOR = 'Amanda Singh'
 
@@ -499,7 +500,7 @@ test('deleting a section moves it to Deleted Sections, and Restore brings it bac
       .filter({ has: gm.page.locator('input[value="E2E Delete Restore"]') })
 
     await article.locator('.remove-note').click()
-    await gm.page.locator('.dialog .dialog-buttons button[data-button="yes"]').click()
+    await confirmYes(gm.page)
 
     await expect
       .poll(() => getActorPath(gm.page, ACTOR, `${tabPath}.deletedSections.0.label`))

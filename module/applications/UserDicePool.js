@@ -1,4 +1,4 @@
-import { localizer, showPlotPointAnimation } from '../scripts/foundryHelpers.js'
+import { getCurrentTheme, localizer, showPlotPointAnimation } from '../scripts/foundryHelpers.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
 import { runExclusive } from '../scripts/asyncMutex.js'
@@ -108,8 +108,7 @@ export class UserDicePool extends FormApplication {
 
   async getData () {
     const dice = readDicePool()
-    const themes = game.settings.get('cortexprime-ext', 'themes')
-    const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+    const theme = getCurrentTheme()
     const activeChallenge = getActiveChallenge()
     const rollToBeatTargets = getRollToBeatTargets()
     const myInterfererId = getMyInterfererId()

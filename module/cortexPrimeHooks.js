@@ -1,6 +1,6 @@
 import { FloatingPanel } from './applications/FloatingPanel.js'
 import { UserDicePool } from './applications/UserDicePool.js'
-import { localizer, setCssVars } from './scripts/foundryHelpers.js'
+import { getCurrentTheme, localizer, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
 import { registerCrisisPool } from './scripts/crisisPoolPanel.js'
 import { registerDoomPool } from './scripts/doomPool.js'
@@ -52,8 +52,7 @@ export default () => {
   })
 
   Hooks.once('ready', async () => {
-    const themes = game.settings.get('cortexprime-ext', 'themes')
-    const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+    const theme = getCurrentTheme()
     setCssVars(theme)
     if (game.settings.get('cortexprime-ext', 'WelcomeSeen') === false) {
       if (game.user.isGM) {

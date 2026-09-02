@@ -1,4 +1,4 @@
-import { localizer } from './foundryHelpers.js'
+import { getCurrentTheme, localizer } from './foundryHelpers.js'
 
 // A plain promise-resolving Dialog listing the GM-configured Plot Point usage options as a
 // single set of radio buttons (only one selectable across every group) plus a "Spend Plot
@@ -10,8 +10,7 @@ export const selectPlotPointUsage = async () => {
     { label: localizer('PlotPointUsesGeneral'), uses: Object.values(plotPointUses.general ?? {}) },
     { label: localizer('PlotPointUsesOpportunity'), uses: Object.values(plotPointUses.opportunity ?? {}) }
   ]
-  const themes = game.settings.get('cortexprime-ext', 'themes')
-  const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+  const theme = getCurrentTheme()
 
   const content = await foundry.applications.handlebars.renderTemplate(
     'systems/cortexprime-ext/templates/dialog/plot-point-use.html', { groups, theme }

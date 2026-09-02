@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openAs, ROLE_USERS } from './foundry.js'
 import { getSetting } from './helpers/world.js'
+import { listOpenAppNames } from './helpers/apps.js'
 
 // Runs FIRST — hence the filename, since Playwright orders spec files alphabetically.
 //
@@ -65,9 +66,7 @@ test('preflight: the world is in a fit state for the suite', async ({ browser })
     // there by a module — and a floating window over the tray swallows clicks aimed at what is
     // underneath it, which hangs a spec rather than failing it.
     for (const [role, session] of [['gm', gm], ['player1', player1], ['player2', player2]]) {
-      const open = await session.page.evaluate(() =>
-        Object.values(window.ui.windows ?? {}).map(app => app.constructor?.name ?? app.id ?? 'unknown')
-      )
+      const open = await listOpenAppNames(session.page)
 
       expect(
         open,

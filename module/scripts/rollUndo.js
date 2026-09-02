@@ -6,7 +6,7 @@
 // destroyed at roll time and never persisted; they rebuild it).
 //
 // The pure decisions live in rollUndoLogic.js.
-import { localizer, onSettingChanged } from './foundryHelpers.js'
+import { findApp, localizer, onSettingChanged } from './foundryHelpers.js'
 import {
   getActiveChallenge,
   getBlankChallenge,
@@ -96,7 +96,7 @@ const getUndoState = rollFlag => {
 // ---- The undo itself ----
 
 const closeHitchesDialog = actorId => {
-  const dialog = Object.values(ui.windows ?? {}).find(app => app.id === `hitches-dialog-${actorId}`)
+  const dialog = findApp(app => app.id === `hitches-dialog-${actorId}`)
 
   dialog?.close()
 }

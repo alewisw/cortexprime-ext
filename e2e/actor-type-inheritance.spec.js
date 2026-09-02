@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
 import { getSetting, setSetting, snapshotSettings, restoreSettings } from './helpers/world.js'
+import { closeOpenApps } from './helpers/apps.js'
 
 // Actor Type inheritance is a settings-form feature, and the half a unit test can't reach is the
 // locking: applyActorTypeInheritance is covered in test/actorTypeInheritanceLogic.test.js, but
@@ -52,11 +53,7 @@ async function openActorSettings(page) {
 }
 
 async function closeActorSettings(page) {
-  await page.evaluate(() => {
-    Object.values(window.ui.windows)
-      .filter(app => app.id === 'actor-settings')
-      .forEach(app => app.close())
-  })
+  await closeOpenApps(page, { id: 'actor-settings' })
 }
 
 // Seeds the fixture, opens the form and drills into the parent Actor Type.

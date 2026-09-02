@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { closeOpenApps } from './helpers/apps.js'
 
 const FOUNDRY_URL_DEFAULT = 'http://localhost:30000'
 const VIEWPORT = { width: 1366, height: 768 }
@@ -45,17 +46,28 @@ function foundryUrl() {
 // will have a different class, and the suite shouldn't need updating to survive it.
 async function closeLeftoverWindows(page) {
   try {
-    await page.evaluate(async () => {
-      for (const app of Object.values(window.ui.windows ?? {})) {
-        try {
-          await app.close()
-        } catch {
-          // A window that refuses to close is still better than failing login here.
-        }
-      }
-    })
+    await closeOpenApps(page)
   } catch {
     // No window layer yet — nothing to close.
+  }
+}
+
+// Foundry stacks its notification toasts in a top-center <ol id="notifications"> that sits ABOVE
+// the window layer and eats pointer events wherever it overlaps. Most toasts expire on their own,
+// but ones raised with {permanent: true} never do — and headless Chromium always earns at least
+// one: "Your web browser does not have hardware acceleration enabled."
+//
+// That banner is directly over the middle of an actor sheet at this viewport, so a click aimed at
+// a control underneath it never lands. Playwright's click has no action timeout configured here,
+// so it retries until the whole 180s test timeout expires — the failure surfaces as an unexplained
+// hang with the button present and "visible, enabled and stable" in the log, which is a genuinely
+// nasty thing to diagnose. Clearing them once at login costs nothing and removes the whole class
+// of failure.
+async function dismissNotifications(page) {
+  try {
+    await page.evaluate(() => window.ui?.notifications?.clear?.())
+  } catch {
+    // Notifications not up yet — nothing to clear.
   }
 }
 
@@ -109,6 +121,7 @@ export async function joinAs(browser, { user = ROLE_USERS.gm, password = '' } = 
 
   await closeYendorsChangelogIfPresent(page)
   await closeLeftoverWindows(page)
+  await dismissNotifications(page)
 
   return { context, page }
 }
@@ -139,6 +152,7 @@ export async function openAs(browser, role) {
 
   await closeYendorsChangelogIfPresent(page)
   await closeLeftoverWindows(page)
+  await dismissNotifications(page)
 
   return { context, page }
 }

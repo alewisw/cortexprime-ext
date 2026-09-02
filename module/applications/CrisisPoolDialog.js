@@ -1,5 +1,5 @@
 import { getLength, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
-import { localizer } from '../scripts/foundryHelpers.js'
+import { getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
 import { endCrisis, getCrisisPool, startCrisis } from '../scripts/crisisPool.js'
 
 export class CrisisPoolDialog extends FormApplication {
@@ -34,8 +34,7 @@ export class CrisisPoolDialog extends FormApplication {
   }
 
   async getData () {
-    const themes = game.settings.get('cortexprime-ext', 'themes')
-    const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+    const theme = getCurrentTheme()
 
     return { name: this.name, dice: this.dice, isEditing: this.isEditing, theme }
   }

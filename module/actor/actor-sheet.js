@@ -4,7 +4,7 @@
  */
 import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReindexFilter, objectSome } from '../../lib/helpers.js'
 import { computeActorTypeChange, mergeActorTypeData } from './actorTypeChangeLogic.js'
-import { expandNotesFieldOnEdit, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
+import { expandNotesFieldOnEdit, getCurrentTheme, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
 import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, reindexDiceAfterRemoval, stepFaceDown, stepFaceUp } from '../scripts/traitDiceTemporary.js'
@@ -34,8 +34,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   }
 
   async getData (options) {
-    const themes = game.settings.get('cortexprime-ext', 'themes')
-    const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+    const theme = getCurrentTheme()
 
     if (this.actor.isOwner) {
       const normalization = computeTraitDiceNormalization(this.actor.system.actorType)

@@ -1,4 +1,4 @@
-import { localizer } from '../scripts/foundryHelpers.js'
+import { getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
 import { applyParadoxOutcome, localizeParadoxLog } from '../mage/paradox.js'
 import { LIMIT_STATES } from '../mage/paradoxLogic.js'
 
@@ -28,8 +28,7 @@ export class ParadoxDialog extends FormApplication {
   }
 
   async getData () {
-    const themes = game.settings.get('cortexprime-ext', 'themes')
-    const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+    const theme = getCurrentTheme()
 
     return {
       log: localizeParadoxLog(this.pending.log),

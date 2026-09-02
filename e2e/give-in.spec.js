@@ -4,6 +4,7 @@ import { TRAY, openTray, clearRollRecord, seedRollRecord } from './helpers/diceP
 import { setChallengeType, setInitiator, selectResponder, checkResponder, checkGroupParticipant, getActiveChallenge, challengeIdFor } from './helpers/challenge.js'
 import { clearChallenge, getChatMessageIds, plotPointMessagesSince, restoreSettings, snapshotSettings } from './helpers/world.js'
 import { getActorPath, updateActor } from './helpers/sheet.js'
+import { confirmYes } from './helpers/dialog.js'
 
 // UserDicePool.js's new Give-In button has no coverage: conceding a Contest/Group without
 // rolling has to gain a Plot Point, take the current opponent's effect dice as the consequence,
@@ -72,7 +73,7 @@ test('Give In on a Contest confirms, gains a Plot Point, takes the opponent\'s e
     const messagesBefore = await getChatMessageIds(gm.page)
 
     await giveInButton.click()
-    await player1.page.locator('.dialog .dialog-buttons button[data-button="yes"]').click()
+    await confirmYes(player1.page)
 
     // The Contest ends outright, exactly like a real loss.
     await expect.poll(() => getActiveChallenge(gm.page).then(c => c.type ?? null)).toBeNull()
@@ -199,7 +200,7 @@ test('Give In on a Group duel drops the challenger from the queue without distur
     const messagesBefore = await getChatMessageIds(gm.page)
 
     await giveInButton.click()
-    await player1.page.locator('.dialog .dialog-buttons button[data-button="yes"]').click()
+    await confirmYes(player1.page)
 
     // Dropped from the front of the queue; the champion is untouched.
     await expect.poll(() => getActiveChallenge(gm.page).then(c => c.group?.queue)).toEqual([gmId])

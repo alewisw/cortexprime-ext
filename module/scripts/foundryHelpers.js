@@ -130,3 +130,23 @@ export const setCssVars = (theme) => {
     document.body.style.setProperty(property, value)
   })
 }
+
+// The active theme: either the hand-tuned 'custom' one or the named preset currently selected.
+// This lookup was copy-pasted at a dozen call sites; it lives here so the "what is 'custom'"
+// rule is stated once. ThemeSettings writes the setting and then reads it straight back through
+// this, so it must stay a live read rather than anything cached.
+export const getCurrentTheme = () => {
+  const themes = game.settings.get('cortexprime-ext', 'themes')
+
+  return themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+}
+
+// The first open Application matching `predicate`, across BOTH registries. Application V1 windows
+// live in ui.windows; V2 ones live in foundry.applications.instances and never appear in
+// ui.windows at all. During the V1 -> V2 migration both are populated, so anything looking up a
+// live window by identity has to check both or it will silently stop finding apps the moment they
+// move. Use this rather than reaching into either registry directly.
+export const findApp = predicate => [
+  ...Object.values(ui.windows ?? {}),
+  ...(foundry.applications?.instances?.values() ?? [])
+].find(predicate) ?? null

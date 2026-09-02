@@ -1,4 +1,4 @@
-import { localizer } from '../scripts/foundryHelpers.js'
+import { getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
 import { applyHitchOutcomes, getComplications, getDoomPool } from '../scripts/hitches.js'
 import { ComplicationDialog } from './ComplicationDialog.js'
 import {
@@ -133,8 +133,7 @@ export class HitchesDialog extends FormApplication {
   }
 
   async getData () {
-    const themes = game.settings.get('cortexprime-ext', 'themes')
-    const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+    const theme = getCurrentTheme()
 
     const { complications, sceneComplications, defaultComplicationLabel, doomPool, plotPoints, projection, summary } = this._getState()
 

@@ -200,7 +200,7 @@ test('the Hitches dialog\'s "Choose…" button reuses ComplicationDialog\'s pick
 
     await rows.first().locator('.choose-complication-name:visible').click()
 
-    const picker = gm.page.locator('.window-app.complication-dialog')
+    const picker = gm.page.locator('[id^="complication-picker-dialog-"]')
     await picker.waitFor({ state: 'visible' })
 
     // pickOnly mode: no dice editor, no Hidden checkbox, no Delete - just the name field and the

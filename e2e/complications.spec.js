@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
 import { openActorSheet, closeAllSheets, getActorPath, updateActor } from './helpers/sheet.js'
+import { confirmYes } from './helpers/dialog.js'
 
 // ComplicationDialog.js / complication.html / complicationPresets.js have no E2E coverage at
 // all: inline editing was replaced by a popout that handles name/dice/hidden/delete AND offers a
@@ -10,7 +11,10 @@ import { openActorSheet, closeAllSheets, getActorPath, updateActor } from './hel
 
 const ACTOR = 'Amanda Singh'
 const COMPLICATIONS = 'system.actorType.complications'
-const DIALOG = '.window-app.complication-dialog'
+// The dialog ids itself per actor+index (see ComplicationDialog's constructor), so match the
+// prefix rather than a fixed id. Both frameworks put options.id on the root element, so this
+// survives the V2 migration where the .window-app class does not.
+const DIALOG = '[id^="complication-dialog-"]'
 
 async function requireComplications(page, actorName) {
   const enabled = await page.evaluate(
@@ -26,7 +30,7 @@ async function requireComplications(page, actorName) {
  *
  * The `has` locator is built from sheet.page(), not from `sheet` itself: filter({ has }) matches
  * within each candidate by re-running the inner locator's OWN selector chain as a nested query,
- * so an inner locator that embeds the same ".window-app.actor-sheet" scoping as the outer one
+ * so an inner locator that embeds the same actor-sheet scoping as the outer one
  * asks Playwright to find that scoping AGAIN inside a candidate already inside it - impossible,
  * so it silently matches nothing. Scoping the inner locator from the page instead keeps its
  * chain to just ".trait-title-cpt", which correctly resolves as a descendant of each candidate.
@@ -156,7 +160,7 @@ test('the pencil on an existing complication opens it pre-filled; editing persis
     await dialog.waitFor({ state: 'visible' })
 
     await dialog.locator('button.delete-complication').click()
-    await gm.page.locator('.dialog .dialog-buttons button[data-button="yes"]').click()
+    await confirmYes(gm.page)
 
     await expect(dialog).toBeHidden({ timeout: 15_000 })
     await expect

@@ -1,5 +1,5 @@
 import { getLength, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
-import { localizer } from '../scripts/foundryHelpers.js'
+import { getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
 import { removeDataPoint, resetDataPoint } from '../scripts/sheetHelpers.js'
 import { SEVERITY_DICE } from '../actor/complicationPresets.js'
 import { buildPickerState, toDiceValue } from './complicationDialogLogic.js'
@@ -72,8 +72,7 @@ export class ComplicationDialog extends FormApplication {
   }
 
   async getData () {
-    const themes = game.settings.get('cortexprime-ext', 'themes')
-    const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+    const theme = getCurrentTheme()
 
     return {
       theme,

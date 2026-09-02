@@ -5,8 +5,15 @@
 // floating panel. Any spec that opens a sheet and then needs the panel (or
 // the dice pool tray behind it) must close the sheet first — Foundry will
 // not reposition it out of the way. Use closeAllSheets() between phases.
+import { closeOpenApps } from './apps.js'
 
-export const SHEET = '.window-app.actor-sheet'
+// Deliberately just the system's own class, with no framework chrome class alongside it. The
+// window root carries options.classes under BOTH frameworks, so 'actor-sheet' identifies it
+// either way — whereas the V1-only '.window-app' does not, and a '.window-app, .application'
+// pair cannot be used: several specs interpolate SHEET into a longer selector
+// (`${SHEET} .column-item`), and a comma in it silently reparses that into "the whole sheet, OR
+// a .column-item" rather than scoping as intended. Single selector, no commas — keep it that way.
+export const SHEET = '.actor-sheet'
 const CLOSE = 'a.header-button.close, button.header-control[data-action="close"]'
 
 /** Opens an actor's sheet directly (bypasses whichever button would do it). */
@@ -24,10 +31,7 @@ export async function openActorSheet(page, actorName) {
 
 /** Closes every open actor sheet on this client. */
 export async function closeAllSheets(page) {
-  await page.evaluate(async () => {
-    const apps = Object.values(window.ui.windows).filter(app => app.actor)
-    for (const app of apps) await app.close()
-  })
+  await closeOpenApps(page, { hasActor: true })
 
   await page.locator(SHEET).first().waitFor({ state: 'detached' }).catch(() => {})
 }

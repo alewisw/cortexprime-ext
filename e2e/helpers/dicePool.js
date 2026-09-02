@@ -1,6 +1,12 @@
 // Dice Pool tray helpers: opening the tray, building a pool, and rolling
 // with known die values.
 
+import { confirmDialog } from './dialog.js'
+
+// Re-exported: the picker's Confirm lives conceptually with the tray, even though the
+// framework-straddling selector belongs in dialog.js.
+export { confirmDialog }
+
 export const TRAY = '#user-dice-pool'
 
 /** Opens the viewer's own Dice Pool tray and waits for it to render. */
@@ -233,11 +239,6 @@ export async function rollExactly(page, values) {
   await confirmDialog(page)
 
   await picker.waitFor({ state: 'detached', timeout: 15_000 })
-}
-
-/** Confirms whichever Foundry Dialog is open (the picker's Confirm button). */
-export async function confirmDialog(page, label = 'Confirm') {
-  await page.locator(`.dialog button:has-text("${label}")`).first().click()
 }
 
 /**

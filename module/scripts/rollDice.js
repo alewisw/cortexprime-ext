@@ -1,4 +1,4 @@
-import { localizer, onSettingChanged, showPlotPointSpendAnimation } from './foundryHelpers.js'
+import { getCurrentTheme, localizer, onSettingChanged, showPlotPointSpendAnimation } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
 import { flattenPoolEntries } from './dicePoolValidation.js'
 import { getHinderRewards } from './dicePoolTraitLogic.js'
@@ -37,8 +37,7 @@ const getRollResults = async pool => {
 }
 
 const dicePicker = async rollResults => {
-  const themes = game.settings.get('cortexprime-ext', 'themes')
-  const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+  const theme = getCurrentTheme()
   const challengeTarget = getMyChallengeTarget()
   const availablePlotPoints = game.user.character?.system.pp.value ?? 0
 
@@ -414,8 +413,7 @@ export default async function (pool, rollType, targetTotal, spendPlotPointForExt
     .map(entry => ({ traitSetId: entry.traitSetId, faces: Object.values(entry.value ?? {}).map(String) }))
 
   const rollResults = await getRollResults(pool)
-  const themes = game.settings.get('cortexprime-ext', 'themes')
-  const theme = themes.current === 'custom' ? themes.custom : themes.list[themes.current]
+  const theme = getCurrentTheme()
   const sourceDefaultCollapsed = game.settings.get('cortexprime-ext', 'rollResultSourceCollapsed')
 
   if (spendPlotPointForExtraDie && game.user.character) {

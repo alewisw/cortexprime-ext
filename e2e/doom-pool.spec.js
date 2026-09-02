@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
 import { getSetting, setSetting } from './helpers/world.js'
+import { openActorSheetActorId } from './helpers/apps.js'
 
 // The Doom Pool button is deliberately visible to players as well as the
 // GM (doomPool.js:16 gates only on the actor being configured, not on
@@ -45,9 +46,7 @@ test('the Doom Pool button opens the configured actor sheet', async ({ browser }
   try {
     await button(gm.page).click()
 
-    const openedId = await gm.page.evaluate(() =>
-      Object.values(window.ui.windows).find(app => app.actor)?.actor?.id ?? null
-    )
+    const openedId = await openActorSheetActorId(gm.page)
     expect(openedId).toBe(configuredId)
 
     // It is a toggle, not just an opener.

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
+import { SHEET } from './helpers/sheet.js'
 
 // "My Character" is the players' shortcut to their own sheet. It is gated
 // on !isGM && !!game.user.character (myCharacter.js:11), and refreshes off
@@ -24,7 +25,7 @@ test('a player can open their own character sheet from the panel', async ({ brow
     // The sheet window itself is the assertion. (The button's `.active`
     // class is not: FloatingPanel only recomputes isActive() on refresh,
     // and rendering a sheet doesn't trigger one.)
-    const sheet = player1.page.locator('.window-app.actor-sheet')
+    const sheet = player1.page.locator(SHEET)
     await expect(sheet).toHaveCount(1)
 
     const openedName = await player1.page.evaluate(() =>
