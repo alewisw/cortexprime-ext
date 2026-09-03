@@ -1,6 +1,7 @@
 import { getLength, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
-import { confirmAction, getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
+import { confirmAction, localizer } from '../scripts/foundryHelpers.js'
 import { removeDataPoint, resetDataPoint } from '../scripts/sheetHelpers.js'
+import { CortexApplicationV2 } from './CortexApplicationV2.js'
 import { SEVERITY_DICE } from '../actor/complicationPresets.js'
 import { buildPickerState, toDiceValue } from './complicationDialogLogic.js'
 
@@ -12,15 +13,16 @@ import { buildPickerState, toDiceValue } from './complicationDialogLogic.js'
 //     straight to the actor on Confirm (index omitted/null means "create a new one").
 //   new ComplicationDialog({ pickOnly: true, initialLabel, onPick }) - never touches an actor;
 //     Confirm just calls onPick(label) with whatever name is showing.
-export class ComplicationDialog extends FormApplication {
+export class ComplicationDialog extends CortexApplicationV2 {
   constructor ({ actor, path, index = null, hasHidableTraits = false, pickOnly = false, initialLabel = '', onPick = null } = {}) {
     // Scoped so simultaneous windows never share a DOM id: pickOnly can be opened from several
     // Hitches rows at once (no actor to key off), and full mode is keyed by actor + index so
     // editing two different complications on the same actor at the same time doesn't collide
-    // either - the same reasoning HitchesDialog uses for its own per-actor id.
+    // either - the same reasoning HitchesDialog uses for its own per-actor id. Passed as instance
+    // options, which override DEFAULT_OPTIONS, so no id is declared there.
     const id = pickOnly ? `complication-picker-dialog-${Date.now()}` : `complication-dialog-${actor.id}-${index ?? 'new'}`
 
-    super({}, { id })
+    super({ id })
 
     this.pickOnly = pickOnly
 
@@ -48,34 +50,42 @@ export class ComplicationDialog extends FormApplication {
     }
   }
 
-  static get defaultOptions () {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      template: 'systems/cortexprime-ext/templates/dialog/complication.html',
-      classes: ['cortexprime', 'complication-dialog'],
+  static DEFAULT_OPTIONS = {
+    classes: ['complication-dialog'],
+    position: {
       width: 640,
       // 'auto' always sizes the window to exactly match its content, so there's no gap between
       // the form and the window chrome to leave a dead grey area below it - the taller default
       // comes from .picker-name-list's own max-height (see _forms.scss), not a fixed number here.
       // resizable still lets the player drag it taller/shorter on top of that.
-      height: 'auto',
-      resizable: true,
-      closeOnSubmit: false,
-      submitOnChange: false,
-      submitOnClose: false
-    })
+      height: 'auto'
+    },
+    window: { resizable: true },
+    actions: {
+      newDie: ComplicationDialog.#onNewDie,
+      pickName: ComplicationDialog.#onPickName,
+      confirmComplication: ComplicationDialog.#onConfirm,
+      cancelComplication: ComplicationDialog.#onCancel,
+      deleteComplication: ComplicationDialog.#onDelete
+    }
   }
 
+  static PARTS = {
+    content: { template: 'systems/cortexprime-ext/templates/dialog/complication.html' }
+  }
+
+  // The wording depends on instance state, so this is a getter rather than window.title.
+  // ApplicationV2 reads it on the first render only, which is sufficient: pickOnly and isEditing
+  // are both fixed when the dialog is constructed.
   get title () {
     if (this.pickOnly) return localizer('ChooseComplicationName')
 
     return localizer(this.isEditing ? 'EditComplication' : 'AddComplication')
   }
 
-  async getData () {
-    const theme = getCurrentTheme()
-
+  async _prepareContext (options) {
     return {
-      theme,
+      ...await super._prepareContext(options),
       pickOnly: this.pickOnly,
       isEditing: this.isEditing,
       hasHidableTraits: this.hasHidableTraits,
@@ -90,90 +100,83 @@ export class ComplicationDialog extends FormApplication {
     }
   }
 
-  activateListeners (html) {
-    super.activateListeners(html)
+  // `change` has no `actions` equivalent, so these stay hand-wired. Rebound every render, which
+  // is correct: the part's DOM is replaced wholesale each time.
+  _onRender (context, options) {
+    super._onRender(context, options)
 
-    // this.render(true) rebuilds the whole form from scratch, so the fresh .picker-name-list
-    // elements it produces always start scrolled to the top - restore whatever scroll position
-    // _onPickerNameClick saved just before triggering that render.
-    if (this._pickerScrollPositions) {
-      html.find('.picker-name-list').each((index, element) => {
-        element.scrollTop = this._pickerScrollPositions[index] ?? 0
+    // Picking a name re-renders the whole form, so the fresh lists start at the top - put back
+    // whatever #onPickName captured just before triggering it. PARTS.scrollable cannot do this:
+    // it resolves each selector with querySelector, the FIRST match only, and there is one
+    // .picker-name-list per severity group. Restoring here rather than in _syncPartState because
+    // the elements are laid out by this point; setting scrollTop mid-swap clamps to 0.
+    if (this.#pickerScrollTops) {
+      this.element.querySelectorAll('.picker-name-list').forEach((list, index) => {
+        list.scrollTop = this.#pickerScrollTops[index] ?? 0
       })
-      this._pickerScrollPositions = null
+
+      this.#pickerScrollTops = null
     }
 
-    html.find('.complication-label').change(event => { this.label = event.currentTarget.value })
+    this.element.querySelector('.complication-label')
+      ?.addEventListener('change', event => { this.label = event.currentTarget.value })
 
-    if (!this.pickOnly) {
-      html.find('.die-select').change(this._onDieChange.bind(this))
-      html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
-      html.find('.new-die').click(this._onNewDie.bind(this))
-      html.find('.complication-hidden').change(event => { this.hidden = event.currentTarget.checked })
-      html.find('.delete-complication').click(this._onDelete.bind(this))
+    this.element.querySelector('.picker-category')
+      ?.addEventListener('change', async event => {
+        this.pickerCategory = event.currentTarget.value
+        this.pickerSubCategory = undefined
+        this.pickerSelectedName = undefined
+
+        await this.render()
+      })
+
+    this.element.querySelector('.picker-subcategory')
+      ?.addEventListener('change', async event => {
+        this.pickerSubCategory = event.currentTarget.value
+        this.pickerSelectedName = undefined
+
+        await this.render()
+      })
+
+    if (this.pickOnly) return
+
+    this.element.querySelector('.complication-hidden')
+      ?.addEventListener('change', event => { this.hidden = event.currentTarget.checked })
+
+    for (const select of this.element.querySelectorAll('.die-select')) {
+      select.addEventListener('change', this.#onDieChange.bind(this))
+      select.addEventListener('mouseup', this.#onDieRemove.bind(this))
     }
-
-    html.find('.picker-category').change(event => {
-      this.pickerCategory = event.currentTarget.value
-      this.pickerSubCategory = undefined
-      this.pickerSelectedName = undefined
-      this.render(true)
-    })
-    html.find('.picker-subcategory').change(event => {
-      this.pickerSubCategory = event.currentTarget.value
-      this.pickerSelectedName = undefined
-      this.render(true)
-    })
-    html.find('.picker-name').click(event => {
-      event.preventDefault()
-
-      const $target = $(event.currentTarget)
-      const name = $target.data('name')
-      const severity = $target.data('severity')
-
-      this.label = name
-      this.pickerSelectedName = name
-
-      if (!this.pickOnly) {
-        this.dice = toDiceValue(SEVERITY_DICE[severity])
-      }
-
-      this._pickerScrollPositions = html.find('.picker-name-list').toArray().map(element => element.scrollTop)
-
-      this.render(true)
-    })
-
-    html.find('.confirm-complication').click(this._onConfirm.bind(this))
-    html.find('.cancel-complication').click(() => this.close())
   }
 
-  _onDieChange (event) {
+  async #onDieChange (event) {
     event.preventDefault()
 
-    const $target = $(event.currentTarget)
-    const key = $target.data('key')
+    const target = event.currentTarget
+    const key = target.dataset.key
+    const value = target.value
 
-    this.dice = objectMapValues(this.dice, (value, index) => parseInt(index, 10) === parseInt(key, 10) ? $target.val() : value)
+    this.dice = objectMapValues(this.dice, (current, index) =>
+      parseInt(index, 10) === parseInt(key, 10) ? value : current)
 
-    this.render(true)
+    await this.render()
   }
 
-  _onDieRemove (event) {
+  async #onDieRemove (event) {
     event.preventDefault()
 
     if (event.button !== 2) return
 
-    const $target = $(event.currentTarget)
-    const key = $target.data('key')
-
     if (getLength(this.dice) <= 1) return
+
+    const key = event.currentTarget.dataset.key
 
     this.dice = objectReindexFilter(this.dice, (_, index) => parseInt(index, 10) !== parseInt(key, 10))
 
-    this.render(true)
+    await this.render()
   }
 
-  _onNewDie (event) {
+  static async #onNewDie (event, target) {
     event.preventDefault()
 
     const currentLength = getLength(this.dice)
@@ -181,10 +184,36 @@ export class ComplicationDialog extends FormApplication {
 
     this.dice = { ...this.dice, [currentLength]: lastValue }
 
-    this.render(true)
+    await this.render()
   }
 
-  async _onDelete (event) {
+  // Scroll positions of every name list, captured on the way into a re-render; see _onRender.
+  #pickerScrollTops = null
+
+  static async #onPickName (event, target) {
+    event.preventDefault()
+
+    const { name, severity } = target.dataset
+
+    this.#pickerScrollTops = [...this.element.querySelectorAll('.picker-name-list')].map(list => list.scrollTop)
+
+    this.label = name
+    this.pickerSelectedName = name
+
+    if (!this.pickOnly) {
+      this.dice = toDiceValue(SEVERITY_DICE[severity])
+    }
+
+    await this.render()
+  }
+
+  static async #onCancel (event, target) {
+    event.preventDefault()
+
+    await this.close()
+  }
+
+  static async #onDelete (event, target) {
     event.preventDefault()
 
     if (!this.isEditing) return
@@ -199,15 +228,17 @@ export class ComplicationDialog extends FormApplication {
 
     await removeDataPoint.call(this, currentComplications, this.path, 'complications', this.index)
 
-    this.close()
+    await this.close()
   }
 
-  async _onConfirm (event) {
+  static async #onConfirm (event, target) {
     event.preventDefault()
 
     if (this.pickOnly) {
       this.onPick?.(this.label)
-      this.close()
+
+      await this.close()
+
       return
     }
 
@@ -225,8 +256,6 @@ export class ComplicationDialog extends FormApplication {
       }
     })
 
-    this.close()
+    await this.close()
   }
-
-  async _updateObject () {}
 }

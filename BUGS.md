@@ -181,3 +181,34 @@ the form actually edits. So changing a value stores it without updating the page
 Observed: setting `bodyFontSize` to 19 left `--cp-body-font-size` at `15px`. The appv1 code did
 exactly the same, so this was left alone during the migration rather than smuggling a behaviour
 change into it. Worth deciding whether the live preview is meant to track edits.
+
+---
+
+## 5. The complication picker's scroll position is never restored
+
+**Severity: low (cosmetic).** Pre-existing; behaviour is unchanged by the V2 migration.
+
+`ComplicationDialog` re-renders its whole form when a name is picked, so the name lists jump back
+to the top. It carries code specifically to prevent that - capture every `.picker-name-list`
+scrollTop before the re-render, put it back afterwards - and a comment explaining why. **It does
+not work, and never did.**
+
+Measured on both frameworks, picking a name after scrolling the only list long enough to overflow:
+
+| | scrollTop before | after |
+|---|---|---|
+| appv1 (`activateListeners` restore) | 3 | 0 |
+| ApplicationV2 (`_onRender` restore) | 18 | 0 |
+
+Also tried, with the same result: `PARTS.scrollable`, and the mixin's own
+`_preSyncPartState`/`_syncPartState` hooks. Note `PARTS.scrollable` could not express this case
+anyway - it resolves each selector with `querySelector`, i.e. the first match only, and there is
+one `.picker-name-list` per severity group (three for Mental / Anger and Aggression).
+
+The likely cause is that the freshly inserted list has not been laid out when `scrollTop` is
+assigned, so the value clamps to 0. A fix probably needs to force a reflow first, or defer to
+`requestAnimationFrame`. The V2 port keeps the same capture/restore shape as appv1 so the fix has
+an obvious place to land.
+
+Only the first of the three lists overflows at the default window size, so the visible effect is
+small - which is presumably why it went unnoticed.
