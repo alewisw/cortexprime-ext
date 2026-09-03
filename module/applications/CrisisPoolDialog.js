@@ -1,8 +1,9 @@
 import { getLength, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
-import { getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
+import { localizer } from '../scripts/foundryHelpers.js'
+import { CortexApplicationV2 } from './CortexApplicationV2.js'
 import { endCrisis, getCrisisPool, startCrisis } from '../scripts/crisisPool.js'
 
-export class CrisisPoolDialog extends FormApplication {
+export class CrisisPoolDialog extends CortexApplicationV2 {
   constructor () {
     super()
 
@@ -15,65 +16,84 @@ export class CrisisPoolDialog extends FormApplication {
       : { 0: '8' }
   }
 
-  static get defaultOptions () {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'crisis-pool-dialog',
-      template: 'systems/cortexprime-ext/templates/dialog/crisis-pool.html',
-      title: localizer('StartCrisis'),
-      classes: ['cortexprime', 'crisis-pool-dialog'],
-      width: 420,
-      height: 'auto',
-      closeOnSubmit: false,
-      submitOnChange: false,
-      submitOnClose: false
-    })
+  static DEFAULT_OPTIONS = {
+    id: 'crisis-pool-dialog',
+    classes: ['crisis-pool-dialog'],
+    position: { width: 420, height: 'auto' },
+    actions: {
+      newDie: CrisisPoolDialog.#onNewDie,
+      // Both the Start and Update buttons commit; which one is rendered depends on isEditing.
+      startCrisis: CrisisPoolDialog.#onStart,
+      endCrisis: CrisisPoolDialog.#onEnd
+    }
   }
 
+  static PARTS = {
+    content: { template: 'systems/cortexprime-ext/templates/dialog/crisis-pool.html' }
+  }
+
+  // Overriding the getter rather than setting window.title, because the wording depends on
+  // instance state. ApplicationV2 reads this during the FIRST render only
+  // (_configureRenderOptions gates it on isFirstRender), which is sufficient here: isEditing is
+  // fixed when the dialog is constructed and never changes while it is open. A title that has to
+  // change mid-life would need render({ window: { title } }) instead.
   get title () {
     return localizer(this.isEditing ? 'EditCrisis' : 'StartCrisis')
   }
 
-  async getData () {
-    const theme = getCurrentTheme()
-
-    return { name: this.name, dice: this.dice, isEditing: this.isEditing, theme }
+  async _prepareContext (options) {
+    return {
+      ...await super._prepareContext(options),
+      name: this.name,
+      dice: this.dice,
+      isEditing: this.isEditing
+    }
   }
 
-  activateListeners (html) {
-    super.activateListeners(html)
-    html.find('.crisis-name').change(event => { this.name = event.currentTarget.value })
-    html.find('.die-select').change(this._onDieChange.bind(this))
-    html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
-    html.find('.new-die').click(this._onNewDie.bind(this))
-    html.find('.start-crisis, .update-crisis').click(this._onSubmit.bind(this))
-    html.find('.end-crisis').click(this._onEnd.bind(this))
+  // `change` has no `actions` equivalent - actions dispatch from click/contextmenu only - so these
+  // stay hand-wired. Rebinding on every render is correct and necessary: _renderHTML replaces the
+  // part's DOM wholesale, so the previous elements (and their listeners) are gone.
+  _onRender (context, options) {
+    super._onRender(context, options)
+
+    this.element.querySelector('.crisis-name')
+      ?.addEventListener('change', event => { this.name = event.currentTarget.value })
+
+    for (const select of this.element.querySelectorAll('.die-select')) {
+      select.addEventListener('change', this.#onDieChange.bind(this))
+      // Right-click to drop a die. Kept as mouseup to match the rest of the system's dice
+      // controls; ApplicationV2 can express this as an action with { handler, buttons: [2] },
+      // which is worth adopting across all of them at once rather than here alone.
+      select.addEventListener('mouseup', this.#onDieRemove.bind(this))
+    }
   }
 
-  _onDieChange (event) {
+  async #onDieChange (event) {
     event.preventDefault()
 
-    const $target = $(event.currentTarget)
-    const key = $target.data('key')
+    const target = event.currentTarget
+    const key = target.dataset.key
+    const value = target.value
 
-    this.dice = objectMapValues(this.dice, (value, index) => parseInt(index, 10) === parseInt(key, 10) ? $target.val() : value)
+    this.dice = objectMapValues(this.dice, (current, index) =>
+      parseInt(index, 10) === parseInt(key, 10) ? value : current)
 
-    this.render(true)
+    await this.render()
   }
 
-  _onDieRemove (event) {
+  async #onDieRemove (event) {
     event.preventDefault()
 
     if (event.button !== 2) return
 
-    const $target = $(event.currentTarget)
-    const key = $target.data('key')
+    const key = event.currentTarget.dataset.key
 
     this.dice = objectReindexFilter(this.dice, (_, index) => parseInt(index, 10) !== parseInt(key, 10))
 
-    this.render(true)
+    await this.render()
   }
 
-  _onNewDie (event) {
+  static async #onNewDie (event, target) {
     event.preventDefault()
 
     const currentLength = getLength(this.dice)
@@ -81,10 +101,10 @@ export class CrisisPoolDialog extends FormApplication {
 
     this.dice = { ...this.dice, [currentLength]: lastValue }
 
-    this.render(true)
+    await this.render()
   }
 
-  async _onSubmit (event) {
+  static async #onStart (event, target) {
     event.preventDefault()
 
     const dice = Object.values(this.dice).map(face => parseInt(face, 10))
@@ -93,16 +113,14 @@ export class CrisisPoolDialog extends FormApplication {
 
     await startCrisis({ name: this.name, dice })
 
-    this.close()
+    await this.close()
   }
 
-  async _onEnd (event) {
+  static async #onEnd (event, target) {
     event.preventDefault()
 
     await endCrisis()
 
-    this.close()
+    await this.close()
   }
-
-  async _updateObject () {}
 }
