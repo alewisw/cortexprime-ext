@@ -5,25 +5,7 @@ what is wrong, how it was observed, and what a fix would need to do.
 
 ---
 
-## 1. `challenge-resolution.spec.js` › Group Challenge times out
-
-**Severity: medium.** One test never passes, and costs 6 minutes of every run it is included in.
-
-`challenge-resolution.spec.js:250` — "a Group Challenge runs from initiative through duelling to a
-single winner" — exceeds its 360s timeout on every run.
-
-Confirmed **pre-existing and unrelated to the V1 → V2 migration**: it fails identically with the
-migration work stashed on the preceding commit, and it fails the same way run in isolation. It
-had never been run before the migration started, so nothing had previously flagged it.
-
-Diagnosis used to be blocked by masking: a timed-out test surfaced only its `finally` block's
-error, hiding the click that actually hung. `playwright.config.js` now sets
-`actionTimeout: 15_000`, so a re-run should fail at — and name — the offending locator instead of
-burning the full six minutes. That is the place to start.
-
----
-
-## 2. Dead exports in the shared helper modules
+## 1. Dead exports in the shared helper modules
 
 **Severity: trivial.**
 
@@ -42,7 +24,7 @@ the V1 → V2 migration and are safe to delete.
 
 ---
 
-## 3. Theme edits do not repaint the live CSS variables
+## 2. Theme edits do not repaint the live CSS variables
 
 **Severity: low.** Pre-existing; behaviour is unchanged by the V2 migration.
 
@@ -56,7 +38,7 @@ change into it. Worth deciding whether the live preview is meant to track edits.
 
 ---
 
-## 4. The complication picker's scroll position is never restored
+## 3. The complication picker's scroll position is never restored
 
 **Severity: low (cosmetic).** Pre-existing; behaviour is unchanged by the V2 migration.
 
@@ -87,7 +69,7 @@ small - which is presumably why it went unnoticed.
 
 ---
 
-## 5. A stylesheet rule that never applied, removed
+## 4. A stylesheet rule that never applied, removed
 
 **Severity: trivial.** Recorded because the fix is a judgement call, not because anything is broken.
 
