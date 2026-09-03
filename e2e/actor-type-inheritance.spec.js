@@ -122,24 +122,26 @@ test('a derived actor type\'s Additional Tab description is locked to the parent
   try {
     await openParent(gm.page)
 
-    // The parent's own tab: description is editable, so Foundry's editor offers its edit button.
+    // The parent's own tab: description is editable, so it renders a <prose-mirror> with its
+    // own edit button.
     await gm.page.locator(`${APP} button.view-change[data-to="additionalTab-0-0"]`).click()
 
     const parentTab = visibleArticle(gm.page, 'article.additional-tab')
     await expect(parentTab.locator('.additional-tab-description .editor-content')).toContainText('E2E tab description.')
-    await expect(parentTab.locator('.additional-tab-description .editor-edit')).toHaveCount(1)
+    await expect(parentTab.locator('.additional-tab-description prose-mirror button.toggle')).toHaveCount(1)
 
     // Back up to the parent's own view, then create the derived type from there.
     await gm.page.locator(`${APP} .breadcrumb[data-to="actorType-0"]`).click()
     await addDerived(gm.page)
 
     // The stamped copy on the derived type: same text, but the inherited-fields sweep disables
-    // editing it directly - Foundry's editor renders no edit affordance at all in that mode.
+    // editing it directly - rich-text.html renders no <prose-mirror> at all in that mode, just
+    // the plain .editor/.editor-content box.
     await gm.page.locator(`${APP} button.view-change[data-to="additionalTab-1-0"]`).click()
 
     const childTab = visibleArticle(gm.page, 'article.additional-tab')
     await expect(childTab.locator('.additional-tab-description .editor-content')).toContainText('E2E tab description.')
-    await expect(childTab.locator('.additional-tab-description .editor-edit')).toHaveCount(0)
+    await expect(childTab.locator('.additional-tab-description prose-mirror button.toggle')).toHaveCount(0)
   } finally {
     await closeActorSettings(gm.page)
     await restoreSettings(gm.page, before)

@@ -135,8 +135,8 @@ test('additional tabs configured for an actor type render on the sheet', async (
 
 // .notes-field (_forms.scss) shrinks to fit a short note rather than showing
 // a big empty box, but editing should still expand it to the field's full
-// max-height rather than opening at the shrunk size (module/actor/actor-sheet.js,
-// the capture-phase listener on .editor-edit).
+// max-height rather than opening at the shrunk size (foundryHelpers.js,
+// the capture-phase expandNotesFieldOnEdit listener).
 test('opening a note for editing expands it to the field\'s max height', async ({ browser }) => {
   const gm = await openAs(browser, 'gm')
 
@@ -169,10 +169,10 @@ test('opening a note for editing expands it to the field\'s max height', async (
 
     expect(parseFloat(shrunkHeight)).toBeLessThan(parseFloat(maxHeight))
 
-    // The pencil is display:none until .editor is hovered (Foundry core
-    // CSS: body.game .app .editor:hover .editor-edit), so hover first.
+    // The pencil is display:none until <prose-mirror> is hovered (_forms.scss:
+    // `prose-mirror:hover button.toggle`), so hover first.
     await notesField.hover()
-    await notesField.locator('.editor-edit').click()
+    await notesField.locator('prose-mirror button.toggle').click()
 
     await expect
       .poll(() => notesField.evaluate(el => getComputedStyle(el).height))
@@ -398,7 +398,7 @@ test('a shutdown-enabled tab lets the player shut down and restore a section, an
     await expect(normalArticle).not.toHaveClass(/shutdown/)
     await expect(normalArticle.locator('input.input-cpt').first()).toBeEnabled()
     await expect(normalArticle.locator('.remove-note')).toHaveCount(1)
-    await expect(normalArticle.locator('.editor-edit')).toHaveCount(1)
+    await expect(normalArticle.locator('prose-mirror button.toggle')).toHaveCount(1)
 
     await toggle.click()
 
@@ -409,7 +409,7 @@ test('a shutdown-enabled tab lets the player shut down and restore a section, an
     await expect(normalArticle).toHaveClass(/shutdown/)
     await expect(normalArticle.locator('input.input-cpt').first()).toHaveAttribute('readonly', '')
     await expect(normalArticle.locator('.remove-note')).toHaveCount(0)
-    await expect(normalArticle.locator('.editor-edit')).toHaveCount(0)
+    await expect(normalArticle.locator('prose-mirror button.toggle')).toHaveCount(0)
 
     // The player can always toggle it back - shutdown is reversible, not a one-way lock.
     await toggle.click()
@@ -460,7 +460,7 @@ test('a section with allowRename:false only still allows deletion and editing co
 
     await expect(article.locator('input.input-cpt').first()).toHaveAttribute('readonly', '')
     await expect(article.locator('.remove-note')).toHaveCount(1)
-    await expect(article.locator('.editor-edit')).toHaveCount(1)
+    await expect(article.locator('prose-mirror button.toggle')).toHaveCount(1)
   } finally {
     await removeNotesByLabel(gm.page, ACTOR, tabPath, ['E2E Rename Restricted'])
     await closeAllSheets(gm.page)
