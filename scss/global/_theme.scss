@@ -120,6 +120,17 @@
       line-height: 0;
       padding: 0;
       border-radius: 50%;
+
+      // Core sets `height: var(--button-size)` on every button, with --button-size: 2em declared
+      // on `button` itself, so it always resolves - roughly 30px here. The plot point token this
+      // wraps is 64px, so the button clamped to less than half its content and the circle spilled
+      // over the "Plot Points" heading above it and the value field below.
+      //
+      // .btn overrides min-height but not height, and every other icon button in _buttons.scss
+      // (.btn-icon, .btn-small, .shutdown-toggle) states its own size, which is why this was the
+      // only one exposed. Sizing to the content keeps it in step with .pp-lg rather than
+      // duplicating that number here.
+      height: auto;
     }
   }
 

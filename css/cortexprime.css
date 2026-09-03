@@ -1543,6 +1543,7 @@
   line-height: 0;
   padding: 0;
   border-radius: 50%;
+  height: auto;
 }
 .cortexprime .btn-secondary-cpt {
   background-color: var(--cp-button-secondary-color, #b30044);
