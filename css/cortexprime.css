@@ -4,6 +4,7 @@
 .cortexprime.application .window-content {
   background: none;
   padding: 0;
+  overflow: hidden auto;
 }
 .cortexprime.application .window-resize-handle {
   z-index: 10;
@@ -1449,7 +1450,10 @@
   font-family: "Roboto", sans-serif;
   font-size: var(--cp-body-font-size, 15px);
   font-weight: var(--cp-body-font-weight, 400);
-  height: 100%;
+  min-height: 100%;
+  -webkit-box-flex: 0;
+  -ms-flex: 0 0 auto;
+  flex: 0 0 auto;
   position: relative;
 }
 .cortexprime .sheet-cpt .sheet-background {

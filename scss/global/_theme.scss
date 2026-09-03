@@ -4,7 +4,12 @@
     font-family: 'Roboto', sans-serif;
     font-size: var(--cp-body-font-size, 15px);
     font-weight: var(--cp-body-font-weight, 400);
-    height: 100%;
+    // Fills the window when content is short, but grows past it when content is long, so that
+    // .sheet-background / .sheet-image below - sized at 100% of this element - cover the whole
+    // scrollable length instead of just the first screenful. `flex: 0 0 auto` keeps this from
+    // being shrunk below its content by the flex column that .window-content now scrolls.
+    min-height: 100%;
+    flex: 0 0 auto;
     // Containing block for .sheet-background / .sheet-image below, which are absolutely
     // positioned at 100% of "the sheet". Without this they resolve against whichever ancestor
     // happens to be positioned, which differs between frameworks: appv1's Dialog gave them the

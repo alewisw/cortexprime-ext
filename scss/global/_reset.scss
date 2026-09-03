@@ -3,6 +3,11 @@
   .window-content {
     background: none;
     padding: 0;
+    // appv1 scrolled .window-content implicitly (`overflow: hidden auto`); ApplicationV2 sets
+    // `overflow: hidden` and expects apps to opt in via a .scrollable element or PARTS.scrollable.
+    // None of ours do, so without this every window clips - fixed-height ones at their frame,
+    // auto-height ones at .application's `max-height: calc(100vh - 1.5 * var(--hotbar-height))`.
+    overflow: hidden auto;
   }
 
   .window-resize-handle {
