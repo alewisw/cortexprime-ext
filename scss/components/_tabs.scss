@@ -4,4 +4,9 @@ nav.sheet-tabs {
   border: 0;
   padding: 0;
   justify-content: start;
+
+  // Core's generic `nav.tabs` sets `gap: 1rem`, meant for a handful of widely-spaced section
+  // tabs. Ours are small pill buttons that already space themselves via .tab-cpt's own margin
+  // (theme.scss), so the two stack into a much wider gap than these tabs were designed for.
+  gap: 0;
 }

@@ -1249,6 +1249,7 @@
   -webkit-box-pack: start;
   -ms-flex-pack: start;
   justify-content: start;
+  gap: 0;
 }
 .cortexprime .breadcrumb:hover {
   text-decoration: underline;
