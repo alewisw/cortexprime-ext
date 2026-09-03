@@ -1,4 +1,5 @@
-import { confirmAction, getCurrentTheme, localizer, showPlotPointAnimation } from '../scripts/foundryHelpers.js'
+import { confirmAction, localizer, showPlotPointAnimation } from '../scripts/foundryHelpers.js'
+import { CortexApplicationV2 } from './CortexApplicationV2.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
 import { runExclusive } from '../scripts/asyncMutex.js'
@@ -69,7 +70,8 @@ const DICE_POOL_KEY = 'dicePool'
 // `mutator` receives the current pool and returns the value to write, or `undefined` to write
 // nothing. `reset` matches each call site's original write shape: most handlers null the flag
 // before setting it (so a shrinking object actually loses keys instead of Foundry's update()
-// merge silently keeping them), but _updateObject's own submitOnChange flow wants a plain merge
+// merge silently keeping them), but the form submit handler's own submitOnChange flow wants a
+// plain merge
 // instead, same as before this existed.
 const updateDicePool = (mutator, { reset = true } = {}) => runExclusive(DICE_POOL_KEY, async () => {
   const next = await mutator(readDicePool())
@@ -82,33 +84,56 @@ const updateDicePool = (mutator, { reset = true } = {}) => runExclusive(DICE_POO
   return next
 })
 
-export class UserDicePool extends FormApplication {
+export class UserDicePool extends CortexApplicationV2 {
   constructor() {
     super()
 
     this.dicePool = readDicePool()
   }
 
-  static get defaultOptions () {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'user-dice-pool',
-      template: 'systems/cortexprime-ext/templates/dice-pool.html',
-      title: localizer('DicePool'),
-      classes: ['cortexprime', 'user-dice-pool'],
-      width: 600,
-      height: 'auto',
-      top: 500,
-      left: 20,
-      resizable: true,
-      closeOnSubmit: false,
-      submitOnClose: true,
-      submitOnChange: true
-    })
+  // The handlers below stay ordinary instance methods rather than becoming static private
+  // ones: several are called from outside the class (rollDice.js reaches _clearDicePool,
+  // actor-sheet.js reaches _setTraitInPool), and ApplicationV2 invokes an action through
+  // handler.call(this, event, target), so a prototype method is exactly the right shape.
+  static DEFAULT_OPTIONS = {
+    id: 'user-dice-pool',
+    classes: ['user-dice-pool'],
+    tag: 'form',
+    position: { width: 600, height: 'auto', top: 500, left: 20 },
+    // A localization key, not a localized string: DEFAULT_OPTIONS is evaluated at module
+    // load, before game.i18n exists.
+    window: { title: 'DicePool', resizable: true },
+    form: {
+      handler: UserDicePool.#onSubmit,
+      submitOnChange: true,
+      closeOnSubmit: false
+    },
+    actions: {
+      addTraitToPool: UserDicePool.prototype._addCustomTraitToPool,
+      clearChallenge: UserDicePool.prototype._clearChallenge,
+      clearDicePool: UserDicePool.prototype._clearDicePool,
+      clearSource: UserDicePool.prototype._clearSource,
+      endInterference: UserDicePool.prototype._endInterference,
+      giveIn: UserDicePool.prototype._giveIn,
+      newDie: UserDicePool.prototype._onNewDie,
+      removeGroupParticipant: UserDicePool.prototype._removeGroupParticipant,
+      removePoolTrait: UserDicePool.prototype._removePoolTrait,
+      requestReroll: UserDicePool.prototype._requestReroll,
+      resetCustomPoolTrait: UserDicePool.prototype._resetCustomPoolTrait,
+      rollDicePool: UserDicePool.prototype._rollDicePool,
+      setChallengeType: UserDicePool.prototype._setChallengeType,
+      setDifficulty: UserDicePool.prototype._setDifficulty,
+      startGroupInitiative: UserDicePool.prototype._startGroupInitiative,
+      startInterference: UserDicePool.prototype._startInterference
+    }
   }
 
-  async getData () {
+  static PARTS = {
+    form: { template: 'systems/cortexprime-ext/templates/dice-pool.html' }
+  }
+
+  async _prepareContext (options) {
     const dice = readDicePool()
-    const theme = getCurrentTheme()
     const activeChallenge = getActiveChallenge()
     const rollToBeatTargets = getRollToBeatTargets()
     const myInterfererId = getMyInterfererId()
@@ -137,9 +162,9 @@ export class UserDicePool extends FormApplication {
       .map(({ id, name }) => ({ id, name }))
 
     return {
+      ...await super._prepareContext(options),
       ...dice,
       isGM: game.user.isGM,
-      theme,
       canRollToBeat,
       hasPlotPoints: !game.user.isGM && (game.user.character?.system.pp.value ?? 0) >= 1,
       dicePoolInvalidReason,
@@ -169,43 +194,54 @@ export class UserDicePool extends FormApplication {
     }
   }
 
-  async _updateObject (event, formData) {
+  // reset:false because this is a plain merge of the form's own fields, unlike the handlers
+  // below which null the flag first so a shrinking object actually loses its keys.
+  static async #onSubmit (event, form, formData) {
     await updateDicePool(
-      current => foundry.utils.mergeObject(current, foundry.utils.expandObject(formData)),
+      current => foundry.utils.mergeObject(current, foundry.utils.expandObject(formData.object)),
       { reset: false }
     )
   }
 
-  activateListeners (html) {
-    html.find('.add-trait-to-pool').click(this._addCustomTraitToPool.bind(this))
-    html.find('.clear-dice-pool').click(this._clearDicePool.bind(this))
-    html.find('.new-die').click(this._onNewDie.bind(this))
-    html.find('.custom-dice-label').change(this.submit.bind(this))
-    html.find('.die-select').change(this._onDieChange.bind(this))
-    html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
-    html.find('.remove-pool-trait').click(this._removePoolTrait.bind(this))
-    html.find('.reset-custom-pool-trait').click(this._resetCustomPoolTrait.bind(this))
-    html.find('.roll-dice-pool').click(this._rollDicePool.bind(this))
-    html.find('.clear-source').click(this._clearSource.bind(this))
-    html.find('.set-difficulty').click(this._setDifficulty.bind(this))
-    html.find('.set-challenge-type').click(this._setChallengeType.bind(this))
-    html.find('.challenge-initiator').change(this._onChallengeInitiatorChange.bind(this))
-    html.find('.challenge-responder-checkbox').change(this._onChallengeResponderCheckboxChange.bind(this))
-    html.find('.challenge-responder-radio').change(this._onChallengeResponderSelectChange.bind(this))
-    html.find('.clear-challenge').click(this._clearChallenge.bind(this))
-    html.find('.start-interference').click(this._startInterference.bind(this))
-    html.find('.end-interference').click(this._endInterference.bind(this))
-    html.find('.group-participant-checkbox').change(this._onGroupParticipantCheckboxChange.bind(this))
-    html.find('.start-group-initiative').click(this._startGroupInitiative.bind(this))
-    html.find('.remove-group-participant').click(this._removeGroupParticipant.bind(this))
-    html.find('.spend-plot-point-extra-die').change(this._onSpendPlotPointExtraDieChange.bind(this))
-    html.find('.request-reroll').click(this._requestReroll.bind(this))
-    html.find('.give-in').click(this._giveIn.bind(this))
+  // appv1's submitOnClose has no ApplicationV2 equivalent. _preClose is awaited while the
+  // form still exists, so a custom label typed and then closed without blurring is committed.
+  async _preClose (options) {
+    if (this.form) await this.submit()
+
+    return super._preClose(options)
   }
 
-  async _requestReroll (event) {
+  // Only the non-click controls remain wired here; every button is an `actions` entry.
+  //
+  // Note the super call. The appv1 version deliberately did NOT call super.activateListeners,
+  // but _onRender is part of ApplicationV2's render pipeline and must always be chained.
+  //
+  // The custom label field is no longer bound explicitly either: form.submitOnChange commits
+  // every field in the form on change, which is exactly what that binding duplicated.
+  _onRender (context, options) {
+    super._onRender(context, options)
+
+    const onChange = (selector, handler) => {
+      for (const element of this.element.querySelectorAll(selector)) {
+        element.addEventListener('change', handler)
+      }
+    }
+
+    onChange('.challenge-initiator', this._onChallengeInitiatorChange.bind(this))
+    onChange('.challenge-responder-checkbox', this._onChallengeResponderCheckboxChange.bind(this))
+    onChange('.challenge-responder-radio', this._onChallengeResponderSelectChange.bind(this))
+    onChange('.group-participant-checkbox', this._onGroupParticipantCheckboxChange.bind(this))
+    onChange('.spend-plot-point-extra-die', this._onSpendPlotPointExtraDieChange.bind(this))
+
+    for (const select of this.element.querySelectorAll('.die-select')) {
+      select.addEventListener('change', this._onDieChange.bind(this))
+      select.addEventListener('mouseup', this._onDieRemove.bind(this))
+    }
+  }
+
+  async _requestReroll (event, target) {
     event.preventDefault()
-    const actorId = $(event.currentTarget).data('actorId')
+    const { actorId } = target.dataset
     await game.settings.set('cortexprime-ext', 'dicePickerRerollRequest', { actorId, requestedAt: Date.now() })
   }
 
@@ -244,7 +280,7 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _addCustomTraitToPool (event) {
+  async _addCustomTraitToPool (event, target) {
     event.preventDefault()
 
     await updateDicePool(current => {
@@ -276,10 +312,10 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _setDifficulty (event) {
+  async _setDifficulty (event, target) {
     event.preventDefault()
 
-    const { faces } = event.currentTarget.dataset
+    const { faces } = target.dataset
 
     await updateDicePool(current => {
       foundry.utils.setProperty(current, 'pool.Difficulty', {
@@ -308,9 +344,9 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _clearSource (event) {
+  async _clearSource (event, target) {
     event.preventDefault()
-    const { source } = event.currentTarget.dataset
+    const { source } = target.dataset
 
     await updateDicePool(current => {
       current.pool = objectFilter(current.pool, (_, dieSource) => source !== dieSource)
@@ -322,10 +358,10 @@ export class UserDicePool extends FormApplication {
 
   async _onDieChange (event) {
     event.preventDefault()
-    const $targetDieSelect = $(event.currentTarget)
-    const target = $targetDieSelect.data('target')
-    const targetKey = $targetDieSelect.data('key')
-    const targetValue = $targetDieSelect.val()
+    const dieSelect = event.currentTarget
+    const target = dieSelect.dataset.target
+    const targetKey = dieSelect.dataset.key
+    const targetValue = dieSelect.value
 
     await this.submit()
 
@@ -347,9 +383,9 @@ export class UserDicePool extends FormApplication {
     event.preventDefault()
 
     if (event.button === 2) {
-      const $targetDieSelect = $(event.currentTarget)
-      const target = $targetDieSelect.data('target')
-      const targetKey = $targetDieSelect.data('key')
+      const dieSelect = event.currentTarget
+      const target = dieSelect.dataset.target
+      const targetKey = dieSelect.dataset.key
 
       await this.submit()
 
@@ -366,10 +402,9 @@ export class UserDicePool extends FormApplication {
     }
   }
 
-  async _onNewDie (event) {
+  async _onNewDie (event, button) {
     event.preventDefault()
-    const $targetNewDie = $(event.currentTarget)
-    const target = $targetNewDie.data('target')
+    const target = button.dataset.target
 
     await updateDicePool(current => {
       const dataTargetValue = foundry.utils.getProperty(current, `${target}.value`) || {}
@@ -384,11 +419,9 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _removePoolTrait (event) {
+  async _removePoolTrait (event, target) {
     event.preventDefault()
-    const $target = $(event.currentTarget)
-    const source = $target.data('source')
-    const key = $target.data('key')
+    const { source, key } = target.dataset
 
     await updateDicePool(current => {
       if (getLength(current.pool[source] || {}) < 2) {
@@ -404,7 +437,7 @@ export class UserDicePool extends FormApplication {
     this.render(true)
   }
 
-  async _resetCustomPoolTrait (event) {
+  async _resetCustomPoolTrait (event, target) {
     event.preventDefault()
 
     await updateDicePool(current => {
@@ -428,10 +461,10 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _setChallengeType (event) {
+  async _setChallengeType (event, target) {
     event.preventDefault()
 
-    const { type } = event.currentTarget.dataset
+    const { type } = target.dataset
 
     await setChallengeType(type)
 
@@ -454,7 +487,7 @@ export class UserDicePool extends FormApplication {
   async _onChallengeResponderCheckboxChange (event) {
     event.preventDefault()
 
-    const responderIds = this.element.find('.challenge-responder-checkbox:checked').get().map(el => el.value)
+    const responderIds = [...this.element.querySelectorAll('.challenge-responder-checkbox:checked')].map(el => el.value)
 
     await setChallengeResponders(responderIds)
 
@@ -476,7 +509,7 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _clearChallenge (event) {
+  async _clearChallenge (event, target) {
     event.preventDefault()
 
     await clearActiveChallenge()
@@ -484,7 +517,7 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _startInterference (event) {
+  async _startInterference (event, target) {
     event.preventDefault()
 
     const activeChallenge = getActiveChallenge()
@@ -494,7 +527,7 @@ export class UserDicePool extends FormApplication {
     // be able to stack a second interference on top of one already in progress.
     if (!hasContestStarted(activeChallenge, hasInitiatorRolled(activeChallenge)) || activeChallenge.interference) return
 
-    const interfererId = this.element.find('.interferer-radio:checked').val()
+    const interfererId = this.element.querySelector('.interferer-radio:checked')?.value
 
     if (!interfererId) return
 
@@ -503,7 +536,7 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _endInterference (event) {
+  async _endInterference (event, target) {
     event.preventDefault()
 
     await endInterference()
@@ -514,14 +547,14 @@ export class UserDicePool extends FormApplication {
   async _onGroupParticipantCheckboxChange (event) {
     event.preventDefault()
 
-    const participantIds = this.element.find('.group-participant-checkbox:checked').get().map(el => el.value)
+    const participantIds = [...this.element.querySelectorAll('.group-participant-checkbox:checked')].map(el => el.value)
 
     await setGroupParticipants(participantIds)
 
     await this.render(true)
   }
 
-  async _startGroupInitiative (event) {
+  async _startGroupInitiative (event, target) {
     event.preventDefault()
 
     // Defense-in-depth, matching _startInterference above — the button is only rendered once
@@ -533,14 +566,14 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _removeGroupParticipant (event) {
+  async _removeGroupParticipant (event, target) {
     event.preventDefault()
 
     const activeChallenge = getActiveChallenge()
 
     if (activeChallenge.type !== 'group' || activeChallenge.group?.phase !== 'dueling') return
 
-    await removeGroupParticipant(event.currentTarget.dataset.id)
+    await removeGroupParticipant(target.dataset.id)
 
     await this.render(true)
   }
@@ -552,7 +585,7 @@ export class UserDicePool extends FormApplication {
   // processGroupAdvancement (rollToBeat.js) resolve it on the GM's client without any extra code
   // here. An empty effectDice array is already the floor D4 everywhere else in that pipeline
   // (applyContestEffectStepDown), so giving in can never step down the opponent's effect die.
-  async _giveIn (event) {
+  async _giveIn (event, target) {
     event.preventDefault()
 
     if (game.user.isGM) return
@@ -592,7 +625,7 @@ export class UserDicePool extends FormApplication {
     await this.render(true)
   }
 
-  async _rollDicePool (event) {
+  async _rollDicePool (event, target) {
     event.preventDefault()
 
     // Second layer of protection beyond the buttons' disabled state — a bystander can't roll
@@ -600,17 +633,15 @@ export class UserDicePool extends FormApplication {
     // of the four roll types) until the initiator has actually rolled, even from a stale render.
     if (!canCurrentUserRoll()) return
 
-    const $target = $(event.currentTarget)
-
     const currentDicePool = readDicePool()
 
     const dicePool = currentDicePool.pool
 
-    const rollType = $target.hasClass('roll-for-total')
+    const rollType = target.classList.contains('roll-for-total')
       ? 'total'
-      : $target.hasClass('roll-for-effect')
+      : target.classList.contains('roll-for-effect')
         ? 'effect'
-        : $target.hasClass('roll-to-beat')
+        : target.classList.contains('roll-to-beat')
           ? 'toBeat'
           : 'select'
 
