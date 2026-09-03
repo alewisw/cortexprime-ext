@@ -64,13 +64,10 @@
           {{/unless}}
         </header>
         <div class="notes-field">
-          {{!-- The V2 rich-text editor. `toggled` renders the pencil and shows this element's own
-                innerHTML until it is clicked, so the content is written twice: once into `value`
-                as the raw string to edit, once as the body to display while closed. --}}
-          <prose-mirror name="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.value'}}"
-                        value="{{note.value}}"
-                        toggled
-                        {{#if (or (eq note.allowEdit false) note.shutdown)}}disabled{{/if}}>{{{note.value}}}</prose-mirror>
+          {{> "systems/cortexprime-ext/templates/partials/rich-text.html"
+              name=(concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.value')
+              value=note.value
+              editable=(not (or (eq note.allowEdit false) note.shutdown)) }}
         </div>
       </div>
     </article>

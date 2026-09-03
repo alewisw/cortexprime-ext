@@ -23,6 +23,7 @@ export const preloadHandlebarsTemplates = async function () {
     'plot-point',
     'pp',
     'remove-button',
+    'rich-text',
     'reorder',
     'settings/actor-types',
     'settings/actor-type',

@@ -1175,7 +1175,15 @@
 .cortexprime .notes-field prose-mirror.inactive .editor-content {
   position: static;
 }
+.cortexprime prose-mirror {
+  position: relative;
+}
 .cortexprime prose-mirror button.toggle {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   -webkit-box-align: center;
@@ -1200,7 +1208,7 @@
   border-color: var(--cp-input-focus-color, #b30044);
   color: var(--cp-body-font-color, #000000);
 }
-.cortexprime prose-mirror:hover button.toggle:enabled {
+.cortexprime prose-mirror:hover button.toggle {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;

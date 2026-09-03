@@ -29,10 +29,10 @@
     <div class="section-background-alternate"></div>
     <label class="input-label-cpt">{{localize 'Description'}}</label>
     <div class="notes-field">
-      <prose-mirror name="{{concat 'actorTypes.' path '.' tabIndex '.description'}}"
-                    value="{{additionalTab.description}}"
-                    toggled
-                    {{#if additionalTab.inherited}}disabled{{/if}}>{{{additionalTab.description}}}</prose-mirror>
+      {{> "systems/cortexprime-ext/templates/partials/rich-text.html"
+          name=(concat 'actorTypes.' path '.' tabIndex '.description')
+          value=additionalTab.description
+          editable=(not additionalTab.inherited) }}
     </div>
   </div>
   <section>
@@ -107,10 +107,10 @@
             </div>
           </div>
           <div class="notes-field">
-            <prose-mirror name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.value'}}"
-                          value="{{defaultNote.value}}"
-                          toggled
-                          {{#if defaultNote.inherited}}disabled{{/if}}>{{{defaultNote.value}}}</prose-mirror>
+            {{> "systems/cortexprime-ext/templates/partials/rich-text.html"
+                name=(concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.value')
+                value=defaultNote.value
+                editable=(not defaultNote.inherited) }}
           </div>
         </li>
       {{/each}}

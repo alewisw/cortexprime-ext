@@ -44,8 +44,23 @@ input {
 // rule lands. What is left is the generic `button` rule and `button.icon { width: var(--button-size) }`:
 // a 28px box with `padding: 0 0.5rem`, leaving 10px of content width for a ~14px glyph, so the
 // pencil spills its box and reads as clipped. The background is core's `--color-warm-2` (#c9593f)
-// button hover, which is the wrong palette for these sheets besides. Restate what core intended.
+// button hover, which is the wrong palette for these sheets besides.
+//
+// The fallback that ought to have covered position and visibility - `prose-mirror button.toggle
+// { display: none; position: absolute; ... }` - lives in core's `@layer compatibility`, and was
+// observed not reaching these sheets either: the pencil rendered in normal flow, below its box,
+// and stayed visible without hovering. Rather than depend on which of core's rules lands, this
+// states the whole thing: an overlay in the top-right corner, revealed on hover.
+prose-mirror {
+  position: relative;
+}
+
 prose-mirror button.toggle {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
@@ -67,11 +82,10 @@ prose-mirror button.toggle {
   }
 }
 
-// The button is hidden until its editor is hovered, exactly as appv1's .editor-edit pencil was.
-// Core reveals it with `display: block`; this restates the same trigger with `flex`, which is what
-// the centering above needs. Setting a display on the rule itself would have shown the button all
-// the time, since our unlayered CSS outranks core's `display: none`.
-prose-mirror:hover button.toggle:enabled {
+// Hidden until its editor is hovered, exactly as appv1's .editor-edit pencil was. A read-only
+// field renders no <prose-mirror> at all (see partials/rich-text.html), so there is no disabled
+// pencil to suppress here.
+prose-mirror:hover button.toggle {
   display: flex;
 }
 

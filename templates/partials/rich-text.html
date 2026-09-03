@@ -1,0 +1,14 @@
+{{!-- A rich text field, shared by the actor sheet's Additional Tab notes and the Actor Settings
+      equivalents. Editable, it is a V2 <prose-mirror> carrying its own pencil; read-only, it is
+      the same bordered box with no editor and no pencil at all, which is the point - a player
+      who cannot edit a note should not be offered a control that does nothing.
+
+      `value` is written twice into the editable form: into the attribute as the raw string to
+      edit, and as the element's body, which is what a toggled editor displays while closed.
+
+      Params: name (the form field path), value (raw HTML), editable. --}}
+{{#if editable}}
+  <prose-mirror name="{{name}}" value="{{value}}" toggled>{{{value}}}</prose-mirror>
+{{else}}
+  <div class="editor"><div class="editor-content">{{{value}}}</div></div>
+{{/if}}
