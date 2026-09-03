@@ -7,14 +7,16 @@
 .cortexprime .window-app .window-content {
   background: #ffffff;
 }
-.cortexprime.window-app .window-content {
+.cortexprime.window-app .window-content, .cortexprime.application .window-content {
   background: none;
   padding: 0;
 }
-.cortexprime.window-app .window-resizable-handle {
+.cortexprime.window-app .window-resizable-handle,
+.cortexprime.window-app .window-resize-handle, .cortexprime.application .window-resizable-handle,
+.cortexprime.application .window-resize-handle {
   z-index: 10;
 }
-.cortexprime.doom-pool-settings.window-app .window-content {
+.cortexprime.doom-pool-settings.window-app .window-content, .cortexprime.doom-pool-settings.application .window-content {
   background: #ffffff;
 }
 .cortexprime .dice-picker.window-app .window-content, .cortexprime .consumable-dice.window-app .window-content {
