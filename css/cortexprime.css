@@ -1175,6 +1175,36 @@
 .cortexprime .notes-field prose-mirror.inactive .editor-content {
   position: static;
 }
+.cortexprime prose-mirror button.toggle {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  width: var(--form-field-height, 1.625rem);
+  height: var(--form-field-height, 1.625rem);
+  min-height: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--cp-input-border-color, #2d5931);
+  border-radius: 3px;
+  color: var(--cp-body-font-color, #000000);
+}
+.cortexprime prose-mirror button.toggle:hover, .cortexprime prose-mirror button.toggle:focus {
+  background: #ffffff;
+  border-color: var(--cp-input-focus-color, #b30044);
+  color: var(--cp-body-font-color, #000000);
+}
+.cortexprime prose-mirror:hover button.toggle:enabled {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
 .cortexprime .picker-name-list {
   max-height: 22.3125rem;
   overflow-y: auto;
