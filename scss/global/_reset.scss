@@ -33,7 +33,8 @@
 }
 
 .dice-picker, .consumable-dice {
-  &.window-app {
+  &.window-app,
+  &.application {
     .window-content {
       background: none;
       padding: 0;

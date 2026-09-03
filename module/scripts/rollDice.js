@@ -43,13 +43,13 @@ const dicePicker = async rollResults => {
 
   // Lets the GM's Dice Pool panel show a "SELECTING - <name>" row (see selectingRollers in
   // UserDicePool.js) with a Re-roll button while this dialog is open, and re-roll it from a
-  // different client. myActorId/dialogOpen/capturedHtml are read by onRerollRequested below;
+  // different client. myActorId/dialogOpen/capturedRoot are read by onRerollRequested below;
   // dialogOpen and the flag are both cleared together in resolveFromDom. The flag itself is set
-  // in the Dialog's render callback below, not here - setting it this early would flip the GM's
+  // in the dialog's render callback below, not here - setting it this early would flip the GM's
   // row on before the dialog has actually appeared on this player's screen.
   const myActorId = game.user.character?.id ?? null
   let dialogOpen = true
-  let capturedHtml = null
+  let capturedRoot = null
 
   // Re-rolls every die currently in this dialog (same faces/count, not the original pool - the
   // trait selection that produced them is already gone by the time this dialog is open) and
@@ -57,7 +57,7 @@ const dicePicker = async rollResults => {
   // request for someone else is a no-op; the dialogOpen check is belt-and-braces for a request
   // already in flight as this dialog closes, since resolveFromDom unregisters this listener.
   const onRerollRequested = async setting => {
-    if (!dialogOpen || !myActorId || !capturedHtml) return
+    if (!dialogOpen || !myActorId || !capturedRoot) return
     if (setting.key !== 'cortexprime-ext.dicePickerRerollRequest') return
 
     const request = game.settings.get('cortexprime-ext', 'dicePickerRerollRequest')
@@ -83,8 +83,9 @@ const dicePicker = async rollResults => {
     rollResults.results = fresh.results
 
     const { pickerCase, content } = await buildContent()
-    capturedHtml.find('.cortexprime.dice-picker').replaceWith(content)
-    bindInteractivity(capturedHtml, pickerCase)
+
+    replacePickerContent(capturedRoot, content)
+    bindInteractivity(capturedRoot, pickerCase)
   }
 
   // Scoped to this one dialog, so it MUST be unregistered when the dialog goes away (see
@@ -118,273 +119,319 @@ const dicePicker = async rollResults => {
 
   const { pickerCase: initialPickerCase, content: initialContent } = await buildContent()
 
-  return new Promise((resolve) => {
-    // Foundry's appv1 Dialog#submit calls the chosen button's callback and THEN close(), which in
-    // turn fires the dialog's own `close` handler — and this function is wired to both (see the
-    // Dialog config below), so clicking Confirm runs it twice. The element is still in the DOM for
-    // that second pass (close() only removes it after a 200ms slide), so it re-reads the same
-    // checked Plot Point boxes and charges for them again. Everything below here is
-    // side-effecting, so the second pass has to be a no-op — same resolveOnce guard
-    // plotPointUsageDialog.js uses for exactly this reason.
-    let resolved = false
+  // resolveFromDom is side-effecting — it spends Plot Points — and is wired to BOTH the Confirm
+  // button and the dialog's close, which fire in sequence on the button path. DialogV2.wait's own
+  // resolution is idempotent, but that only protects the returned value, not the spend, so this
+  // guard is about the side effects and has to stay. (appv1 had the same shape for the same
+  // reason: Dialog#submit ran the callback and then close(), re-reading the still-present checked
+  // boxes and charging twice.)
+  let resolved = false
 
-    const resolveFromDom = async html => {
-      if (resolved) return
+  const noValues = () => ({ dice: [], total: 0, effectDice: [] })
 
-      resolved = true
-      dialogOpen = false
+  const resolveFromDom = async root => {
+    if (resolved) return
 
-      stopListeningForReroll?.()
-      // Nothing else references the dialog's DOM once the listener above is gone, but this is the
-      // handle that was keeping it reachable, so drop it explicitly rather than by implication.
-      capturedHtml = null
+    resolved = true
+    dialogOpen = false
 
-      if (myActorId) {
-        try {
-          await game.user.character.unsetFlag('cortexprime-ext', 'dicePickerOpen')
-        } catch (error) {
-          console.warn('CP | Could not clear dice picker open flag', error)
-        }
+    stopListeningForReroll?.()
+    // Nothing else references the dialog's DOM once the listener above is gone, but this is the
+    // handle that was keeping it reachable, so drop it explicitly rather than by implication.
+    capturedRoot = null
+
+    if (myActorId) {
+      try {
+        await game.user.character.unsetFlag('cortexprime-ext', 'dicePickerOpen')
+      } catch (error) {
+        console.warn('CP | Could not clear dice picker open flag', error)
       }
-
-      const $diceBox = html.find('.dice-box')
-      const values = { dice: [], total: 0, effectDice: [] }
-
-      $diceBox
-        .find('.result-die')
-        .each(function () {
-          const $die = $(this)
-          const faces = $die.data('faces')
-          const result = parseInt($die.data('result'), 10)
-          const value = { effect: false, faces, result, total: false }
-
-          if ($die.hasClass('chosen')) {
-            values.total += result
-            value.total = true
-          } else if ($die.hasClass('effect')) {
-            values.effectDice.push(faces)
-            value.effect = true
-          }
-
-          values.dice.push(value)
-        })
-
-      const spendExtraTotal = html.find('.extra-total-die-checkbox').prop('checked')
-      const spendExtraEffect = html.find('.extra-effect-die-checkbox').prop('checked')
-      const spendCount = (spendExtraTotal ? 1 : 0) + (spendExtraEffect ? 1 : 0)
-
-      if (spendCount > 0 && game.user.character) {
-        const usage = [spendExtraTotal && localizer('ExtraTotalDieCheckbox'), spendExtraEffect && localizer('ExtraEffectDieCheckbox')]
-          .filter(Boolean).join('; ')
-
-        await game.user.character.changePpBy(-spendCount, false, usage)
-        showPlotPointSpendAnimation(spendCount)
-      }
-
-      resolve(values)
     }
 
-    // At most one value-picker popup is ever on screen — opening a new one, or a click anywhere
-    // else, always closes whatever's currently open.
-    const closeValueMenu = () => { $('.die-value-menu').remove() }
+    const values = noValues()
 
-    const openValueMenu = async (event, html) => {
-      event.preventDefault()
+    for (const die of root.querySelectorAll('.dice-box .result-die')) {
+      // Number(), because jQuery's .data('faces') coerced the attribute to a number and these
+      // faces are handed to the chat card and the effect-die maths downstream.
+      const faces = Number(die.dataset.faces)
+      const result = parseInt(die.dataset.result, 10)
+      const value = { effect: false, faces, result, total: false }
+
+      if (die.classList.contains('chosen')) {
+        values.total += result
+        value.total = true
+      } else if (die.classList.contains('effect')) {
+        values.effectDice.push(faces)
+        value.effect = true
+      }
+
+      values.dice.push(value)
+    }
+
+    const spendExtraTotal = !!root.querySelector('.extra-total-die-checkbox')?.checked
+    const spendExtraEffect = !!root.querySelector('.extra-effect-die-checkbox')?.checked
+    const spendCount = (spendExtraTotal ? 1 : 0) + (spendExtraEffect ? 1 : 0)
+
+    if (spendCount > 0 && game.user.character) {
+      const usage = [spendExtraTotal && localizer('ExtraTotalDieCheckbox'), spendExtraEffect && localizer('ExtraEffectDieCheckbox')]
+        .filter(Boolean).join('; ')
+
+      await game.user.character.changePpBy(-spendCount, false, usage)
+      showPlotPointSpendAnimation(spendCount)
+    }
+
+    return values
+  }
+
+  // At most one value-picker popup is ever on screen — opening a new one, or a click anywhere
+  // else, always closes whatever's currently open.
+  const closeValueMenu = () => {
+    for (const menu of document.querySelectorAll('.die-value-menu')) menu.remove()
+  }
+
+  // Swaps the rendered picker for freshly built content, in place. Used by the test-mode value
+  // editor and by a remote re-roll request.
+  const replacePickerContent = (root, content) => {
+    const holder = document.createElement('div')
+
+    holder.innerHTML = content
+    root.querySelector('.cortexprime.dice-picker').replaceWith(holder.firstElementChild)
+  }
+
+  const openValueMenu = async (event, root) => {
+    event.preventDefault()
+    closeValueMenu()
+
+    const target = event.target.closest('.die-value-target')
+    const source = target.dataset.source
+    const key = parseInt(target.dataset.key, 10)
+    const faces = parseInt(target.dataset.faces, 10)
+    const current = parseInt(target.dataset.result, 10)
+
+    if (!faces || Number.isNaN(key)) return
+
+    const menuContent = await foundry.applications.handlebars.renderTemplate(
+      'systems/cortexprime-ext/templates/partials/dice/value-menu.html',
+      { values: Array.from({ length: faces }, (_, index) => index + 1), current }
+    )
+
+    const holder = document.createElement('div')
+
+    holder.innerHTML = menuContent
+
+    const menu = holder.firstElementChild
+
+    // jQuery's .css() appended px to bare numbers for these; the DOM API does not.
+    menu.style.position = 'fixed'
+    menu.style.left = `${event.clientX}px`
+    menu.style.top = `${event.clientY}px`
+    menu.style.zIndex = '100000'
+
+    document.body.append(menu)
+
+    menu.addEventListener('click', async optionEvent => {
+      const option = optionEvent.target.closest('.die-value-option')
+
+      if (!option) return
+
+      const value = parseInt(option.dataset.value, 10)
+
       closeValueMenu()
 
-      const $target = $(event.currentTarget)
-      const source = $target.data('source')
-      const key = parseInt($target.data('key'), 10)
-      const faces = parseInt($target.data('faces'), 10)
-      const current = parseInt($target.data('result'), 10)
+      const die = source === 'hitches' ? rollResults.hitches[key] : rollResults.results[key]
 
-      if (!faces || Number.isNaN(key)) return
+      if (!die || value === die.result) return
 
-      const menuContent = await foundry.applications.handlebars.renderTemplate(
-        'systems/cortexprime-ext/templates/partials/dice/value-menu.html',
-        { values: Array.from({ length: faces }, (_, index) => index + 1), current }
-      )
+      die.result = value
 
-      $(menuContent)
-        .css({ position: 'fixed', left: event.clientX, top: event.clientY, zIndex: 100000 })
-        .appendTo(document.body)
-        .on('click', '.die-value-option', async optionEvent => {
-          const value = parseInt($(optionEvent.currentTarget).data('value'), 10)
+      // A die that crosses the hitch/non-hitch boundary moves to the other list entirely, so
+      // getPickerCase (which only ever looks at rollResults.results) reacts to it correctly.
+      const wasHitch = source === 'hitches'
+      const isHitchNow = value === 1
 
-          closeValueMenu()
+      if (wasHitch !== isHitchNow) {
+        const fromList = wasHitch ? rollResults.hitches : rollResults.results
+        const toList = wasHitch ? rollResults.results : rollResults.hitches
 
-          const die = source === 'hitches' ? rollResults.hitches[key] : rollResults.results[key]
+        fromList.splice(key, 1)
+        toList.push(die)
+      }
 
-          if (!die || value === die.result) return
+      rollResults.hitches.sort(sortHitches)
+      rollResults.results.sort(sortResults)
 
-          die.result = value
+      const { pickerCase, content } = await buildContent()
 
-          // A die that crosses the hitch/non-hitch boundary moves to the other list entirely, so
-          // getPickerCase (which only ever looks at rollResults.results) reacts to it correctly.
-          const wasHitch = source === 'hitches'
-          const isHitchNow = value === 1
+      replacePickerContent(root, content)
+      bindInteractivity(root, pickerCase)
+    })
 
-          if (wasHitch !== isHitchNow) {
-            const fromList = wasHitch ? rollResults.hitches : rollResults.results
-            const toList = wasHitch ? rollResults.results : rollResults.hitches
+    document.addEventListener('click', closeValueMenu, { once: true })
+  }
 
-            fromList.splice(key, 1)
-            toList.push(die)
-          }
+  const bindInteractivity = (root, pickerCase) => {
+    const diceBox = root.querySelector('.dice-box')
+    const effectDiceContainer = root.querySelector('.your-effect-dice')
+    const totalValue = root.querySelector('.total-value')
+    const extraTotalCheckbox = root.querySelector('.extra-total-die-checkbox')
+    const extraEffectCheckbox = root.querySelector('.extra-effect-die-checkbox')
 
-          rollResults.hitches.sort(sortHitches)
-          rollResults.results.sort(sortResults)
+    const defaultIndex = pickerCase.dice.findIndex(die => die.effect)
+    const selectedEffectDice = defaultIndex !== -1 ? [rollResults.results[defaultIndex]] : []
 
-          const { pickerCase, content } = await buildContent()
+    const effectDiceCap = () => extraEffectCheckbox?.checked ? 2 : 1
 
-          html.find('.cortexprime.dice-picker').replaceWith(content)
-          bindInteractivity(html, pickerCase)
-        })
+    // Each checkbox is disabled whenever it's currently unchecked AND either the Plot Point
+    // budget is already fully committed to the other box, or there simply aren't enough
+    // non-hitch dice for it to change anything — with 2 or fewer dice there's no baseline
+    // effect die to extend at all (both go straight to Total per the normal rules), and
+    // "extra total" specifically also goes stale the moment fewer than 3 dice remain once
+    // the currently-selected effect dice are set aside (e.g. after picking a 2nd effect die).
+    // "Extra effect" needs the mirror image of that: a 2nd effect die is only meaningful if
+    // enough non-hitch dice remain afterward to still fill Total (2, or 3 if "extra total" is
+    // also checked) — hitches are never selectable as an effect die (see the .selectable
+    // click handler below, keyed off rollResults.results, which is already hitch-free), so
+    // with e.g. exactly 3 non-hitch dice there's no 4th die anywhere to become that 2nd effect
+    // die once the existing 1 effect + 2 total already account for all of them.
+    // A checkbox already checked is never disabled, so the player can always uncheck it.
+    const updateCheckboxAvailability = () => {
+      if (!extraTotalCheckbox || !extraEffectCheckbox) return
 
-      $(document).one('click', closeValueMenu)
+      const checkedCount = (extraTotalCheckbox.checked ? 1 : 0) + (extraEffectCheckbox.checked ? 1 : 0)
+      const remainingForTotal = rollResults.results.length - selectedEffectDice.length
+      const totalDiceNeeded = extraTotalCheckbox.checked ? 3 : 2
+
+      const extraTotalUseless = !pickerCase.selectable || remainingForTotal < 3
+      const extraEffectUseless = !pickerCase.selectable || rollResults.results.length < 2 + totalDiceNeeded
+
+      extraTotalCheckbox.disabled = !extraTotalCheckbox.checked && (extraTotalUseless || checkedCount >= availablePlotPoints)
+      extraEffectCheckbox.disabled = !extraEffectCheckbox.checked && (extraEffectUseless || checkedCount >= availablePlotPoints)
     }
 
-    const bindInteractivity = (html, pickerCase) => {
-      const $diceBox = html.find('.dice-box')
-      const $effectDiceContainer = html.find('.your-effect-dice')
-      const $totalValue = html.find('.total-value')
-      const $extraTotalCheckbox = html.find('.extra-total-die-checkbox')
-      const $extraEffectCheckbox = html.find('.extra-effect-die-checkbox')
+    const recompute = async () => {
+      while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
 
-      const defaultIndex = pickerCase.dice.findIndex(die => die.effect)
-      const selectedEffectDice = defaultIndex !== -1 ? [rollResults.results[defaultIndex]] : []
+      const n = extraTotalCheckbox?.checked ? 3 : 2
+      const totalDice = getBestNExcluding(rollResults.results, selectedEffectDice, n)
+      const totalDiceSet = new Set(totalDice)
+      const selectedSet = new Set(selectedEffectDice)
+      const total = totalDice.reduce((sum, die) => sum + die.result, 0)
 
-      const effectDiceCap = () => $extraEffectCheckbox.prop('checked') ? 2 : 1
+      const dieElements = [...diceBox.querySelectorAll('.result-die')]
 
-      // Each checkbox is disabled whenever it's currently unchecked AND either the Plot Point
-      // budget is already fully committed to the other box, or there simply aren't enough
-      // non-hitch dice for it to change anything — with 2 or fewer dice there's no baseline
-      // effect die to extend at all (both go straight to Total per the normal rules), and
-      // "extra total" specifically also goes stale the moment fewer than 3 dice remain once
-      // the currently-selected effect dice are set aside (e.g. after picking a 2nd effect die).
-      // "Extra effect" needs the mirror image of that: a 2nd effect die is only meaningful if
-      // enough non-hitch dice remain afterward to still fill Total (2, or 3 if "extra total" is
-      // also checked) — hitches are never selectable as an effect die (see the .selectable
-      // click handler below, keyed off rollResults.results, which is already hitch-free), so
-      // with e.g. exactly 3 non-hitch dice there's no 4th die anywhere to become that 2nd effect
-      // die once the existing 1 effect + 2 total already account for all of them.
-      // A checkbox already checked is never disabled, so the player can always uncheck it.
-      const updateCheckboxAvailability = () => {
-        const checkedCount = (($extraTotalCheckbox.prop('checked') ? 1 : 0) + ($extraEffectCheckbox.prop('checked') ? 1 : 0))
-        const remainingForTotal = rollResults.results.length - selectedEffectDice.length
-        const totalDiceNeeded = $extraTotalCheckbox.prop('checked') ? 3 : 2
+      dieElements.forEach((dieElement, index) => {
+        const dieCpt = dieElement.querySelector('.die-cpt')
+        const die = rollResults.results[index]
 
-        const extraTotalUseless = !pickerCase.selectable || remainingForTotal < 3
-        const extraEffectUseless = !pickerCase.selectable || rollResults.results.length < 2 + totalDiceNeeded
+        dieElement.classList.remove('chosen', 'effect')
+        dieCpt?.classList.remove('chosen-cpt', 'effect-cpt', 'unchosen-cpt')
 
-        $extraTotalCheckbox.prop('disabled', !$extraTotalCheckbox.prop('checked') && (extraTotalUseless || checkedCount >= availablePlotPoints))
-        $extraEffectCheckbox.prop('disabled', !$extraEffectCheckbox.prop('checked') && (extraEffectUseless || checkedCount >= availablePlotPoints))
-      }
-
-      const recompute = async () => {
-        while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
-
-        const n = $extraTotalCheckbox.prop('checked') ? 3 : 2
-        const totalDice = getBestNExcluding(rollResults.results, selectedEffectDice, n)
-        const totalDiceSet = new Set(totalDice)
-        const selectedSet = new Set(selectedEffectDice)
-        const total = totalDice.reduce((sum, die) => sum + die.result, 0)
-
-        $diceBox.find('.result-die').each(function (index) {
-          const $die = $(this)
-          const $dieCpt = $die.find('.die-cpt')
-          const die = rollResults.results[index]
-
-          $die.removeClass('chosen effect')
-          $dieCpt.removeClass('chosen-cpt effect-cpt unchosen-cpt')
-
-          if (selectedSet.has(die)) {
-            $die.addClass('effect')
-            $dieCpt.addClass('effect-cpt')
-          } else if (totalDiceSet.has(die)) {
-            $die.addClass('chosen')
-            $dieCpt.addClass('chosen-cpt')
-          } else {
-            $dieCpt.addClass('unchosen-cpt')
-          }
-        })
-
-        $totalValue.text(total)
-
-        $effectDiceContainer.find('.die-icon-wrapper').remove()
-
-        for (const die of selectedEffectDice) {
-          const dieContent = await getAppendDiceContent({ dieRating: die.faces, value: die.faces, type: 'effect' })
-          $effectDiceContainer.append(dieContent)
+        if (selectedSet.has(die)) {
+          dieElement.classList.add('effect')
+          dieCpt?.classList.add('effect-cpt')
+        } else if (totalDiceSet.has(die)) {
+          dieElement.classList.add('chosen')
+          dieCpt?.classList.add('chosen-cpt')
+        } else {
+          dieCpt?.classList.add('unchosen-cpt')
         }
-      }
-
-      // Individual dice are only clickable when there were enough of them to need a choice in
-      // the first place (see getPickerCase) — with 2 or fewer, both checkboxes stay disabled
-      // above, so there's nothing for this handler to ever need to do.
-      if (pickerCase.selectable) {
-        $diceBox.on('click', '.selectable', async function () {
-          const $clicked = $(this)
-          const clickedKey = parseInt($clicked.data('key'), 10)
-          const clickedDie = rollResults.results[clickedKey]
-
-          const index = selectedEffectDice.indexOf(clickedDie)
-
-          if (index !== -1) {
-            if (selectedEffectDice.length > 1) selectedEffectDice.splice(index, 1)
-          } else {
-            selectedEffectDice.push(clickedDie)
-            while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
-          }
-
-          await recompute()
-        })
-      }
-
-      if (testModeSelectDiceValues()) {
-        $diceBox.on('contextmenu', '.die-value-target', event => openValueMenu(event, html))
-      }
-
-      $extraTotalCheckbox.on('change', async () => {
-        updateCheckboxAvailability()
-        await recompute()
       })
 
-      $extraEffectCheckbox.on('change', async () => {
-        updateCheckboxAvailability()
+      totalValue.textContent = total
+
+      for (const wrapper of effectDiceContainer.querySelectorAll('.die-icon-wrapper')) wrapper.remove()
+
+      for (const die of selectedEffectDice) {
+        const dieContent = await getAppendDiceContent({ dieRating: die.faces, value: die.faces, type: 'effect' })
+
+        effectDiceContainer.insertAdjacentHTML('beforeend', dieContent)
+      }
+    }
+
+    // Individual dice are only clickable when there were enough of them to need a choice in
+    // the first place (see getPickerCase) — with 2 or fewer, both checkboxes stay disabled
+    // above, so there's nothing for this handler to ever need to do.
+    if (pickerCase.selectable) {
+      // Delegated from .dice-box, as jQuery's .on(event, selector, fn) was, so the dice can be
+      // re-rendered underneath it without rebinding.
+      diceBox.addEventListener('click', async event => {
+        const clicked = event.target.closest('.selectable')
+
+        if (!clicked || !diceBox.contains(clicked)) return
+
+        const clickedKey = parseInt(clicked.dataset.key, 10)
+        const clickedDie = rollResults.results[clickedKey]
+
+        const index = selectedEffectDice.indexOf(clickedDie)
+
+        if (index !== -1) {
+          if (selectedEffectDice.length > 1) selectedEffectDice.splice(index, 1)
+        } else {
+          selectedEffectDice.push(clickedDie)
+          while (selectedEffectDice.length > effectDiceCap()) selectedEffectDice.shift()
+        }
+
         await recompute()
       })
+    }
 
+    if (testModeSelectDiceValues()) {
+      diceBox.addEventListener('contextmenu', event => {
+        const target = event.target.closest('.die-value-target')
+
+        if (!target || !diceBox.contains(target)) return
+
+        openValueMenu(event, root)
+      })
+    }
+
+    extraTotalCheckbox?.addEventListener('change', async () => {
       updateCheckboxAvailability()
-    }
+      await recompute()
+    })
 
-    new Dialog({
-      title: "Select Your Dice",
-      content: initialContent,
-      buttons: {
-        confirm: {
-          icon: '<i class="fa-solid fa-check"></i>',
-          label: localizer('Confirm'),
-          callback: resolveFromDom
-        }
-      },
-      default: 'confirm',
-      close: resolveFromDom,
-      // Foundry's appv1 Application#render() returns `this` (for chaining), not a Promise - the
-      // render: callback below is the real "it's actually rendered" signal, fired once the dialog
-      // is in the DOM and its listeners are bound.
-      render: html => {
-        capturedHtml = html
-        bindInteractivity(html, initialPickerCase)
+    extraEffectCheckbox?.addEventListener('change', async () => {
+      updateCheckboxAvailability()
+      await recompute()
+    })
 
-        if (myActorId) {
-          game.user.character.setFlag('cortexprime-ext', 'dicePickerOpen', true).catch(error => {
-            console.warn('CP | Could not flag dice picker as open', error)
-          })
-        }
+    updateCheckboxAvailability()
+  }
+
+  const values = await foundry.applications.api.DialogV2.wait({
+    window: { title: 'Select Your Dice' },
+    // Merged with DialogV2's own 'dialog' class rather than replacing it. Note the window root
+    // and the template root both end up carrying cortexprime/dice-picker, which is why
+    // e2e/helpers/dicePool.js scopes its picker locators to .window-content.
+    classes: ['cortexprime', 'dice-picker'],
+    content: initialContent,
+    buttons: [
+      {
+        action: 'confirm',
+        label: 'Confirm',
+        icon: 'fa-solid fa-check',
+        default: true,
+        callback: (event, target, dialog) => resolveFromDom(dialog.element)
       }
-    }, { jQuery: true, classes: ['dialog', 'dice-picker', 'cortexprime'] }).render(true)
+    ],
+    close: (event, dialog) => resolveFromDom(dialog.element),
+    // The real "it is actually rendered" signal, fired once the dialog is in the DOM. The
+    // dicePickerOpen flag is set here rather than earlier so the GM's SELECTING row only lights
+    // up once this player can actually see the dialog.
+    render: (event, dialog) => {
+      capturedRoot = dialog.element
+
+      bindInteractivity(dialog.element, initialPickerCase)
+
+      if (myActorId) {
+        game.user.character.setFlag('cortexprime-ext', 'dicePickerOpen', true).catch(error => {
+          console.warn('CP | Could not flag dice picker as open', error)
+        })
+      }
+    }
   })
+
+  return values ?? noValues()
 }
 
 export default async function (pool, rollType, targetTotal, spendPlotPointForExtraDie) {

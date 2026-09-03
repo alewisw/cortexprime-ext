@@ -19,7 +19,7 @@
 .cortexprime.doom-pool-settings.window-app .window-content, .cortexprime.doom-pool-settings.application .window-content {
   background: #ffffff;
 }
-.cortexprime .dice-picker.window-app .window-content, .cortexprime .consumable-dice.window-app .window-content {
+.cortexprime .dice-picker.window-app .window-content, .cortexprime .dice-picker.application .window-content, .cortexprime .consumable-dice.window-app .window-content, .cortexprime .consumable-dice.application .window-content {
   background: none;
   padding: 0;
 }

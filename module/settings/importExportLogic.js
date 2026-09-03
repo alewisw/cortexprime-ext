@@ -2,7 +2,7 @@ import { SYNCED_SETTINGS } from './syncedSettings.js'
 
 // The decidable half of ImportExportSettings.js: what counts as an importable file, when to warn
 // about a version mismatch, and how the settings and theme values resolve. Kept free of Foundry
-// globals — the FileReader, Dialog.confirm and game.settings.set calls stay in the app — so the
+// globals — the FileReader, confirmation dialog and game.settings.set calls stay in the app — so
 // rules that decide what a world ends up with are unit testable.
 
 // An export always carries cortexPrimeVersion; exports predating that field are recognised by
