@@ -71,11 +71,17 @@ async function dismissNotifications(page) {
   }
 }
 
+// Counted before clicking, deliberately. Clicking straight through and catching the failure costs
+// the FULL action timeout every time the dialog is absent - which is almost always, since it only
+// appears when the module's version has moved on. Measured at 3.1-3.3s per session in a trace, on
+// every openAs in the suite. count() answers immediately.
 async function closeYendorsChangelogIfPresent(page) {
   try {
-    await page.locator('.window-app.yendors-dialog .header-button.close').click({ timeout: 3_000 })
+    const close = page.locator('.window-app.yendors-dialog .header-button.close')
+
+    if (await close.count()) await close.first().click({ timeout: 3_000 })
   } catch {
-    // Not shown — nothing to close.
+    // Not shown, or it went away on its own — nothing to close.
   }
 }
 
@@ -96,6 +102,22 @@ async function closeYendorsChangelogIfPresent(page) {
  * Returns { context, page }. Callers are responsible for
  * `await context.close()` when done with that session.
  */
+// Dice So Nice renders every roll as a 3D animation, and the system awaits it
+// (game.dice3d.showForRoll(..., true) in rollDice.js, game.dice3d.show(...) for the plot-point
+// flip). Measured at ~3.7s per roll against ~0ms with it absent - challenge-resolution.spec.js
+// alone rolls twelve times, and the suite around nineteen.
+//
+// Nulling game.dice3d on the test client is exactly the shape of a world without the module
+// installed, which is a supported configuration the system already branches on, so nothing under
+// test changes. It is per-page and never persisted: the module stays enabled for real play.
+async function disableDiceAnimations(page) {
+  try {
+    await page.evaluate(() => { window.game.dice3d = null })
+  } catch {
+    // No dice3d to disable - nothing to do.
+  }
+}
+
 export async function joinAs(browser, { user = ROLE_USERS.gm, password = '' } = {}) {
   const context = await browser.newContext({
     baseURL: foundryUrl(),
@@ -122,6 +144,7 @@ export async function joinAs(browser, { user = ROLE_USERS.gm, password = '' } = 
   await closeYendorsChangelogIfPresent(page)
   await closeLeftoverWindows(page)
   await dismissNotifications(page)
+  await disableDiceAnimations(page)
 
   return { context, page }
 }
@@ -153,6 +176,7 @@ export async function openAs(browser, role) {
   await closeYendorsChangelogIfPresent(page)
   await closeLeftoverWindows(page)
   await dismissNotifications(page)
+  await disableDiceAnimations(page)
 
   return { context, page }
 }

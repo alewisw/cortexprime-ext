@@ -89,3 +89,22 @@ input {
     width: auto;
   }
 }
+
+// Bare radios and checkboxes carry no intrinsic size: core styles them with appearance:none and
+// gives them dimensions through its own cascade. Most of the system's pick that up and resolve to
+// 20x22 - but not all of them. The Contest interference radio renders 0x0 and STAYS 0x0, so it is
+// in the DOM, reports visibility:visible, and cannot be clicked; Playwright retried for a full 15
+// seconds against it. Its markup, classes and matched CSS rules are identical to the challenge
+// initiator radio two sections above it, which renders 20x22 while also unchecked, and toggling
+// `checked` on the collapsed one makes it jump to 20x22 - i.e. the size resolves once a style
+// recalculation is forced. I could not pin down why that one element misses it.
+//
+// So rather than depend on that cascade, floor the size. min-* leaves anything already larger
+// alone, so the radios that do resolve correctly are unaffected. .input-checkbox-cpt is excluded:
+// that is the system's own pattern, deliberately transparent and sized by its sibling
+// .checkmark-cpt (see _theme.scss).
+input[type="radio"]:not(.input-checkbox-cpt),
+input[type="checkbox"]:not(.input-checkbox-cpt) {
+  min-width: 20px;
+  min-height: 20px;
+}

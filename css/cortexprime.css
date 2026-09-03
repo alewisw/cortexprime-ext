@@ -1186,6 +1186,11 @@
   height: auto;
   width: auto;
 }
+.cortexprime input[type=radio]:not(.input-checkbox-cpt),
+.cortexprime input[type=checkbox]:not(.input-checkbox-cpt) {
+  min-width: 20px;
+  min-height: 20px;
+}
 .cortexprime nav.sheet-tabs {
   height: auto;
   margin: 0 -0.25rem 0.5rem;

@@ -48,7 +48,16 @@ async function resetWorld(gmPage) {
   await endCrisis(gmPage)
 }
 
-test.setTimeout(360_000)
+// Sized from measurement, not guesswork. These specs drive three real browser sessions through
+// whole challenge pipelines; the Group Challenge alone performs five rolls and around fifty UI
+// interactions against a live server, and a Playwright trace puts 40% of its runtime in click
+// actionability checks alone - unavoidable when every interaction re-renders the tray.
+//
+// Timed at 4.7, 4.8, 4.9, 5.0 and 5.3 minutes over five runs. The previous 360s budget left as
+// little as 13% headroom over the slowest of those, which is why this timed out intermittently
+// rather than consistently - and a timed-out test used to take its own cleanup down with it.
+// 600s is roughly double the observed worst case.
+test.setTimeout(600_000)
 
 test('a Contest plays out across both clients: roles swap, a player win reduces the Crisis Pool, a GM win does not, and the loser blunts the winner\'s Effect die', async ({ browser }) => {
   const gm = await openAs(browser, 'gm')
