@@ -26,10 +26,13 @@ export const registerSpotlight = () => {
         options: game.user.isGM ? getConnectedPlayerActors() : null
       }
     },
-    activateListeners: html => {
-      html.find('.spotlight-select').on('change', async event => {
-        await game.settings.set('cortexprime-ext', 'spotlightActorId', event.currentTarget.value)
-      })
+    // An HTMLElement since the FloatingPanel moved to ApplicationV2. The select only exists for
+    // the GM - a player sees the read-only card - hence the optional call.
+    activateListeners: element => {
+      element.querySelector('.spotlight-select')
+        ?.addEventListener('change', async event => {
+          await game.settings.set('cortexprime-ext', 'spotlightActorId', event.currentTarget.value)
+        })
     }
   })
 
