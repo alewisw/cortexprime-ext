@@ -13,6 +13,33 @@
   .window-resize-handle {
     z-index: 10;
   }
+
+  // Core sets `scrollbar-width: thin` on every element, which lands around 11px in Chromium.
+  // These sheets are dense enough that the bar is easy to miss, so ours run about double that.
+  // Chromium ignores ::-webkit-scrollbar entirely unless scrollbar-width is `auto`, hence both
+  // declarations. Firefox has no ::-webkit-scrollbar and only accepts thin/auto/none, so it gets
+  // the wider `auto` bar rather than the full 22px.
+  * {
+    scrollbar-width: auto;
+  }
+
+  ::-webkit-scrollbar {
+    width: 22px;
+    height: 22px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track, transparent);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar, #782e22);
+    // Drawn inside a transparent border so the thumb reads as a bar with breathing room either
+    // side, rather than filling the full 22px gutter.
+    background-clip: content-box;
+    border: 4px solid transparent;
+    border-radius: 11px;
+  }
 }
 
 // Doom Pool Settings has no sheet-background overlay of its own (unlike ActorSettings/ThemeSettings),
@@ -20,15 +47,6 @@
 &.doom-pool-settings.application {
   .window-content {
     background: #ffffff;
-  }
-}
-
-.dice-picker, .consumable-dice {
-  &.application {
-    .window-content {
-      background: none;
-      padding: 0;
-    }
   }
 }
 

@@ -20,6 +20,7 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     classes: ['cortexprime', 'sheet', 'actor', 'actor-sheet'],
     tag: 'form',
     position: { width: 960, height: 'auto' },
+    window: { resizable: true },
     form: {
       // MUST be set explicitly. appv1's ActorSheet defaulted submitOnChange to true, whereas
       // DocumentSheetV2 defaults it to FALSE - without this every named field on the sheet
@@ -110,6 +111,22 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
 
   /* -------------------------------------------- */
 
+  // Set once the player drags the resize handle, after which the window is theirs to size and
+  // _resizeToFitContent stops running. Without this the auto-height pass below would snap the
+  // window back to 960 x fit-content on the very next render - and with submitOnChange the sheet
+  // re-renders on every field edit, so a manual resize would barely survive a keystroke.
+  #userResized = false
+
+  // The frame (and so the resize handle) is built once, before any part renders, so this is the
+  // right place to bind - _onRender would stack a fresh listener on every re-render.
+  async _onFirstRender (context, options) {
+    await super._onFirstRender(context, options)
+
+    this.element
+      .querySelector('.window-resize-handle')
+      ?.addEventListener('pointerdown', () => { this.#userResized = true }, { once: true })
+  }
+
   // Clicks are all `actions`; only the change/mouseup controls are wired here.
   _onRender (context, options) {
     super._onRender(context, options)
@@ -176,6 +193,8 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
   // height calculation without it has been observed to also blow the window out to a much wider,
   // unintended width.
   _resizeToFitContent () {
+    if (this.#userResized) return
+
     try {
       this.setPosition({ width: this.options.position.width, height: 'auto' })
     } catch (error) {
