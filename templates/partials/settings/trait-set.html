@@ -227,7 +227,7 @@
       <div class="flex flex-ac flex-jsb py-1">
         <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'PresetTraits'}}</h3>
         <div class="flex-col">
-          <button class="btn btn-primary-cpt btn-icon add-trait" data-path="{{path}}" data-actor-type="{{actorTypeIndex}}" data-trait-set="{{traitSetIndex}}" type="button">
+          <button class="btn btn-primary-cpt btn-icon add-trait" data-action="addTrait" data-path="{{path}}" data-actor-type="{{actorTypeIndex}}" data-trait-set="{{traitSetIndex}}" type="button">
             <i class="fa fa-plus"></i>
           </button>
         </div>
@@ -262,7 +262,7 @@
               </button>
             </div>
             <div class="flex-col px-0">
-              <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{trait.name}}" data-to="trait-{{../actorTypeIndex}}-{{../traitSetIndex}}-{{traitIndex}}" type="button">
+              <button class="view-change btn btn-icon btn-icon-plain-cpt" data-action="viewChange" data-name="{{trait.name}}" data-to="trait-{{../actorTypeIndex}}-{{../traitSetIndex}}-{{traitIndex}}" type="button">
                 <i class="fa fa-edit ma-0"></i>
               </button>
             </div>

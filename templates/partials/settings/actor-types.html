@@ -7,7 +7,7 @@
         {{localize 'ActorTypes'}}
       </h1>
       <div class="flex-col">
-        <button class="btn btn-primary-cpt btn-icon" id="add-new-actor-type" type="button">
+        <button class="btn btn-primary-cpt btn-icon" id="add-new-actor-type" data-action="addNewActorType" type="button">
           <i class="fa fa-plus"></i>
         </button>
       </div>
@@ -40,12 +40,12 @@
         </div>
         <div class="flex-col flex-row flex-ac">
           <div class="flex-col px-0">
-            <button class="btn btn-icon btn-icon-plain-cpt duplicate-item" data-id="{{actorType.id}}" type="button">
+            <button class="btn btn-icon btn-icon-plain-cpt duplicate-item" data-action="duplicateItem" data-id="{{actorType.id}}" type="button">
               <i class="fa fa-clone"></i>
             </button>
           </div>
           <div class="flex-col px-0">
-            <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{actorType.name}}" data-to="actorType-{{actorTypeIndex}}" type="button">
+            <button class="view-change btn btn-icon btn-icon-plain-cpt" data-action="viewChange" data-name="{{actorType.name}}" data-to="actorType-{{actorTypeIndex}}" type="button">
               <i class="fa fa-edit ma-0"></i>
             </button>
           </div>

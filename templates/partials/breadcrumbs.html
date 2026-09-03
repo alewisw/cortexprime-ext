@@ -1,6 +1,6 @@
 <div class="breadcrumbs">
   {{#unless breadcrumbs.0.active}}
-    <button class="btn btn-secondary-cpt go-back" type="button" data-to="{{goBack}}" type="button">
+    <button class="btn btn-secondary-cpt go-back" data-action="breadcrumbChange" data-to="{{goBack}}" type="button">
       {{localize 'Back'}}
     </button>
   {{/unless}}
@@ -11,7 +11,7 @@
     {{#if breadcrumb.active}}
       <span class="breadcrumb active">{{ or (ternary breadcrumb.name (localize breadcrumb.name) breadcrumb.name) (concat '[' breadcrumb.target ']') }}</span>
     {{else}}
-      <span class="breadcrumb" data-to="{{breadcrumb.target}}">{{ or (ternary breadcrumb.name (localize breadcrumb.name) breadcrumb.name) (concat '[' breadcrumb.target ']') }}</span>
+      <span class="breadcrumb" data-action="breadcrumbChange" data-to="{{breadcrumb.target}}">{{ or (ternary breadcrumb.name (localize breadcrumb.name) breadcrumb.name) (concat '[' breadcrumb.target ']') }}</span>
     {{/if}}
   {{/each}}
 </div>

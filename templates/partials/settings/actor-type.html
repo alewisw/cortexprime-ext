@@ -38,7 +38,7 @@
         <p class="section-secondary-title-cpt mb-1">{{localize 'DefaultImage'}}</p>
         {{! An <img>, not a form control, so the inherited-fields sweep can't disable it - the
             .inherited-fields .default-image rule makes it click-through instead. }}
-        <img class="default-image bkg-light-grey" src="{{or actorType.defaultImage 'icons/svg/mystery-man.svg'}}"
+        <img class="default-image bkg-light-grey" data-action="changeDefaultImage" src="{{or actorType.defaultImage 'icons/svg/mystery-man.svg'}}"
           data-actor-type-index="{{actorTypeIndex}}" title="{{localize 'DefaultImage'}}" />
       </div>
       <div class="flex-col col-9">
@@ -107,7 +107,7 @@
         <div class="flex flex-ac flex-jsb py-1">
           <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'TraitSets'}}</h3>
           <div class="flex-col">
-            <button class="btn btn-primary-cpt btn-icon add-trait-set" data-actor-type="{{actorTypeIndex}}" type="button">
+            <button class="btn btn-primary-cpt btn-icon add-trait-set" data-action="addTraitSet" data-actor-type="{{actorTypeIndex}}" type="button">
               <i class="fa fa-plus"></i>
             </button>
           </div>
@@ -136,12 +136,12 @@
             </div>
             <div class="flex-col flex-row flex-ac">
               <div class="flex-col px-0">
-                <button class="btn btn-icon btn-icon-plain-cpt duplicate-item" data-path="{{concat ../actorTypeIndex '.traitSets'}}" data-id="{{traitSet.id}}" type="button">
+                <button class="btn btn-icon btn-icon-plain-cpt duplicate-item" data-action="duplicateItem" data-path="{{concat ../actorTypeIndex '.traitSets'}}" data-id="{{traitSet.id}}" type="button">
                   <i class="fa fa-clone"></i>
                 </button>
               </div>
               <div class="flex-col px-0">
-                <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{traitSet.label}}" data-to="traitSet-{{../actorTypeIndex}}-{{traitSetIndex}}" type="button">
+                <button class="view-change btn btn-icon btn-icon-plain-cpt" data-action="viewChange" data-name="{{traitSet.label}}" data-to="traitSet-{{../actorTypeIndex}}-{{traitSetIndex}}" type="button">
                   <i class="fa fa-edit ma-0"></i>
                 </button>
               </div>
@@ -159,7 +159,7 @@
         <div class="flex flex-ac flex-jsb py-1">
           <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'SimpleTraits'}}</h3>
           <div class="flex-col">
-            <button class="btn btn-primary-cpt btn-icon add-simple-trait" data-actor-type="{{actorTypeIndex}}" type="button">
+            <button class="btn btn-primary-cpt btn-icon add-simple-trait" data-action="addSimpleTrait" data-actor-type="{{actorTypeIndex}}" type="button">
               <i class="fa fa-plus"></i>
             </button>
           </div>
@@ -189,13 +189,13 @@
             </div>
             <div class="flex-col flex-row flex-ac">
               <div class="flex-col px-0">
-                <button class="btn btn-icon btn-icon-plain-cpt duplicate-item" data-path="{{concat ../actorTypeIndex '.simpleTraits'}}"
+                <button class="btn btn-icon btn-icon-plain-cpt duplicate-item" data-action="duplicateItem" data-path="{{concat ../actorTypeIndex '.simpleTraits'}}"
                   data-id="{{simpleTrait.id}}" type="button">
                   <i class="fa fa-clone"></i>
                 </button>
               </div>
               <div class="flex-col px-0">
-                <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{simpleTrait.label}}"
+                <button class="view-change btn btn-icon btn-icon-plain-cpt" data-action="viewChange" data-name="{{simpleTrait.label}}"
                   data-to="simpleTrait-{{../actorTypeIndex}}-{{simpleTraitIndex}}" type="button">
                   <i class="fa fa-edit ma-0"></i>
                 </button>
@@ -214,7 +214,7 @@
         <div class="flex flex-ac flex-jsb py-1">
           <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'AdditionalTabs'}}</h3>
           <div class="flex-col">
-            <button class="btn btn-primary-cpt btn-icon add-additional-tab" data-actor-type="{{actorTypeIndex}}" type="button">
+            <button class="btn btn-primary-cpt btn-icon add-additional-tab" data-action="addAdditionalTab" data-actor-type="{{actorTypeIndex}}" type="button">
               <i class="fa fa-plus"></i>
             </button>
           </div>
@@ -243,7 +243,7 @@
             </div>
             <div class="flex-col flex-row flex-ac">
               <div class="flex-col px-0">
-                <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{additionalTab.name}}" data-to="additionalTab-{{../actorTypeIndex}}-{{tabIndex}}" type="button">
+                <button class="view-change btn btn-icon btn-icon-plain-cpt" data-action="viewChange" data-name="{{additionalTab.name}}" data-to="additionalTab-{{../actorTypeIndex}}-{{tabIndex}}" type="button">
                   <i class="fa fa-edit ma-0"></i>
                 </button>
               </div>
@@ -263,7 +263,7 @@
           <div class="flex flex-ac flex-jsb py-1">
             <h3 class="flex-col col-12 section-primary-title-cpt">{{localize 'DerivedActorTypes'}}</h3>
             <div class="flex-col">
-              <button class="btn btn-primary-cpt btn-icon add-derived-actor-type" data-actor-type-id="{{actorType.id}}" type="button">
+              <button class="btn btn-primary-cpt btn-icon add-derived-actor-type" data-action="addDerivedActorType" data-actor-type-id="{{actorType.id}}" type="button">
                 <i class="fa fa-plus"></i>
               </button>
             </div>
@@ -286,7 +286,7 @@
               </div>
               <div class="flex-col flex-row flex-ac">
                 <div class="flex-col px-0">
-                  <button class="view-change btn btn-icon btn-icon-plain-cpt" data-name="{{child.name}}" data-to="actorType-{{child.index}}" type="button">
+                  <button class="view-change btn btn-icon btn-icon-plain-cpt" data-action="viewChange" data-name="{{child.name}}" data-to="actorType-{{child.index}}" type="button">
                     <i class="fa fa-edit ma-0"></i>
                   </button>
                 </div>

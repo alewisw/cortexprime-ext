@@ -38,12 +38,10 @@ export const displayToggle = html => {
   })
 }
 
-// removeItem/reorderItem below exist in two shapes on purpose. The templates/partials that carry
-// these buttons (remove-button.html, reorder.html) are rendered by applications on BOTH
-// frameworks while the migration is in progress, so the work itself lives in one place and gets a
-// thin wrapper for each: a jQuery binding for the appv1 apps, and an `actions` handler for the V2
-// ones. Both take the button's dataset and run with `this` bound to the owning application.
-// Once nothing appv1 renders these partials, the jQuery halves can go.
+// The work behind the remove-button.html / reorder.html partials, taking a button's dataset and
+// running with `this` bound to the owning application. These briefly had a second, jQuery-bound
+// shape as well, for as long as ActorSettings was still appv1; that consumer is gone, so only the
+// ApplicationV2 `actions` handlers remain.
 
 const applyRemoveItem = async function ({ group, itemKey, itemName, setting, stayOnPage }) {
   const confirmed = await confirmAction({
@@ -118,24 +116,6 @@ const applyReorderItem = async function ({ currentIndex, newIndex, path, setting
   await game.settings.set('cortexprime-ext', setting, reconciled(setting, settings))
 
   this.render(true)
-}
-
-/** appv1 binding. */
-export const removeItem = function (html) {
-  html.find('.remove-item').click(async event => {
-    event.preventDefault()
-
-    await applyRemoveItem.call(this, event.currentTarget.dataset)
-  })
-}
-
-/** appv1 binding. */
-export const reorderItem = function (html) {
-  html.find('.reorder').click(async event => {
-    event.preventDefault()
-
-    await applyReorderItem.call(this, event.currentTarget.dataset)
-  })
 }
 
 /** ApplicationV2 `actions` handler. */

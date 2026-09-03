@@ -62,10 +62,10 @@ export const showPlotPointSpendAnimation = showPlotPointAnimation
 // expanding to the field's max. Force both to max height first, so Foundry's measurement (and
 // the abs-positioned editor surface that then fills .editor's box once mounted) picks up the
 // expanded size. Call this once per activateListeners, alongside the sheet's other listener
-// wiring; it registers on the capture phase so it runs before Foundry's own button.onclick,
-// bound during super.activateListeners.
-export const expandNotesFieldOnEdit = html => {
-  html[0].addEventListener('click', event => {
+// wiring; it registers on the capture phase so it runs before Foundry's own button.onclick.
+// Takes the root HTMLElement - appv1 callers pass html[0], ApplicationV2 ones this.element.
+export const expandNotesFieldOnEdit = root => {
+  root.addEventListener('click', event => {
     const button = event.target.closest('.notes-field .editor-edit')
     if (!button) return
 

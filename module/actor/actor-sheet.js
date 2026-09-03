@@ -100,7 +100,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     html.find('.step-die-up').click(this._stepDieUp.bind(this))
     html.find('.trait-set-edit').click(this._traitSetEdit.bind(this))
 
-    expandNotesFieldOnEdit(html)
+    expandNotesFieldOnEdit(html[0])
 
     removeItems.call(this, html)
     toggleItems.call(this, html)

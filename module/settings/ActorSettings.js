@@ -2,31 +2,50 @@ import { applyActorTypeInheritance, buildActorTypeTree } from '../actor/actorTyp
 import { buildSystemTraitOptions } from './systemTraitsLogic.js'
 import { expandNotesFieldOnEdit, localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFindKey, objectFindValue, objectMapValues, objectReduce, objectReindexFilter } from '../../lib/helpers.js'
-import { removeItem, reorderItem } from '../scripts/settingsHelpers.js'
+import { onRemoveItem, onReorderItem } from '../scripts/settingsHelpers.js'
+import { CortexApplicationV2 } from '../applications/CortexApplicationV2.js'
 
-export default class ActorSettings extends FormApplication {
-  constructor() {
-    super()
+export default class ActorSettings extends CortexApplicationV2 {
+  static DEFAULT_OPTIONS = {
+    id: 'actor-settings',
+    classes: ['actor-settings'],
+    tag: 'form',
+    position: { width: 600, height: 900, top: 200, left: 400 },
+    // A localization key, not a localized string: DEFAULT_OPTIONS is evaluated at module load,
+    // before game.i18n exists.
+    window: { title: 'ActorSettings', resizable: true },
+    form: {
+      handler: ActorSettings.#onSubmit,
+      submitOnChange: true,
+      closeOnSubmit: false
+    },
+    actions: {
+      addAdditionalTab: ActorSettings.#onAddAdditionalTab,
+      addDefaultNote: ActorSettings.#onAddAdditionalTabDefaultNote,
+      addDerivedActorType: ActorSettings.#onAddDerivedActorType,
+      addDescriptor: ActorSettings.#onAddDescriptor,
+      addNewActorType: ActorSettings.#onAddNewActorType,
+      addSfx: ActorSettings.#onAddSfx,
+      addSimpleTrait: ActorSettings.#onAddSimpleTrait,
+      addSubTrait: ActorSettings.#onAddSubTrait,
+      addTrait: ActorSettings.#onAddTrait,
+      addTraitSet: ActorSettings.#onAddTraitSet,
+      breadcrumbChange: ActorSettings.#onBreadcrumbChange,
+      changeDefaultImage: ActorSettings.#onChangeDefaultImage,
+      duplicateItem: ActorSettings.#onDuplicateItem,
+      newDie: ActorSettings.#onNewDie,
+      viewChange: ActorSettings.#onViewChange,
+      // Shared with the other settings applications; see settingsHelpers.
+      removeItem: onRemoveItem,
+      reorderItem: onReorderItem
+    }
   }
 
-  static get defaultOptions () {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'actor-settings',
-      template: 'systems/cortexprime-ext/templates/actor/settings.html',
-      title: localizer('ActorSettings'),
-      classes: ['cortexprime', 'actor-settings'],
-      width: 600,
-      height: 900,
-      top: 200,
-      left: 400,
-      resizable: true,
-      closeOnSubmit: false,
-      submitOnClose: true,
-      submitOnChange: true
-    })
+  static PARTS = {
+    form: { template: 'systems/cortexprime-ext/templates/actor/settings.html' }
   }
 
-  getData() {
+  async _prepareContext (options) {
     const breadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs') ?? {}
     const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')
 
@@ -40,66 +59,101 @@ export default class ActorSettings extends FormApplication {
     )
 
     return {
+      ...await super._prepareContext(options),
       actorTypes,
       breadcrumbs,
       goBack: breadcrumbs[getLength(breadcrumbs ?? {}) - 2]?.target ?? 0
     }
   }
 
-  // The single write path for the actorTypes setting. Reconciling here means every derived Actor
-  // Type is rebuilt from its parent on any change, wherever that change came from.
-  async _saveActorTypes (value) {
-    await game.settings.set('cortexprime-ext', 'actorTypes', applyActorTypeInheritance(value))
-  }
+  _onRender (context, options) {
+    super._onRender(context, options)
 
-  async _updateObject(event, formData) {
-    if (!$(event.currentTarget).hasClass('die-select')) {
-      const expandedFormData = foundry.utils.expandObject(formData)
-      const currentActorTypes = game.settings.get('cortexprime-ext', 'actorTypes') ?? {}
+    this.#lockInheritedControls()
 
-      await this._saveActorTypes(foundry.utils.mergeObject(currentActorTypes, expandedFormData.actorTypes))
+    expandNotesFieldOnEdit(this.element)
 
-      this.render(true)
+    for (const field of this.element.querySelectorAll('.breadcrumb-name-change')) {
+      field.addEventListener('change', this.#onBreadcrumbNameChange.bind(this))
+    }
+
+    for (const select of this.element.querySelectorAll('.die-select')) {
+      select.addEventListener('change', this.#onDieChange.bind(this))
+      select.addEventListener('mouseup', this.#onDieRemove.bind(this))
     }
   }
 
-  activateListeners(html) {
-    super.activateListeners(html)
-    html.find('#add-new-actor-type').click(this._addNewActorType.bind(this))
-    html.find('.add-additional-tab').click(this._addAdditionalTab.bind(this))
-    html.find('.add-default-note').click(this._addAdditionalTabDefaultNote.bind(this))
-    html.find('.add-derived-actor-type').click(this._addDerivedActorType.bind(this))
-    html.find('.add-descriptor').click(this._addDescriptor.bind(this))
-    html.find('.add-simple-trait').click(this._addSimpleTrait.bind(this))
-    html.find('.add-sfx').click(this._addSfx.bind(this))
-    html.find('.add-sub-trait').click(this._addSubTrait.bind(this))
-    html.find('.add-trait').click(this._addTrait.bind(this))
-    html.find('.add-trait-set').click(this._addTraitSet.bind(this))
-    html.find('.breadcrumb-name-change').change(this._breadcrumbNameChange.bind(this))
-    html.find('.breadcrumb:not(.active), .go-back').click(this._breadcrumbChange.bind(this))
-    html.find('.default-image').click(this._changeDefaultImage.bind(this))
-    html.find('.die-select').change(this._onDieChange.bind(this))
-    html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
-    html.find('.duplicate-item').click(this._duplicateItem.bind(this))
-    html.find('.new-die').click(this._newDie.bind(this))
-    html.find('.view-change').click(this._viewChange.bind(this))
-    this._lockInheritedControls(html)
-    expandNotesFieldOnEdit(html)
-    removeItem.call(this, html)
-    reorderItem.call(this, html)
+  // Set by _preClose so the submit it triggers doesn't try to re-render a closing application.
+  #closing = false
+
+  // appv1's submitOnClose has no ApplicationV2 equivalent; submit once more on the way out so a
+  // field edited and then closed without losing focus is not dropped. _preClose is awaited while
+  // the form element still exists, unlike _onClose.
+  async _preClose (options) {
+    this.#closing = true
+
+    if (this.form) await this.submit()
+
+    return super._preClose(options)
   }
 
   // Everything a derived Actor Type inherits is read-only: it belongs to the parent and is rebuilt
-  // from it on every save. Disabled inputs aren't serialised by the form, and _updateObject merges
-  // rather than replaces, so the omitted fields simply keep their reconciled parent values.
-  _lockInheritedControls (html) {
-    html.find('.inherited-fields').find('input, select, textarea').prop('disabled', true)
-    html.find('.inherited-fields').find('button').remove()
-    html.find('.inherited-row').find('.reorder, .duplicate-item, .remove-item').remove()
+  // from it on every save. Disabled inputs aren't serialised by the form, and the submit handler
+  // merges rather than replaces, so the omitted fields simply keep their reconciled parent values.
+  #lockInheritedControls () {
+    for (const container of this.element.querySelectorAll('.inherited-fields')) {
+      for (const field of container.querySelectorAll('input, select, textarea')) field.disabled = true
+      for (const button of container.querySelectorAll('button')) button.remove()
+    }
+
+    for (const row of this.element.querySelectorAll('.inherited-row')) {
+      for (const control of row.querySelectorAll('.reorder, .duplicate-item, .remove-item')) control.remove()
+    }
   }
 
-  async _addNewActorType(event) {
+  // The single write path for the actorTypes setting. Reconciling here means every derived Actor
+  // Type is rebuilt from its parent on any change, wherever that change came from.
+  async #saveActorTypes (value) {
+    await game.settings.set('cortexprime-ext', 'actorTypes', applyActorTypeInheritance(value))
+  }
+
+  static async #onSubmit (event, form, formData) {
+    // Dice are written by their own handlers, which do an index-aware rewrite rather than a
+    // merge; letting the generic merge below run as well would put the pre-change value straight
+    // back. appv1 checked event.currentTarget for this, which worked because it bound change per
+    // input - ApplicationV2 binds one listener on the form, so the changed element is event.target.
+    if (event?.target?.classList?.contains('die-select')) return
+
+    const expandedFormData = foundry.utils.expandObject(formData.object)
+    const currentActorTypes = game.settings.get('cortexprime-ext', 'actorTypes') ?? {}
+
+    await this.#saveActorTypes(foundry.utils.mergeObject(currentActorTypes, expandedFormData.actorTypes))
+
+    if (!this.#closing) await this.render()
+  }
+
+  async changeView (name, target) {
+    const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
+
+    await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', {
+      ...objectMapValues(currentBreadcrumbs, breadcrumb => {
+        breadcrumb.active = false
+        return breadcrumb
+      }),
+      [getLength(currentBreadcrumbs)]: {
+        active: true,
+        localize: false,
+        name,
+        target
+      }
+    })
+
+    await this.render()
+  }
+
+  static async #onAddNewActorType (event, target) {
     event.preventDefault()
+
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const newKey = getLength(source ?? {})
 
@@ -111,15 +165,15 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await this._saveActorTypes(foundry.utils.mergeObject(source, newActorType))
+    await this.#saveActorTypes(foundry.utils.mergeObject(source, newActorType))
     await this.changeView(localizer('NewActorType'), `actorType-${newKey}`)
-    this.render(true)
   }
 
-  async _addAdditionalTab (event) {
+  static async #onAddAdditionalTab (event, target) {
     event.preventDefault()
+
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
-    const actorTypeKey = $(event.currentTarget).data('actorType')
+    const actorTypeKey = target.dataset.actorType
     const newKey = getLength(source[actorTypeKey]?.additionalTabs || {})
     const name = localizer('NewAdditionalTab')
 
@@ -134,42 +188,41 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await this._saveActorTypes(foundry.utils.mergeObject(source, newAdditionalTab))
+    await this.#saveActorTypes(foundry.utils.mergeObject(source, newAdditionalTab))
     await this.changeView(name, `additionalTab-${actorTypeKey}-${newKey}`)
-    this.render(true)
   }
 
-  async _addAdditionalTabDefaultNote (event) {
+  static async #onAddAdditionalTabDefaultNote (event, target) {
     event.preventDefault()
-    const $addButton = $(event.currentTarget)
-    const path = $addButton.data('path')
+
+    const { path } = target.dataset
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentDefaultNotes = foundry.utils.getProperty(source, path) || {}
 
-    foundry.utils.setProperty(source, path,
-      {
-        ...currentDefaultNotes,
-        [getLength(currentDefaultNotes ?? {})]: {
-          label: localizer('NewSection'),
-          allowRename: false,
-          allowDeletion: false,
-          allowEdit: false,
-          value: null
-        }
-      })
+    foundry.utils.setProperty(source, path, {
+      ...currentDefaultNotes,
+      [getLength(currentDefaultNotes ?? {})]: {
+        label: localizer('NewSection'),
+        allowRename: false,
+        allowDeletion: false,
+        allowEdit: false,
+        value: null
+      }
+    })
 
-    await this._saveActorTypes(source)
-    this.render(true)
+    await this.#saveActorTypes(source)
+    await this.render()
   }
 
-  async _addDerivedActorType (event) {
+  static async #onAddDerivedActorType (event, target) {
     event.preventDefault()
-    const { actorTypeId } = event.currentTarget.dataset
+
+    const { actorTypeId } = target.dataset
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const newKey = getLength(source ?? {})
     const name = localizer('NewDerivedActorType')
 
-    // Only the identity and the parent link are stored - _saveActorTypes materializes the rest
+    // Only the identity and the parent link are stored - #saveActorTypes materializes the rest
     // from the parent.
     const newActorType = {
       [newKey]: {
@@ -179,77 +232,73 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await this._saveActorTypes(foundry.utils.mergeObject(source, newActorType))
+    await this.#saveActorTypes(foundry.utils.mergeObject(source, newActorType))
     await this.changeView(name, `actorType-${newKey}`)
-    this.render(true)
   }
 
-  async _addDescriptor(event) {
+  static async #onAddDescriptor (event, target) {
     event.preventDefault()
-    const $addButton = $(event.currentTarget)
-    const path = $addButton.data('path')
+
+    const { path } = target.dataset
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentDescriptors = foundry.utils.getProperty(source, path) || {}
 
-    foundry.utils.setProperty(source, path,
-      {
-        ...currentDescriptors,
-        [getLength(currentDescriptors ?? {})]: {
-          label: localizer('NewDescriptor'),
-          value: null
-        }
-      })
+    foundry.utils.setProperty(source, path, {
+      ...currentDescriptors,
+      [getLength(currentDescriptors ?? {})]: {
+        label: localizer('NewDescriptor'),
+        value: null
+      }
+    })
 
-    await this._saveActorTypes(source)
-    this.render(true)
+    await this.#saveActorTypes(source)
+    await this.render()
   }
 
-  async _addSfx(event) {
+  static async #onAddSfx (event, target) {
     event.preventDefault()
-    const $addButton = $(event.currentTarget)
-    const path = $addButton.data('path')
+
+    const { path } = target.dataset
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentSfx = foundry.utils.getProperty(source, path) || {}
 
-    foundry.utils.setProperty(source, path,
-      {
-        ...currentSfx,
-        [getLength(currentSfx ?? {})]: {
-          description: null,
-          label: localizer('NewSfx'),
-          unlocked: true
-        }
-      })
+    foundry.utils.setProperty(source, path, {
+      ...currentSfx,
+      [getLength(currentSfx ?? {})]: {
+        description: null,
+        label: localizer('NewSfx'),
+        unlocked: true
+      }
+    })
 
-    await this._saveActorTypes(source)
-    this.render(true)
+    await this.#saveActorTypes(source)
+    await this.render()
   }
 
-  async _addSubTrait(event) {
+  static async #onAddSubTrait (event, target) {
     event.preventDefault()
-    const $addButton = $(event.currentTarget)
-    const path = $addButton.data('path')
+
+    const { path } = target.dataset
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentSubTraits = foundry.utils.getProperty(source, path) || {}
 
+    foundry.utils.setProperty(source, path, {
+      ...currentSubTraits,
+      [getLength(currentSubTraits ?? {})]: {
+        dice: { value: { 0: '8' } },
+        label: localizer('NewSubTrait')
+      }
+    })
 
-    foundry.utils.setProperty(source, path,
-      {
-        ...currentSubTraits,
-        [getLength(currentSubTraits ?? {})]: {
-          dice: { value: { 0: '8' } },
-          label: localizer('NewSubTrait')
-        }
-      })
-
-    await this._saveActorTypes(source)
-    this.render(true)
+    await this.#saveActorTypes(source)
+    await this.render()
   }
 
-  async _addSimpleTrait (event) {
+  static async #onAddSimpleTrait (event, target) {
     event.preventDefault()
+
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
-    const actorTypeKey = $(event.currentTarget).data('actorType')
+    const actorTypeKey = target.dataset.actorType
     const newKey = getLength(source[actorTypeKey]?.simpleTraits || {})
 
     const newSimpleTrait = {
@@ -272,15 +321,15 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await this._saveActorTypes(foundry.utils.mergeObject(source, newSimpleTrait))
+    await this.#saveActorTypes(foundry.utils.mergeObject(source, newSimpleTrait))
     await this.changeView(localizer('NewSimpleTrait'), `simpleTrait-${actorTypeKey}-${newKey}`)
-    this.render(true)
   }
 
-  async _addTrait (event) {
+  static async #onAddTrait (event, target) {
     event.preventDefault()
+
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
-    const { actorType, path, traitSet } = event.currentTarget.dataset
+    const { actorType, path, traitSet } = target.dataset
     const currentTraits = foundry.utils.getProperty(source, `${path}.${traitSet}.traits`)
     const newKey = getLength(currentTraits || {})
 
@@ -299,15 +348,15 @@ export default class ActorSettings extends FormApplication {
 
     foundry.utils.setProperty(source, `${path}.${traitSet}.traits`, newTraits)
 
-    await this._saveActorTypes(source)
+    await this.#saveActorTypes(source)
     await this.changeView(localizer('NewTrait'), `trait-${actorType}-${traitSet}-${newKey}`)
-    this.render(true)
   }
 
-  async _addTraitSet (event) {
+  static async #onAddTraitSet (event, target) {
     event.preventDefault()
+
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
-    const actorTypeKey = $(event.currentTarget).data('actorType')
+    const actorTypeKey = target.dataset.actorType
     const newKey = getLength(source[actorTypeKey]?.traitSets || {})
 
     const newTraitSet = {
@@ -321,22 +370,19 @@ export default class ActorSettings extends FormApplication {
       }
     }
 
-    await this._saveActorTypes(foundry.utils.mergeObject(source, newTraitSet))
+    await this.#saveActorTypes(foundry.utils.mergeObject(source, newTraitSet))
     await this.changeView(localizer('NewTraitSet'), `traitSet-${actorTypeKey}-${newKey}`)
-    this.render(true)
   }
 
-  async _breadcrumbChange (event) {
+  static async #onBreadcrumbChange (event, target) {
     const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
-
-    const target = $(event.currentTarget).data('to')
-
-    const targetKey = +objectFindKey(currentBreadcrumbs, breadcrumb => breadcrumb.target === target)
+    const to = target.dataset.to
+    const targetKey = +objectFindKey(currentBreadcrumbs, breadcrumb => breadcrumb.target === to)
 
     const value = objectReduce(currentBreadcrumbs, (breadcrumbs, breadcrumb, key) => {
       if (+key > targetKey) return breadcrumbs
 
-      breadcrumb.active = breadcrumb.target === target
+      breadcrumb.active = breadcrumb.target === to
 
       return {
         ...breadcrumbs,
@@ -346,19 +392,23 @@ export default class ActorSettings extends FormApplication {
 
     await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', value)
 
-    await this._onSubmit(event)
-    this.render(true)
+    // Commits any pending field edits before the view changes under them - this was
+    // this._onSubmit(event) under appv1.
+    await this.submit()
+    await this.render()
   }
 
-  async _breadcrumbNameChange (event) {
-    const $nameField = $(event.currentTarget)
-    const target = $nameField.data('target')
+  // A `change` handler rather than an action, so it is bound in _onRender and `this` is already
+  // the application.
+  async #onBreadcrumbNameChange (event) {
+    const nameField = event.currentTarget
+    const to = nameField.dataset.target
     const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
 
     await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', {
       ...objectMapValues(currentBreadcrumbs, breadcrumb => {
-        if (breadcrumb.target === target) {
-          breadcrumb.name = $nameField.val()
+        if (breadcrumb.target === to) {
+          breadcrumb.name = nameField.value
         }
 
         return breadcrumb
@@ -366,57 +416,41 @@ export default class ActorSettings extends FormApplication {
     })
   }
 
-  async _changeDefaultImage (event) {
+  static async #onChangeDefaultImage (event, target) {
     event.preventDefault()
-    const { actorTypeIndex } = event.currentTarget.dataset
+
+    const { actorTypeIndex } = target.dataset
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentImage = source[actorTypeIndex]?.defaultImage || 'icons/svg/mystery-man.svg'
-    const _this = this
 
     const imagePicker = new foundry.applications.apps.FilePicker.implementation({
       type: 'image',
       current: currentImage,
-      async callback (newImage) {
+      // An arrow function, so `this` is still the application - appv1 used method shorthand here
+      // and had to capture the instance in a local `_this`.
+      callback: async newImage => {
         source[actorTypeIndex].defaultImage = newImage
 
-        await _this._saveActorTypes(source)
+        await this.#saveActorTypes(source)
 
-        _this.render()
+        await this.render()
       }
     })
 
-    await imagePicker.render()
+    await imagePicker.render({ force: true })
   }
 
-  async changeView (name, target) {
-    const currentBreadcrumbs = game.settings.get('cortexprime-ext', 'actorBreadcrumbs')
-
-    await game.settings.set('cortexprime-ext', 'actorBreadcrumbs', {
-      ...objectMapValues(currentBreadcrumbs, breadcrumb => {
-        breadcrumb.active = false
-        return breadcrumb
-      }),
-      [getLength(currentBreadcrumbs)]: {
-        active: true,
-        localize: false,
-        name,
-        target
-      }
-    })
-
-    this.render(true)
-  }
-
-  async _duplicateItem (event) {
+  static async #onDuplicateItem (event, target) {
     event.preventDefault()
-    const { id, path } = event.currentTarget.dataset
+
+    const { id, path } = target.dataset
     let source = game.settings.get('cortexprime-ext', 'actorTypes')
     const targetGroup = path ? foundry.utils.getProperty(source, path) : source
     const newKey = getLength(targetGroup ?? {})
-    const target = objectFindValue(targetGroup, item => item.id === id)
+    const item = objectFindValue(targetGroup, entry => entry.id === id)
 
     const newTarget = {
-      [newKey]: objectMapValues(target, (value, key) => {
+      [newKey]: objectMapValues(item, (value, key) => {
         if (key === 'id') return `_${Date.now()}`
 
         return value
@@ -429,65 +463,69 @@ export default class ActorSettings extends FormApplication {
       source = foundry.utils.mergeObject(source, newTarget)
     }
 
-    await this._saveActorTypes(source)
-    this.render(true)
+    await this.#saveActorTypes(source)
+    await this.render()
   }
 
-  async _newDie (event) {
+  static async #onNewDie (event, target) {
     event.preventDefault()
+
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
-    const { target: path } = event.currentTarget.dataset
+    const { target: path } = target.dataset
     const currentDice = foundry.utils.getProperty(source, path) || {}
     const values = currentDice.value ?? {}
     const newKey = getLength(values)
     const newValue = newKey > 0 ? values[newKey - 1] : '8'
 
     foundry.utils.setProperty(source, `${path}.value`, { ...values, [newKey]: newValue })
-    await this._saveActorTypes(source)
-    this.render(true)
+
+    await this.#saveActorTypes(source)
+    await this.render()
   }
 
-  async _onDieChange (event) {
+  async #onDieChange (event) {
     event.preventDefault()
+
     const source = game.settings.get('cortexprime-ext', 'actorTypes')
-    const $dieSelect = $(event.currentTarget)
-    const target = $dieSelect.data('target')
-    const targetKey = $dieSelect.data('key')
-    const targetValue = $dieSelect.val()
-    const currentDiceValues = foundry.utils.getProperty(source, `${target}.value`) ?? {}
+    const dieSelect = event.currentTarget
+    const path = dieSelect.dataset.target
+    const targetKey = dieSelect.dataset.key
+    const targetValue = dieSelect.value
+    const currentDiceValues = foundry.utils.getProperty(source, `${path}.value`) ?? {}
 
     if (parseInt(targetValue, 10) === 0) {
-      foundry.utils.setProperty(source, `${target}.value`, objectReindexFilter(currentDiceValues, (_, index) => parseInt(index, 10) !== parseInt(targetKey, 10)))
+      foundry.utils.setProperty(source, `${path}.value`, objectReindexFilter(currentDiceValues, (_, index) => parseInt(index, 10) !== parseInt(targetKey, 10)))
     } else {
-      foundry.utils.setProperty(source, `${target}.value`, objectMapValues(currentDiceValues, (value, index) => parseInt(index, 10) === parseInt(targetKey, 10) ? targetValue : value))
+      foundry.utils.setProperty(source, `${path}.value`, objectMapValues(currentDiceValues, (value, index) => parseInt(index, 10) === parseInt(targetKey, 10) ? targetValue : value))
     }
 
-    await this._saveActorTypes(source)
+    await this.#saveActorTypes(source)
 
-    await this.render(true)
+    await this.render()
   }
 
-  async _onDieRemove (event) {
+  async #onDieRemove (event) {
     event.preventDefault()
 
-    if (event.button === 2) {
-      const source = game.settings.get('cortexprime-ext', 'actorTypes')
-      const $dieSelect = $(event.currentTarget)
-      const target = $dieSelect.data('target')
-      const targetKey = $dieSelect.data('key')
-      const currentDiceValues = foundry.utils.getProperty(source, `${target}.value`) ?? {}
+    if (event.button !== 2) return
 
-      foundry.utils.setProperty(source, `${target}.value`, objectReindexFilter(currentDiceValues, (_, index) => parseInt(index, 10) !== parseInt(targetKey, 10)))
+    const source = game.settings.get('cortexprime-ext', 'actorTypes')
+    const dieSelect = event.currentTarget
+    const path = dieSelect.dataset.target
+    const targetKey = dieSelect.dataset.key
+    const currentDiceValues = foundry.utils.getProperty(source, `${path}.value`) ?? {}
 
-      await this._saveActorTypes(source)
+    foundry.utils.setProperty(source, `${path}.value`, objectReindexFilter(currentDiceValues, (_, index) => parseInt(index, 10) !== parseInt(targetKey, 10)))
 
-      await this.render(true)
-    }
+    await this.#saveActorTypes(source)
+
+    await this.render()
   }
 
-  async _viewChange (event) {
+  static async #onViewChange (event, target) {
     event.preventDefault()
-    this.changeView($(event.currentTarget).data('name'), $(event.currentTarget).data('to'))
+
+    await this.changeView(target.dataset.name, target.dataset.to)
   }
 }
 
