@@ -1,4 +1,4 @@
-<form class="cortexprime deleted-sections-dialog sheet-cpt" autocomplete="off">
+<div class="sheet-cpt">
   <div class="sheet-background"></div>
   <div class="sheet-image"></div>
   <div class="sheet-content pa-2">
@@ -17,7 +17,7 @@
                   <div class="deleted-section-time">{{entry.deletedAtDisplay}}</div>
                 </div>
                 <div class="flex-col">
-                  <button class="restore-section btn btn-primary-cpt" data-index="{{entry.index}}" type="button">
+                  <button class="restore-section btn btn-primary-cpt" data-action="restoreSection" data-index="{{entry.index}}" type="button">
                     {{localize 'Restore'}}
                   </button>
                 </div>
@@ -30,4 +30,4 @@
       </div>
     </div>
   </div>
-</form>
+</div>

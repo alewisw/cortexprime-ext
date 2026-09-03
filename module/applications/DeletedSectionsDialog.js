@@ -1,8 +1,8 @@
 import { getLength } from '../../lib/helpers.js'
-import { localizer } from '../scripts/foundryHelpers.js'
+import { CortexApplicationV2 } from './CortexApplicationV2.js'
 import { previewText, removeDeletedSection } from '../scripts/deletedSectionsLogic.js'
 
-export class DeletedSectionsDialog extends FormApplication {
+export class DeletedSectionsDialog extends CortexApplicationV2 {
   constructor (actor, tabIndex) {
     super()
 
@@ -11,24 +11,27 @@ export class DeletedSectionsDialog extends FormApplication {
     this.path = `system.actorType.additionalTabs.${tabIndex}`
   }
 
-  static get defaultOptions () {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'deleted-sections-dialog',
-      template: 'systems/cortexprime-ext/templates/dialog/deleted-sections.html',
-      title: localizer('DeletedSections'),
-      classes: ['cortexprime', 'deleted-sections-dialog'],
-      width: 420,
-      height: 'auto',
-      closeOnSubmit: false,
-      submitOnChange: false,
-      submitOnClose: false
-    })
+  static DEFAULT_OPTIONS = {
+    id: 'deleted-sections-dialog',
+    classes: ['deleted-sections-dialog'],
+    position: { width: 420, height: 'auto' },
+    // A localization key, not a localized string - DEFAULT_OPTIONS is evaluated at module load,
+    // before game.i18n exists. ApplicationV2's title getter localizes it on demand.
+    window: { title: 'DeletedSections' },
+    actions: {
+      restoreSection: DeletedSectionsDialog.#onRestore
+    }
   }
 
-  async getData () {
+  static PARTS = {
+    content: { template: 'systems/cortexprime-ext/templates/dialog/deleted-sections.html' }
+  }
+
+  async _prepareContext (options) {
     const deletedSections = foundry.utils.getProperty(this.actor, `${this.path}.deletedSections`) ?? {}
 
     return {
+      ...await super._prepareContext(options),
       deletedSections: Object.keys(deletedSections)
         .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
         .map(index => {
@@ -44,14 +47,12 @@ export class DeletedSectionsDialog extends FormApplication {
     }
   }
 
-  activateListeners (html) {
-    super.activateListeners(html)
-    html.find('.restore-section').click(this._onRestore.bind(this))
-  }
-
-  async _onRestore (event) {
+  // An `actions` handler: called with `this` bound to the instance, and `target` being the
+  // element carrying data-action (so no event.currentTarget dance, and no rebinding needed
+  // after a re-render - ApplicationV2 delegates from the root).
+  static async #onRestore (event, target) {
     event.preventDefault()
-    const { index } = event.currentTarget.dataset
+    const { index } = target.dataset
 
     const deletedSections = foundry.utils.getProperty(this.actor, `${this.path}.deletedSections`) ?? {}
     const restoredEntry = deletedSections[index]
@@ -76,8 +77,6 @@ export class DeletedSectionsDialog extends FormApplication {
       [`${this.path}.deletedSections`]: newDeletedSections
     })
 
-    this.render(true)
+    await this.render()
   }
-
-  async _updateObject () {}
 }
