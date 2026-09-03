@@ -1,4 +1,4 @@
-<form class="sheet-cpt" autocomplete="off">
+<div class="sheet-cpt">
   <div class="sheet-background"></div>
   <div class="sheet-image"></div>
   {{> "systems/cortexprime-ext/templates/partials/settings/theme/style.html"
@@ -31,7 +31,7 @@
                 </div>
                 {{#if (ne defaultVersion themes.version)}}
                   <div class="flex-col">
-                    <button class="btn btn-primary-cpt {{ternary (eq themes.list.Default.buttonStyle 'square') 'btn-square-cpt ' ''}}update-presets" type="button">{{localize 'UpdatePresets'}}</button>
+                    <button class="btn btn-primary-cpt {{ternary (eq themes.list.Default.buttonStyle 'square') 'btn-square-cpt ' ''}}update-presets" data-action="updatePresets" type="button">{{localize 'UpdatePresets'}}</button>
                   </div>
                 {{/if}}
               </div>
@@ -52,10 +52,10 @@
               </select>
             </div>
             <div class="flex-col my-2">
-              <button class="btn btn-primary-cpt {{ternary (eq themes.list.Default.buttonStyle 'square') 'btn-square-cpt ' ''}}save-as-custom-preset" type="button">{{localize 'SaveAsCustomPreset'}}</button>
+              <button class="btn btn-primary-cpt {{ternary (eq themes.list.Default.buttonStyle 'square') 'btn-square-cpt ' ''}}save-as-custom-preset" data-action="saveAsCustomPreset" type="button">{{localize 'SaveAsCustomPreset'}}</button>
             </div>
             <div class="flex-col my-2">
-              <button class="btn btn-secondary-cpt {{ternary (eq themes.list.Default.buttonStyle 'square') 'btn-square-cpt ' ''}}refresh-preset" type="button">{{localize 'RefreshPreset'}}</button>
+              <button class="btn btn-secondary-cpt {{ternary (eq themes.list.Default.buttonStyle 'square') 'btn-square-cpt ' ''}}refresh-preset" data-action="refreshPreset" type="button">{{localize 'RefreshPreset'}}</button>
             </div>
           </div>
         </div>
@@ -74,4 +74,4 @@
       </div>
     </div>
   </section>
-</form>
+</div>
