@@ -26,8 +26,8 @@ export default async function globalSetup() {
 
   // Before anything else: if a previous run died mid-test and never put a spec's settings back,
   // replay them now. Otherwise the run that follows snapshots the damaged values as its own
-  // baseline and cements them - which is exactly how a stuck traitSetEdit poisoned three
-  // consecutive runs. See BUGS.md issue 1.
+  // baseline and cements them - which is exactly how a stuck traitSetEdit once poisoned three
+  // consecutive runs.
   await replayPendingSnapshots(gm.page)
 
   await gm.page.evaluate(async ({ player1User, player2User }) => {

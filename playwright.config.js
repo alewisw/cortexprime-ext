@@ -21,8 +21,8 @@ export default defineConfig({
     baseURL: FOUNDRY_URL,
     // Playwright's default is 0, i.e. wait forever. A click on something that never becomes
     // actionable - covered by an overlay, say - would then hang until the 180s test timeout, and
-    // a timed-out test takes its cleanup down with it (see BUGS.md issue 1). Matching
-    // expect.timeout makes that fail in 15s, naming the locator that could not be clicked.
+    // a timed-out test takes its cleanup down with it. Matching expect.timeout makes that fail
+    // in 15s, naming the locator that could not be clicked.
     actionTimeout: 15_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

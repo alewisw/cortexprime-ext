@@ -5,188 +5,9 @@ what is wrong, how it was observed, and what a fix would need to do.
 
 ---
 
-## 1. A timed-out e2e test permanently destroys world configuration — FIXED
+## 1. `challenge-resolution.spec.js` › Group Challenge times out
 
-**Severity: high.** Data loss affecting real, hand-authored game configuration. Silent — the
-suite reports a test failure, not a data problem, and the damage persists into every later run.
-
-Found 2026-09-02/03 during the Application V1 → V2 migration. Not caused by that migration; the
-migration only made it happen twice.
-
-### What goes wrong
-
-Most specs mutate shared world state and put it back in a `finally`:
-
-```js
-const before = await snapshotSettings(gm.page, SETTINGS_KEYS)
-try {
-  await setSetting(gm.page, 'actorTypes', { 0: PARENT })   // replaces the WHOLE setting
-  ...
-} finally {
-  await restoreSettings(gm.page, before)                    // <-- runs in the page that just died
-  await gm.context.close()
-}
-```
-
-`snapshotSettings` and `restoreSettings` both work through `page.evaluate`. When a test times out,
-Playwright tears the context down, so the `finally` block's `page.evaluate` throws `Target page,
-context or browser has been closed` and the restore never happens.
-
-Worth being precise about the mechanism, because the first write-up of this entry got it wrong:
-the snapshot itself was never lost. `snapshotSettings` returns its data *into Node*, so the
-original values were sitting in a local variable the whole time. What was missing was a way to
-write them back once the page they were read through had died.
-
-The reported failure is the *cleanup* error, which also hides whatever actually went wrong:
-
-```
-Error: page.evaluate: Target page, context or browser has been closed
-   at helpers\world.js:15
-   at setSetting (e2e/helpers/world.js:15:15)
-   at resetWorld (e2e/challenge-resolution.spec.js:44:9)
-```
-
-### Observed twice
-
-**A. `actor-type-inheritance.spec.js` wiped `actorTypes` (2026-09-03).**
-The spec replaces the entire `actorTypes` setting with a two-entry fixture (`E2E Parent`, and a
-derived type it creates). A test timed out; the restore never ran. The world was left with:
-
-```
-{"count":2,"names":["E2E Parent","New Derived Actor Type"]}
-```
-
-The real value was 14 Actor Types: `Scene, Doom Pool, NPC, Tradition Mage, The Akashic
-Brotherhood, The Celestial Chorus, The Cult of Ecstasy, The Dreamspeakers, The Euthanatos, The
-Order of Hermes, The Sons of Ether, The Verbena, The Virtual Adepts, The Orphans` — i.e. every
-Mage Tradition. Recovered only because an unrelated snapshot happened to be sitting on disk from
-an earlier Import/Export check. **Without that file it was gone.**
-
-**B. `actor-sheet.spec.js` left an actor stuck in an editing mode (2026-09-02).**
-Its first test sets `system.actorType.traitSetEdit` on `Amanda Singh` and clears it in `finally`.
-After a run where the `finally` failed, the actor was left with `traitSetEdit: "0"` permanently.
-That makes her sheet render the trait-set-edit panel instead of the tabbed sheet on *every*
-open — so `nav.sheet-tabs a.item` resolved to 0 elements and `.add-complication` never existed.
-It failed 8 tests across two spec files, and survived between runs because each spec then
-snapshotted the already-broken value as its "before". Three debugging cycles went into what was
-a single stuck field.
-
-The same run also accumulated 11 junk notes in `Values Log` (`E2E max-height check` ×4, plus
-others whose labels a test had blanked) and a stray `Playwright Edit Me` complication. Duplicate
-labels then cause `strict mode violation` failures in unrelated tests.
-
-### Why `global-setup.js` does not save you
-
-It resets only *transient* state — `crisisPool`, `spotlightActorId`, `activeChallenge`,
-`mageChallengeState` (`e2e/global-setup.js:51-68`). It does not touch the durable, hand-authored
-configuration that specs overwrite: `actorTypes`, `actorBreadcrumbs`, `plotPointUses`, `themes`,
-nor any actor-level state such as `traitSetEdit` or `additionalTabs.*.notes`.
-
-### Contributing factor: no `actionTimeout`
-
-`playwright.config.js` sets `timeout: 180_000` and `expect.timeout: 15_000`, but no
-`actionTimeout`. Playwright's default is **0 — wait forever**. So a `.click()` on an element that
-never becomes actionable (covered by an overlay, say) hangs for the entire 180s test timeout
-instead of failing in 15s with a useful message.
-
-That is the mechanism behind most of the timeouts here, and therefore behind most of the lost
-restores. Two real examples:
-
-- Foundry's permanent "no hardware acceleration" toast sits over the middle of an actor sheet at
-  the 1366×768 viewport and swallows clicks aimed underneath it. Six `actor-sheet` tests hung on
-  this, each burning 180s, with the button logged "visible, enabled and stable" throughout. (Now
-  worked around by clearing notifications at login, in `e2e/foundry.js`.)
-- `challenge-resolution.spec.js` › "a Group Challenge runs from initiative through duelling to a
-  single winner" still times out at 6 minutes on every run — see issue 2 below.
-
-### Blast radius
-
-13 spec files mutate world settings or actors. The ones that replace a *whole* durable setting
-are the dangerous ones:
-
-| Spec | Keys replaced wholesale | Risk if restore is lost |
-|---|---|---|
-| `actor-type-inheritance.spec.js` | `actorTypes`, `actorBreadcrumbs` | **Total loss of all Actor Type configuration** |
-| `actor-sheet.spec.js` | actor `system.actorType.*` (traitSetEdit, notes, deletedSections, trait-set shutdown) | Actor left unusable; notes accumulate |
-| `complications.spec.js` | actor `system.actorType.complications` | Stray complications accumulate |
-| `actor-type-change.spec.js` | actor `img`, `system.actorType`, `system.pp` | Actor's type/portrait/plot points |
-| `challenge-resolution`, `challenge`, `give-in`, `hitches`, `roll-undo`, `paradox`, `mage` | `activeChallenge`, `lastGmRoll`, `crisisPool`, `testModeSelectDiceValues`, `rollUndoSnapshots`, `mageChallengeState` | Transient; `global-setup` already re-resets these |
-
-### Status: FIXED
-
-Implemented in `e2e/helpers/snapshot.js`, which `world.js` now re-exports, so every existing
-`snapshotSettings` / `restoreSettings` call site is unchanged.
-
-- **A rescue path.** If restoring through the spec's own page throws, `restoreSettings` opens a
-  fresh authenticated GM session and writes the values through that instead. It reuses the browser
-  the dead page belonged to when it is still connected — the usual case, since a timeout closes
-  the *context*, not the browser — and launches one only when it is not.
-- **A file on disk.** `snapshotSettings` writes the values to `e2e/.snapshots/` and they are
-  deleted only once a restore has actually succeeded. That covers the case the rescue path cannot:
-  a worker killed outright, which loses the Node value too.
-- **Replay on the next run.** `global-setup.js` calls `replayPendingSnapshots()` before anything
-  else, so a run that died mid-test cannot leave the next one snapshotting the damaged values as
-  its own baseline — which is exactly how a stuck `traitSetEdit` poisoned three consecutive runs.
-- **`actionTimeout: 15_000`** in `playwright.config.js`, matching `expect.timeout`. Playwright's
-  default is 0 (wait forever), which is what turned a click on an overlay-covered element into a
-  3-minute timeout in the first place. Now it fails in 15s naming the locator.
-
-Both recovery paths were proved against the live world by reproducing the incident: snapshot
-`actorTypes` (14 entries), replace it with a 1-entry fixture, then
-
-- close the context before restoring — the rescue session put all 14 back; and
-- exit the process without restoring at all — the next `globalSetup` replayed the file and put
-  all 14 back, then removed it.
-
-Two of the suggestions below are deliberately NOT done, and remain open:
-
-### Still open
-
-4. **Specs still replace whole settings.** `actor-type-inheritance.spec.js` could append its
-   fixture types alongside the real ones and address them by id, rather than swapping the entire
-   `actorTypes` object. The recovery above makes this much less dangerous, but a smaller blast
-   radius would still be better.
-
-5. **No fail-fast on a dirty world.** If a spec's `before` snapshot already looks like a fixture
-   (e.g. `actorTypes` contains `_e2e-parent`), aborting with a clear message would beat
-   snapshotting the damage. Largely mitigated by the replay above, which now runs first.
-
-### Original suggestions, for reference
-
-1. **Persist the snapshot outside the browser.** Write it to a file (or a Node-side variable in a
-   fixture) *before* mutating, so restore never depends on the page surviving. A Playwright
-   `test.afterEach` or a worker fixture can restore from that copy even after a context dies. This
-   is the actual fix; everything below is mitigation.
-
-2. **Set `actionTimeout` in `playwright.config.js`** — 15s to match `expect.timeout`. Turns
-   "hangs for 3 minutes then destroys the world" into "fails in 15 seconds naming the locator".
-   One line, and it addresses the most common trigger.
-
-3. **Add a durable-state guard to `global-setup.js`.** Assert (or repair) a known-clean baseline
-   before the suite runs: `traitSetEdit: null` on the test actors, no `E2E *` notes or
-   complications left over, and `actorTypes` not equal to the fixture. Incident B poisoned three
-   consecutive runs precisely because nothing checked.
-
-4. **Stop specs from replacing whole settings.** `actor-type-inheritance.spec.js` could append its
-   fixture types alongside the real ones and address them by id, rather than swapping the entire
-   `actorTypes` object. Smaller blast radius even when a restore is lost.
-
-5. **Fail fast on a dirty world.** If a spec's `before` snapshot already looks like a fixture
-   (e.g. `actorTypes` contains `_e2e-parent`), abort the suite with a clear message rather than
-   snapshotting the damage and cementing it.
-
-### Belt and braces
-
-The recovery above is automatic, but an export costs nothing: Configure Settings → Cortex Prime →
-Import / Export → Export Settings writes a complete, restorable copy of every synced setting,
-including `actorTypes`. `configs/mage-2.json` is one such export.
-
----
-
-## 2. `challenge-resolution.spec.js` › Group Challenge times out
-
-**Severity: medium.** One test never passes; costs 6 minutes per run and, per issue 1, can take
-world state with it.
+**Severity: medium.** One test never passes, and costs 6 minutes of every run it is included in.
 
 `challenge-resolution.spec.js:250` — "a Group Challenge runs from initiative through duelling to a
 single winner" — exceeds its 360s timeout on every run.
@@ -195,23 +16,33 @@ Confirmed **pre-existing and unrelated to the V1 → V2 migration**: it fails id
 migration work stashed on the preceding commit, and it fails the same way run in isolation. It
 had never been run before the migration started, so nothing had previously flagged it.
 
-Diagnosis is blocked by the same masking described above — the only error surfaced is the
-`finally` block's, so the click that actually hangs is invisible. **Fix `actionTimeout` first**
-(issue 1, item 2); that alone should name the offending locator.
+Diagnosis used to be blocked by masking: a timed-out test surfaced only its `finally` block's
+error, hiding the click that actually hung. `playwright.config.js` now sets
+`actionTimeout: 15_000`, so a re-run should fail at — and name — the offending locator instead of
+burning the full six minutes. That is the place to start.
 
 ---
 
-## 3. Dead code in `module/scripts/settingsHelpers.js`
+## 2. Dead exports in the shared helper modules
 
 **Severity: trivial.**
 
-`collapseToggle` and `displayToggle` have no callers anywhere in `module/`, `templates/` or
-`e2e/`. They are also the only jQuery left in that file now that every settings application has
-moved to ApplicationV2. Safe to delete.
+Three exported functions have no callers anywhere in `module/`, `templates/` or `e2e/`:
+
+| Function | File |
+|---|---|
+| `collapseToggle` | `module/scripts/settingsHelpers.js` |
+| `displayToggle` | `module/scripts/settingsHelpers.js` |
+| `addNewDataPoint` | `module/scripts/sheetHelpers.js` |
+
+The first two are also the only jQuery left in `settingsHelpers.js` now that every settings
+application has moved to ApplicationV2. `addNewDataPoint` additionally writes to a `data.<path>`
+key, which is a pre-v10 data path and would not resolve against a modern Actor. All three predate
+the V1 → V2 migration and are safe to delete.
 
 ---
 
-## 4. Theme edits do not repaint the live CSS variables
+## 3. Theme edits do not repaint the live CSS variables
 
 **Severity: low.** Pre-existing; behaviour is unchanged by the V2 migration.
 
@@ -225,7 +56,7 @@ change into it. Worth deciding whether the live preview is meant to track edits.
 
 ---
 
-## 5. The complication picker's scroll position is never restored
+## 4. The complication picker's scroll position is never restored
 
 **Severity: low (cosmetic).** Pre-existing; behaviour is unchanged by the V2 migration.
 
@@ -256,7 +87,7 @@ small - which is presumably why it went unnoticed.
 
 ---
 
-## 6. A stylesheet rule that never applied, removed
+## 5. A stylesheet rule that never applied, removed
 
 **Severity: trivial.** Recorded because the fix is a judgement call, not because anything is broken.
 

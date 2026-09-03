@@ -15,8 +15,6 @@
 //   2. a file on disk, written at snapshot time and deleted only once the restore has actually
 //      succeeded, so that even a crashed worker (which loses the Node value too) leaves the
 //      original values recoverable. global-setup replays any leftovers before the next run.
-//
-// See BUGS.md issue 1.
 
 import { chromium } from '@playwright/test'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
