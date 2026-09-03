@@ -5,7 +5,7 @@ what is wrong, how it was observed, and what a fix would need to do.
 
 ---
 
-## 1. A timed-out e2e test permanently destroys world configuration
+## 1. A timed-out e2e test permanently destroys world configuration — FIXED
 
 **Severity: high.** Data loss affecting real, hand-authored game configuration. Silent — the
 suite reports a test failure, not a data problem, and the damage persists into every later run.
@@ -28,11 +28,14 @@ try {
 }
 ```
 
-`snapshotSettings` and `restoreSettings` (`e2e/helpers/world.js:105-118`) both work through
-`page.evaluate`. When a test times out, Playwright tears the context down, so the `finally`
-block's `page.evaluate` throws `Target page, context or browser has been closed` and the restore
-never happens. The pre-test value existed only inside that dead page's memory, so it is now
-unrecoverable.
+`snapshotSettings` and `restoreSettings` both work through `page.evaluate`. When a test times out,
+Playwright tears the context down, so the `finally` block's `page.evaluate` throws `Target page,
+context or browser has been closed` and the restore never happens.
+
+Worth being precise about the mechanism, because the first write-up of this entry got it wrong:
+the snapshot itself was never lost. `snapshotSettings` returns its data *into Node*, so the
+original values were sitting in a local variable the whole time. What was missing was a way to
+write them back once the page they were read through had died.
 
 The reported failure is the *cleanup* error, which also hides whatever actually went wrong:
 
@@ -109,7 +112,46 @@ are the dangerous ones:
 | `actor-type-change.spec.js` | actor `img`, `system.actorType`, `system.pp` | Actor's type/portrait/plot points |
 | `challenge-resolution`, `challenge`, `give-in`, `hitches`, `roll-undo`, `paradox`, `mage` | `activeChallenge`, `lastGmRoll`, `crisisPool`, `testModeSelectDiceValues`, `rollUndoSnapshots`, `mageChallengeState` | Transient; `global-setup` already re-resets these |
 
-### Suggested fixes, in order of value
+### Status: FIXED
+
+Implemented in `e2e/helpers/snapshot.js`, which `world.js` now re-exports, so every existing
+`snapshotSettings` / `restoreSettings` call site is unchanged.
+
+- **A rescue path.** If restoring through the spec's own page throws, `restoreSettings` opens a
+  fresh authenticated GM session and writes the values through that instead. It reuses the browser
+  the dead page belonged to when it is still connected — the usual case, since a timeout closes
+  the *context*, not the browser — and launches one only when it is not.
+- **A file on disk.** `snapshotSettings` writes the values to `e2e/.snapshots/` and they are
+  deleted only once a restore has actually succeeded. That covers the case the rescue path cannot:
+  a worker killed outright, which loses the Node value too.
+- **Replay on the next run.** `global-setup.js` calls `replayPendingSnapshots()` before anything
+  else, so a run that died mid-test cannot leave the next one snapshotting the damaged values as
+  its own baseline — which is exactly how a stuck `traitSetEdit` poisoned three consecutive runs.
+- **`actionTimeout: 15_000`** in `playwright.config.js`, matching `expect.timeout`. Playwright's
+  default is 0 (wait forever), which is what turned a click on an overlay-covered element into a
+  3-minute timeout in the first place. Now it fails in 15s naming the locator.
+
+Both recovery paths were proved against the live world by reproducing the incident: snapshot
+`actorTypes` (14 entries), replace it with a 1-entry fixture, then
+
+- close the context before restoring — the rescue session put all 14 back; and
+- exit the process without restoring at all — the next `globalSetup` replayed the file and put
+  all 14 back, then removed it.
+
+Two of the suggestions below are deliberately NOT done, and remain open:
+
+### Still open
+
+4. **Specs still replace whole settings.** `actor-type-inheritance.spec.js` could append its
+   fixture types alongside the real ones and address them by id, rather than swapping the entire
+   `actorTypes` object. The recovery above makes this much less dangerous, but a smaller blast
+   radius would still be better.
+
+5. **No fail-fast on a dirty world.** If a spec's `before` snapshot already looks like a fixture
+   (e.g. `actorTypes` contains `_e2e-parent`), aborting with a clear message would beat
+   snapshotting the damage. Largely mitigated by the replay above, which now runs first.
+
+### Original suggestions, for reference
 
 1. **Persist the snapshot outside the browser.** Write it to a file (or a Node-side variable in a
    fixture) *before* mutating, so restore never depends on the page surviving. A Playwright
@@ -133,12 +175,11 @@ are the dangerous ones:
    (e.g. `actorTypes` contains `_e2e-parent`), abort the suite with a clear message rather than
    snapshotting the damage and cementing it.
 
-### Immediate workaround
+### Belt and braces
 
-**Export your settings before running the suite** (Configure Settings → Cortex Prime → Import /
-Export → Export Settings). That file is a complete, restorable copy of every synced setting,
-including `actorTypes`. There is a known-good export of the 14 Actor Types at
-`.tmp-probe/settings-backup.json` if it has not been cleaned up.
+The recovery above is automatic, but an export costs nothing: Configure Settings → Cortex Prime →
+Import / Export → Export Settings writes a complete, restorable copy of every synced setting,
+including `actorTypes`. `configs/mage-2.json` is one such export.
 
 ---
 

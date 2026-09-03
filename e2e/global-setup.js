@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { chromium } from '@playwright/test'
 import { authFile, joinAs, ROLE_USERS } from './foundry.js'
+import { replayPendingSnapshots } from './helpers/snapshot.js'
 
 /**
  * Runs once before any test (wired via playwright.config.js's
@@ -22,6 +23,12 @@ export default async function globalSetup() {
   const gm = await joinAs(browser, { user: ROLE_USERS.gm })
   const player1 = await joinAs(browser, { user: ROLE_USERS.player1 })
   const player2 = await joinAs(browser, { user: ROLE_USERS.player2 })
+
+  // Before anything else: if a previous run died mid-test and never put a spec's settings back,
+  // replay them now. Otherwise the run that follows snapshots the damaged values as its own
+  // baseline and cements them - which is exactly how a stuck traitSetEdit poisoned three
+  // consecutive runs. See BUGS.md issue 1.
+  await replayPendingSnapshots(gm.page)
 
   await gm.page.evaluate(async ({ player1User, player2User }) => {
     // Assigning a character is only half the job: without an ownership

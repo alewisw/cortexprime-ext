@@ -99,23 +99,14 @@ export async function requireTestMode(page) {
 }
 
 /**
- * Reads the given setting keys so a spec can put them back in its finally
- * block. Every spec that writes world state must pair these two.
+ * Reads the given setting keys so a spec can put them back in its finally block. Every spec that
+ * writes world state must pair these two.
+ *
+ * Both live in helpers/snapshot.js, which also writes the values to disk and can restore through a
+ * freshly opened session when the spec's own page has died — the case that twice left this world
+ * holding a test's fixture. Re-exported here so every existing call site is unchanged.
  */
-export async function snapshotSettings(page, keys) {
-  return page.evaluate(
-    ks => Object.fromEntries(ks.map(k => [k, window.game.settings.get('cortexprime-ext', k)])),
-    keys
-  )
-}
-
-export async function restoreSettings(page, snapshot) {
-  await page.evaluate(async snap => {
-    for (const [key, value] of Object.entries(snap)) {
-      await window.game.settings.set('cortexprime-ext', key, value)
-    }
-  }, snapshot)
-}
+export { snapshotSettings, restoreSettings } from './snapshot.js'
 
 /** The universal reset between challenge specs. */
 export async function clearChallenge(page) {
