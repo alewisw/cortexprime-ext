@@ -242,8 +242,11 @@ const onPendingParadox = async (actor, data) => {
 
   handledParadox[actor.id] = pending.rolledAt
 
-  // Lazily imported so `extends FormApplication` is never evaluated where that global is absent,
-  // and to keep the dialog's import of this module from becoming a load-time cycle.
+  // Lazily imported so no Application base class is evaluated where the Foundry globals are
+  // absent — still required after the V2 migration, and for the same reason: the dialog's base
+  // class destructures foundry.applications.api at module scope, which throws under unit test
+  // exactly as `extends FormApplication` used to. Also keeps the dialog's import of this module
+  // from becoming a load-time cycle.
   const { ParadoxDialog } = await import('../applications/ParadoxDialog.js')
 
   new ParadoxDialog({ actor, pending }).render(true)

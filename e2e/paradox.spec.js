@@ -32,7 +32,11 @@ import {
 
 const ACTOR = 'Amanda Singh'
 const SETTINGS_KEYS = ['activeChallenge', 'mageChallengeState', 'lastGmRoll']
-const DIALOG = '.window-content .cortexprime.paradox-dialog'
+// Matched by id prefix: the dialog ids itself per actor so two players can resolve Paradox
+// at once. Both frameworks put options.id on the window root, so this survives migration -
+// and unlike the old .window-content-scoped class selector it needs no disambiguation, since
+// the template root no longer duplicates the window's own classes.
+const DIALOG = '[id^="paradox-dialog-"]'
 
 /** The Simple Trait index on the actor claiming the given System Trait, or null. */
 const systemTraitIndex = (page, actorName, key) => page.evaluate(
