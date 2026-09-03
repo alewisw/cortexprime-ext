@@ -4,7 +4,7 @@
  */
 import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReindexFilter, objectSome } from '../../lib/helpers.js'
 import { computeActorTypeChange, mergeActorTypeData } from './actorTypeChangeLogic.js'
-import { confirmAction, expandNotesFieldOnEdit, getCurrentTheme, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
+import { confirmAction, dialogContent, expandNotesFieldOnEdit, getCurrentTheme, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
 import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, reindexDiceAfterRemoval, stepFaceDown, stepFaceUp } from '../scripts/traitDiceTemporary.js'
@@ -513,7 +513,8 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
       // Merged with DialogV2's own 'dialog' class, not replacing it: ApplicationV2 concatenates
       // class arrays down the inheritance chain and then de-duplicates.
       classes: ['cortexprime', 'consumable-dice'],
-      content,
+      // Element, not a string: keeps the dice' inline SVG from being stripped. See dialogContent.
+      content: dialogContent(content),
       buttons: [
         {
           action: 'cancel',

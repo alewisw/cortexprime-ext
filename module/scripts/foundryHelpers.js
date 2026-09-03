@@ -166,3 +166,25 @@ export const confirmAction = async ({ title, content }) =>
     window: { title: title ?? localizer('AreYouSure') },
     content
   }) === true
+
+// Content for a DialogV2 that must keep inline SVG.
+//
+// DialogV2 runs foundry.utils.cleanHTML() over a STRING `content`, and Foundry's allowed-tag list
+// (CONST.ALLOWED_HTML_TAGS, 90 entries) includes neither <svg> nor <path>. Every die shape in a
+// dialog is therefore stripped out silently, leaving the number floating on no background - which
+// is what happened to the Select Your Dice picker and the consumable-dice picker when they moved
+// off appv1's Dialog, since that one did no sanitising at all.
+//
+// An attribute-less <div> is the documented way round it: DialogV2 takes such an element's
+// innerHTML as-is and skips cleaning (see its _initializeApplicationOptions, which throws if the
+// element is not a DIV or carries any attributes).
+//
+// Only for the system's own rendered templates. Anything user-supplied should keep going through
+// the string path so it stays sanitised.
+export const dialogContent = html => {
+  const element = document.createElement('div')
+
+  element.innerHTML = html
+
+  return element
+}

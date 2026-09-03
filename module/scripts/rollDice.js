@@ -1,4 +1,4 @@
-import { getCurrentTheme, localizer, onSettingChanged, showPlotPointSpendAnimation } from './foundryHelpers.js'
+import { dialogContent, getCurrentTheme, localizer, onSettingChanged, showPlotPointSpendAnimation } from './foundryHelpers.js'
 import { previewCrisisReduction } from './crisisPool.js'
 import { flattenPoolEntries } from './dicePoolValidation.js'
 import { getHinderRewards } from './dicePoolTraitLogic.js'
@@ -404,7 +404,8 @@ const dicePicker = async rollResults => {
     // and the template root both end up carrying cortexprime/dice-picker, which is why
     // e2e/helpers/dicePool.js scopes its picker locators to .window-content.
     classes: ['cortexprime', 'dice-picker'],
-    content: initialContent,
+    // Element, not a string: keeps the dice' inline SVG from being stripped. See dialogContent.
+    content: dialogContent(initialContent),
     buttons: [
       {
         action: 'confirm',
