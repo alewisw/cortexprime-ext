@@ -1,16 +1,5 @@
-import { getLength, objectReindexFilter } from '../../lib/helpers.js'
+import { objectReindexFilter } from '../../lib/helpers.js'
 import { confirmAction, localizer } from './foundryHelpers.js'
-
-export const addNewDataPoint = async function (data, path, value) {
-  const currentData = data || {}
-
-  await this.actor.update({
-    [`data.${path}`]: {
-      ...currentData,
-      [getLength(currentData)]: value
-    }
-  })
-}
 
 export const resetDataPoint = async function (path, target, value) {
   await this.actor.update({

@@ -142,15 +142,16 @@ export const setCssVars = (theme) => {
   })
 }
 
-// The active theme: either the hand-tuned 'custom' one or the named preset currently selected.
-// This lookup was copy-pasted at a dozen call sites; it lives here so the "what is 'custom'"
-// rule is stated once. ThemeSettings writes the setting and then reads it straight back through
-// this, so it must stay a live read rather than anything cached.
-export const getCurrentTheme = () => {
-  const themes = game.settings.get('cortexprime-ext', 'themes')
-
-  return themes.current === 'custom' ? themes.custom : themes.list[themes.current]
-}
+// The active theme: `currentSettings`, the live working copy every themed field in ThemeSettings
+// edits (see templates/partials/settings/theme/*.html, all named `themes.currentSettings.*`) and
+// every preset-management action (#onRefreshPreset, #onSaveAsCustomPreset, #onUpdatePresets, the
+// import/reset paths in importExportLogic.js) keeps in sync with `custom`/`list[current]`.
+// `current`/`custom`/`list` are only the menu of presets to switch between or save into - reading
+// them directly here, as this used to, ignores any edit not yet folded back into its preset, which
+// is every edit: nothing ever writes one back. This lookup was copy-pasted at a dozen call sites;
+// it lives here so it's stated once. ThemeSettings writes the setting and then reads it straight
+// back through this, so it must stay a live read rather than anything cached.
+export const getCurrentTheme = () => game.settings.get('cortexprime-ext', 'themes').currentSettings
 
 // The first open Application matching `predicate`, across BOTH registries. Application V1 windows
 // live in ui.windows; V2 ones live in foundry.applications.instances and never appear in

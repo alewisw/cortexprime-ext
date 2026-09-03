@@ -233,6 +233,22 @@ describe('resolveImportedThemes', () => {
     expect(result.custom).toEqual({ sheetBackgroundColor: '#111' })
   })
 
+  // getCurrentTheme() (foundryHelpers.js) reads currentSettings, not current/custom/list directly
+  // - so importing a theme has to update it too, or the newly imported theme reverts on reload.
+  it('recomputes currentSettings from the resolved theme, not the pre-import one', () => {
+    const result = resolveImportedThemes(existing(), {
+      theme: { current: 'custom', custom: { sheetBackgroundColor: '#fff' } }
+    })
+
+    expect(result.currentSettings).toEqual({ sheetBackgroundColor: '#fff' })
+  })
+
+  it('recomputes currentSettings from the resolved named preset', () => {
+    const result = resolveImportedThemes(existing(), { theme: { current: 'Dark' } })
+
+    expect(result.currentSettings).toEqual(existing().list.Dark)
+  })
+
   it('does not mutate the existing settings object', () => {
     const original = existing()
     resolveImportedThemes(original, { theme: { current: 'custom', custom: { x: 1 } } })

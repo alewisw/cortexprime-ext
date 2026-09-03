@@ -43,7 +43,13 @@
 }
 
 // Doom Pool Settings has no sheet-background overlay of its own (unlike ActorSettings/ThemeSettings),
-// so it needs the plain white window background restored instead of the "none" set above.
+// so it needs the plain white window background restored instead of the "none" set above. It is
+// the only framed window's template with no .sheet-cpt (confirm with `grep -rL sheet-cpt` against
+// every PARTS template) - which is also why an old, broken rule that tried to apply a white
+// .window-content background and $font-primary to every window (a missing `&` made the selector
+// match nothing) was deleted outright rather than fixed: font-family is already covered by
+// .sheet-cpt/h1-h6/inputs everywhere, and a restored white background would sit behind the
+// `background: none` rule above, which always wins - doom-pool's actual gap is this rule alone.
 &.doom-pool-settings.application {
   .window-content {
     background: #ffffff;

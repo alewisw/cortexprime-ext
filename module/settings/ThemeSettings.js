@@ -88,6 +88,8 @@ export default class ThemeSettings extends CortexApplicationV2 {
 
         await game.settings.set('cortexprime-ext', 'themes', source)
 
+        setCssVars(getCurrentTheme())
+
         await this.render()
       }
     })
@@ -104,6 +106,8 @@ export default class ThemeSettings extends CortexApplicationV2 {
     source.currentSettings[targetSetting] = null
 
     await game.settings.set('cortexprime-ext', 'themes', source)
+
+    setCssVars(getCurrentTheme())
 
     await this.render()
   }

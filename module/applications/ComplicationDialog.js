@@ -108,10 +108,14 @@ export class ComplicationDialog extends CortexApplicationV2 {
     // Picking a name re-renders the whole form, so the fresh lists start at the top - put back
     // whatever #onPickName captured just before triggering it. PARTS.scrollable cannot do this:
     // it resolves each selector with querySelector, the FIRST match only, and there is one
-    // .picker-name-list per severity group. Restoring here rather than in _syncPartState because
-    // the elements are laid out by this point; setting scrollTop mid-swap clamps to 0.
+    // .picker-name-list per severity group.
     if (this.#pickerScrollTops) {
       this.element.querySelectorAll('.picker-name-list').forEach((list, index) => {
+        // The part swap (_replaceHTML) builds this element in a detached, unlaid-out tree before
+        // inserting it, so scrollHeight can still read stale/zero the instant it lands - setting
+        // scrollTop against that clamps it straight back to 0. Reading a layout property forces a
+        // synchronous reflow first, so the assignment below clamps against the real, current size.
+        void list.offsetHeight
         list.scrollTop = this.#pickerScrollTops[index] ?? 0
       })
 

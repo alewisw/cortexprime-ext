@@ -36,11 +36,21 @@ export const buildResetValues = () =>
 // static presets and are never imported — only current/custom are GM-authored. A file with no
 // theme block falls back to the shipped 'Default' and keeps whatever custom theme is already
 // there, so importing settings can't silently destroy someone's custom theme.
-export const resolveImportedThemes = (themeSettings, data) => ({
-  ...themeSettings,
-  current: data?.theme?.current ?? 'Default',
-  custom: data?.theme?.custom ?? themeSettings.custom
-})
+//
+// `currentSettings` - the live working copy getCurrentTheme() (foundryHelpers.js) actually reads
+// - has to be recomputed here too, not just current/custom. Leaving it as whatever the world had
+// before the import would only look right for the rest of this session, because the caller also
+// paints immediately via setCssVars(resolveActiveTheme(...)); the stored setting itself would
+// still carry the pre-import theme, so a reload or another client would see it revert.
+export const resolveImportedThemes = (themeSettings, data) => {
+  const merged = {
+    ...themeSettings,
+    current: data?.theme?.current ?? 'Default',
+    custom: data?.theme?.custom ?? themeSettings.custom
+  }
+
+  return { ...merged, currentSettings: resolveActiveTheme(merged) }
+}
 
 // Which theme object is actually active: the custom one, or the named preset from the list.
 // Used on both the import and the reset path, which previously duplicated this expression.

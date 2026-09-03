@@ -6,38 +6,6 @@ import { confirmAction, localizer } from './foundryHelpers.js'
 // reconcile here rather than in ActorSettings._saveActorTypes.
 const reconciled = (setting, value) => setting === 'actorTypes' ? applyActorTypeInheritance(value) : value
 
-export const collapseToggle = function (html) {
-  html.find('.collapse-toggle').click(async (event) => {
-    event.preventDefault()
-    const $element = $(event.currentTarget)
-    const $collapseValue = $element
-      .next('.collapse-value')
-
-    $collapseValue.prop('checked', !($collapseValue.is(':checked')))
-
-    await this._onSubmit(event)
-    this.render(true)
-  })
-}
-
-export const displayToggle = html => {
-  html.find('input.display-toggle').change((event) => {
-    event.preventDefault()
-    const $target = $(event.currentTarget)
-    const scope = $target.data('scope')
-    const selector = $target.data('selector')
-
-    if (scope) {
-      $(event.currentTarget)
-        .closest(scope)
-        .find(selector)
-        .toggle()
-    } else {
-      html.find(selector).toggle()
-    }
-  })
-}
-
 // The work behind the remove-button.html / reorder.html partials, taking a button's dataset and
 // running with `this` bound to the owning application. These briefly had a second, jQuery-bound
 // shape as well, for as long as ActorSettings was still appv1; that consumer is gone, so only the
