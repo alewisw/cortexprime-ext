@@ -1,6 +1,6 @@
 /**
- * Extend the basic ActorSheet with some very simple modifications
- * @extends {foundry.appv1.sheets.ActorSheet}
+ * The system's Actor sheet.
+ * @extends {foundry.applications.sheets.ActorSheetV2}
  */
 import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReindexFilter, objectSome } from '../../lib/helpers.js'
 import { computeActorTypeChange, mergeActorTypeData } from './actorTypeChangeLogic.js'
@@ -11,29 +11,60 @@ import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, r
 import { pushDeletedSection } from '../scripts/deletedSectionsLogic.js'
 import { DeletedSectionsDialog } from '../applications/DeletedSectionsDialog.js'
 import { ComplicationDialog } from '../applications/ComplicationDialog.js'
-import {
-  removeItems,
-  toggleItems
-} from '../scripts/sheetHelpers.js'
+import { removeDataPoint } from '../scripts/sheetHelpers.js'
 
-export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
-
-  get actor () {
-    return super.actor
+export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.sheets.ActorSheetV2
+) {
+  static DEFAULT_OPTIONS = {
+    classes: ['cortexprime', 'sheet', 'actor', 'actor-sheet'],
+    tag: 'form',
+    position: { width: 960, height: 'auto' },
+    form: {
+      // MUST be set explicitly. appv1's ActorSheet defaulted submitOnChange to true, whereas
+      // DocumentSheetV2 defaults it to FALSE - without this every named field on the sheet
+      // silently stops saving, with no error anywhere.
+      submitOnChange: true,
+      closeOnSubmit: false
+    },
+    actions: {
+      actorTypeConfirm: CortexPrimeActorSheet.prototype._actorTypeConfirm,
+      actorTypeEdit: CortexPrimeActorSheet.prototype._actorTypeEditStart,
+      addAsset: CortexPrimeActorSheet.prototype._addAsset,
+      addComplication: CortexPrimeActorSheet.prototype._addComplication,
+      addDescriptor: CortexPrimeActorSheet.prototype._addDescriptor,
+      addNote: CortexPrimeActorSheet.prototype._addNote,
+      addPp: CortexPrimeActorSheet.prototype._addPp,
+      addSfx: CortexPrimeActorSheet.prototype._addSfx,
+      addSubTrait: CortexPrimeActorSheet.prototype._addSubTrait,
+      addToPool: CortexPrimeActorSheet.prototype._addToPool,
+      addTrait: CortexPrimeActorSheet.prototype._addTrait,
+      closeTraitSetEdit: CortexPrimeActorSheet.prototype._closeTraitSetEdit,
+      hinderToPool: CortexPrimeActorSheet.prototype._hinderToPool,
+      newDie: CortexPrimeActorSheet.prototype._newDie,
+      openComplicationDialog: CortexPrimeActorSheet.prototype._openComplicationDialog,
+      openDeletedSections: CortexPrimeActorSheet.prototype._openDeletedSections,
+      removeItem: CortexPrimeActorSheet.prototype._onRemoveItem,
+      removeNote: CortexPrimeActorSheet.prototype._removeNote,
+      spendPp: CortexPrimeActorSheet.prototype._spendPp,
+      stepDieDown: CortexPrimeActorSheet.prototype._stepDieDown,
+      stepDieUp: CortexPrimeActorSheet.prototype._stepDieUp,
+      toggleItem: CortexPrimeActorSheet.prototype._onToggleItem,
+      traitSetEdit: CortexPrimeActorSheet.prototype._traitSetEdit,
+      updateActorSettings: CortexPrimeActorSheet.prototype._updateActorSettings
+    }
   }
 
-  /** @override */
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ['cortexprime', 'sheet', 'actor', 'actor-sheet'],
-      template: "systems/cortexprime-ext/templates/actor/actor-sheet.html",
-      width: 960,
-      height: 'auto',
-      tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "traits" }]
-    })
+  static PARTS = {
+    form: { template: 'systems/cortexprime-ext/templates/actor/actor-sheet.html' }
   }
 
-  async getData (options) {
+  // Which tab is showing. ApplicationV2 keeps this across re-renders; the template reads it
+  // through activeTab to mark the nav item and section active, because changeTab() only
+  // applies those classes in response to a click.
+  tabGroups = { primary: 'traits' }
+
+  async _prepareContext (options) {
     const theme = getCurrentTheme()
 
     if (this.actor.isOwner) {
@@ -45,19 +76,26 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       }
     }
 
-    // Read AFTER the fix above, not before: super.getData() snapshots the actor's CURRENT state,
+    // Read AFTER the fix above, not before: the context snapshots the actor's CURRENT state,
     // so capturing it first (as this used to) meant a render that needed normalizing painted the
     // stale, over-full dice value anyway — the fix landed on the document a moment too late to be
     // reflected in THIS render, only showing up once the corrective update's own reactive
     // re-render caught up. That gap between a briefly-wrong render and the correction arriving
     // moments later is what showed up as a torn/misaligned row on a skill needing the trim.
-    const data = super.getData(options)
+    const context = await super._prepareContext(options)
 
     const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentActorTypeId = this.actor.system.actorType?.id
 
     return {
-      ...data,
+      ...context,
+      // appv1's ActorSheet#getData handed the templates `data` (the actor), `actor` and
+      // `owner`; DocumentSheetV2's context has none of those, so they are supplied here
+      // rather than rewriting every partial that reads data.system.actorType.*
+      data: this.actor,
+      actor: this.actor,
+      owner: this.actor.isOwner,
+      activeTab: this.tabGroups.primary,
       actorTypeOptions: objectMapValues(actorTypes, val => val.name),
       // The picker's <option> values are keys into the actorTypes setting, so the current type has
       // to be identified the same way to preselect it.
@@ -71,39 +109,21 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   }
 
   /* -------------------------------------------- */
-  /** @override */
-  activateListeners (html) {
-    super.activateListeners(html)
-    html.find('.update-actor-settings').click(this._updateActorSettings.bind(this))
-    html.find('.actor-type-confirm').click(this._actorTypeConfirm.bind(this))
-    html.find('.actor-type-edit').click(this._actorTypeEditStart.bind(this))
-    html.find('.add-pp').click(() => { this.actor.changePpBy(1) })
-    html.find('.add-asset').click(this._addAsset.bind(this))
-    html.find('.add-complication').click(this._addComplication.bind(this))
-    html.find('.open-complication-dialog').click(this._openComplicationDialog.bind(this))
-    html.find('.add-descriptor').click(this._addDescriptor.bind(this))
-    html.find('.add-note').click(this._addNote.bind(this))
-    html.find('.add-sfx').click(this._addSfx.bind(this))
-    html.find('.add-sub-trait').click(this._addSubTrait.bind(this))
-    html.find('.add-to-pool').click(this._addToPool.bind(this))
-    html.find('.hinder-to-pool').click(this._hinderToPool.bind(this))
-    html.find('.add-trait').click(this._addTrait.bind(this))
-    html.find('.close-trait-set-edit').click(this._closeTraitSetEdit.bind(this))
-    html.find('.die-select').change(this._onDieChange.bind(this))
-    html.find('.die-select').on('mouseup', this._onDieRemove.bind(this))
-    html.find('.new-die').click(this._newDie.bind(this))
-    html.find('.open-deleted-sections').click(this._openDeletedSections.bind(this))
-    html.find('.pp-number-field').change(this._ppNumberChange.bind(this))
-    html.find('.remove-note').click(this._removeNote.bind(this))
-    html.find('.spend-pp').click(this._spendPp.bind(this))
-    html.find('.step-die-down').click(this._stepDieDown.bind(this))
-    html.find('.step-die-up').click(this._stepDieUp.bind(this))
-    html.find('.trait-set-edit').click(this._traitSetEdit.bind(this))
 
-    expandNotesFieldOnEdit(html[0])
+  // Clicks are all `actions`; only the change/mouseup controls are wired here.
+  _onRender (context, options) {
+    super._onRender(context, options)
 
-    removeItems.call(this, html)
-    toggleItems.call(this, html)
+    for (const select of this.element.querySelectorAll('.die-select')) {
+      select.addEventListener('change', this._onDieChange.bind(this))
+      select.addEventListener('mouseup', this._onDieRemove.bind(this))
+    }
+
+    for (const field of this.element.querySelectorAll('.pp-number-field')) {
+      field.addEventListener('change', this._ppNumberChange.bind(this))
+    }
+
+    expandNotesFieldOnEdit(this.element)
 
     // The window uses height:'auto', so Foundry measures and fixes its height as part of this
     // same render - before the profile image (whose height isn't known until it loads) has
@@ -111,18 +131,53 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     // image that finishes loading afterward can grow the sidebar past that fixed height, clipping
     // content at the bottom of the window. Re-running the auto-height calculation now, and again
     // once the image actually loads, keeps the window sized to what's really on screen.
-    html.find('.profile-image').on('load', () => this._resizeToFitContent())
+    for (const image of this.element.querySelectorAll('.profile-image')) {
+      image.addEventListener('load', () => this._resizeToFitContent())
+    }
+
     this._resizeToFitContent()
   }
 
-  // See the comment above the profile-image 'load' listener in activateListeners - guarded so a
+  // The sheet's own remove/toggle handlers. appv1 got these from sheetHelpers' jQuery
+  // removeItems/toggleItems; the data attributes are unchanged, only the binding is.
+  async _onRemoveItem (event, target) {
+    event.preventDefault()
+
+    const { path, itemKey, itemName, target: dataTarget } = target.dataset
+
+    const confirmed = await confirmAction({
+      content: `${localizer('Remove')} ${itemName}?`
+    })
+
+    if (!confirmed) return
+
+    const data = foundry.utils.getProperty(this.actor, `${path}.${dataTarget}`)
+
+    await removeDataPoint.call(this, data, path, dataTarget, itemKey)
+  }
+
+  async _onToggleItem (event, target) {
+    event.preventDefault()
+
+    const { path } = target.dataset
+
+    await this.actor.update({ [path]: !foundry.utils.getProperty(this.actor, path) })
+  }
+
+  async _addPp (event, target) {
+    event.preventDefault()
+
+    await this.actor.changePpBy(1)
+  }
+
+  // See the comment above the profile-image 'load' listener in _onRender - guarded so a
   // failure here can never take down the rest of listener setup. Width is passed explicitly
   // (rather than left to whatever Foundry currently has cached) because re-triggering the 'auto'
   // height calculation without it has been observed to also blow the window out to a much wider,
   // unintended width.
   _resizeToFitContent () {
     try {
-      this.setPosition({ width: this.options.width, height: 'auto' })
+      this.setPosition({ width: this.options.position.width, height: 'auto' })
     } catch (error) {
       console.warn('CP | Actor Sheet: could not resize to fit content', error)
     }
@@ -136,13 +191,13 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
    * @private
    */
 
-  async _actorTypeConfirm (event) {
+  async _actorTypeConfirm (event, target) {
     event.preventDefault()
     const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
     // Scoped to this sheet: with a second sheet showing the picker (now possible, since a GM can
-    // reopen it on an already-configured actor) a bare $('.actor-type-select') reads whichever one
-    // happens to be first in the DOM.
-    const actorTypeIndex = this.element.find('.actor-type-select').val()
+    // reopen it on an already-configured actor) a document-wide '.actor-type-select' lookup reads
+    // whichever one happens to be first in the DOM.
+    const actorTypeIndex = this.element.querySelector('.actor-type-select')?.value
 
     const actorType = actorTypes[actorTypeIndex]
 
@@ -186,15 +241,15 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   }
 
   /** @override */
-  async close (options) {
+  _onClose (options) {
     // Foundry caches the sheet instance on the document, so without this a GM who opens the picker
     // and closes the window without confirming reopens straight back into the picker.
     this._actorTypeEdit = false
 
-    return super.close(options)
+    return super._onClose(options)
   }
 
-  _actorTypeEditStart (event) {
+  _actorTypeEditStart (event, target) {
     event.preventDefault()
 
     if (!game.user.isGM) return
@@ -206,9 +261,9 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     this.render()
   }
 
-  async _addAsset (event) {
+  async _addAsset (event, target) {
     event.preventDefault()
-    const { path } = event.currentTarget.dataset
+    const { path } = target.dataset
     const currentAssets = foundry.utils.getProperty(this.actor, `${path}.assets`) ?? {}
 
     console.log(path, currentAssets)
@@ -226,25 +281,25 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  _addComplication(event) {
+  _addComplication (event, target) {
     event.preventDefault()
-    const { path } = event.currentTarget.dataset
+    const { path } = target.dataset
     const hasHidableTraits = !!foundry.utils.getProperty(this.actor, path)?.hasHidableTraits
 
     new ComplicationDialog({ actor: this.actor, path, hasHidableTraits }).render(true)
   }
 
-  _openComplicationDialog(event) {
+  _openComplicationDialog (event, target) {
     event.preventDefault()
-    const { path, index } = event.currentTarget.dataset
+    const { path, index } = target.dataset
     const hasHidableTraits = !!foundry.utils.getProperty(this.actor, path)?.hasHidableTraits
 
     new ComplicationDialog({ actor: this.actor, path, index: parseInt(index, 10), hasHidableTraits }).render(true)
   }
 
-  async _addDescriptor(event) {
+  async _addDescriptor (event, target) {
     event.preventDefault()
-    const { path } = event.currentTarget.dataset
+    const { path } = target.dataset
     const currentDescriptors = foundry.utils.getProperty(this.actor, `${path}.descriptors`) ?? {}
 
     await this._resetDataPoint(path, 'descriptors', {
@@ -256,9 +311,9 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  async _addNote(event) {
+  async _addNote (event, target) {
     event.preventDefault()
-    const { tabIndex } = event.currentTarget.dataset
+    const { tabIndex } = target.dataset
     const path = `system.actorType.additionalTabs.${tabIndex}`
     const currentNotes = foundry.utils.getProperty(this.actor, `${path}.notes`) ?? {}
 
@@ -274,12 +329,12 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  // Bespoke rather than the shared remove-item/removeDataPoint mechanism (see removeItems in
-  // sheetHelpers.js): a note's content has to be captured into the tab's deletedSections queue
+  // Bespoke rather than the shared remove-item/removeDataPoint mechanism (see _onRemoveItem
+  // above): a note's content has to be captured into the tab's deletedSections queue
   // before it's removed, which is specific to notes and shouldn't leak into that generic partial.
-  async _removeNote (event) {
+  async _removeNote (event, target) {
     event.preventDefault()
-    const { tabIndex, noteIndex, noteLabel } = event.currentTarget.dataset
+    const { tabIndex, noteIndex, noteLabel } = target.dataset
 
     const confirmed = await confirmAction({
       content: `${localizer('Remove')} ${noteLabel}?`
@@ -300,16 +355,16 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     await this._resetDataPoints(path, { notes: newNotes, deletedSections: newDeletedSections })
   }
 
-  _openDeletedSections (event) {
+  _openDeletedSections (event, target) {
     event.preventDefault()
-    const { tabIndex } = event.currentTarget.dataset
+    const { tabIndex } = target.dataset
 
     new DeletedSectionsDialog(this.actor, tabIndex).render(true)
   }
 
-  async _addSfx (event) {
+  async _addSfx (event, target) {
     event.preventDefault()
-    const { path } = event.currentTarget.dataset
+    const { path } = target.dataset
     const currentSfx = foundry.utils.getProperty(this.actor, `${path}.sfx`) ?? {}
 
     await this._resetDataPoint(path, 'sfx', {
@@ -322,9 +377,9 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  async _addSubTrait(event) {
+  async _addSubTrait (event, target) {
     event.preventDefault()
-    const { path } = event.currentTarget.dataset
+    const { path } = target.dataset
     const currentSubTraits = foundry.utils.getProperty(this.actor, `${path}.subTraits`) ?? {}
 
     await this._resetDataPoint(path, 'subTraits', {
@@ -340,10 +395,10 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  async _addToPool (event) {
+  async _addToPool (event, target) {
     if (!this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return
 
-    const { consumable, path, label } = event.currentTarget.dataset
+    const { consumable, path, label } = target.dataset
     const currentDiceData = foundry.utils.getProperty(this.actor, path)
     let value = currentDiceData.value
 
@@ -385,7 +440,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
   // The Hinder control next to a trait's dice (only rendered when the trait has Enable Hinder set -
   // see traits.html). Always a flat d4, and deliberately skips the consumable-dice prompt _addToPool
   // goes through: hindering contributes a fresh d4, not one of the trait's own dice.
-  async _hinderToPool (event) {
+  async _hinderToPool (event, target) {
     // Sits nested inside the trait name's own .add-to-pool span (see traits.html) so it can render
     // right between the dice icon and the name, rather than as a separate control elsewhere in the
     // row - so its click must not bubble up into that span's own _addToPool handler.
@@ -393,7 +448,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
     if (!this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return
 
-    const { path, label } = event.currentTarget.dataset
+    const { path, label } = target.dataset
 
     await game.cortexprime.UserDicePool._setTraitInPool(this.actor.name, {
       label,
@@ -415,8 +470,8 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
       : null
   }
 
-  async _addTrait (event) {
-    const { path } = event.currentTarget.dataset
+  async _addTrait (event, target) {
+    const { path } = target.dataset
     const currentCustomTraits = foundry.utils.getProperty(this.actor, `${path}.customTraits`) ?? {}
 
     await this._resetDataPoint(path, 'customTraits', {
@@ -433,7 +488,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     })
   }
 
-  async _closeTraitSetEdit(event) {
+  async _closeTraitSetEdit (event, target) {
     await this.actor.update({
       ['system.actorType.traitSetEdit']: null
     })
@@ -515,10 +570,9 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     return selection ?? noDice()
   }
 
-  async _newDie (event) {
+  async _newDie (event, button) {
     event.preventDefault()
-    const $targetNewDie = $(event.currentTarget)
-    const target = $targetNewDie.data('target')
+    const target = button.dataset.target
     const currentDiceData = foundry.utils.getProperty(this.actor, target)
     const currentDice = currentDiceData?.value ?? {}
     const newIndex = getLength(currentDice)
@@ -536,10 +590,10 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
   async _onDieChange (event) {
     event.preventDefault()
-    const $targetNewDie = $(event.currentTarget)
-    const target = $targetNewDie.data('target')
-    const targetKey = $targetNewDie.data('key')
-    const targetValue = $targetNewDie.val()
+    const dieSelect = event.currentTarget
+    const target = dieSelect.dataset.target
+    const targetKey = parseInt(dieSelect.dataset.key, 10)
+    const targetValue = dieSelect.value
     const currentDiceData = foundry.utils.getProperty(this.actor, target)
 
     const newValue = objectMapValues(currentDiceData.value ?? {}, (value, index) => parseInt(index, 10) === targetKey ? targetValue : value)
@@ -561,10 +615,10 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     event.preventDefault()
 
     if (event.button === 2) {
-      const $target = $(event.currentTarget)
-      const target = $target.data('target')
-      const targetKey = $target.data('key')
-      const min = parseInt($target.data('min'), 10) || 0
+      const dieSelect = event.currentTarget
+      const target = dieSelect.dataset.target
+      const targetKey = dieSelect.dataset.key
+      const min = parseInt(dieSelect.dataset.min, 10) || 0
       const currentDiceData = foundry.utils.getProperty(this.actor, target)
       const currentValue = currentDiceData.value ?? {}
 
@@ -582,20 +636,19 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     }
   }
 
-  async _stepDieUp (event) {
-    await this._stepDie(event, 'up')
+  async _stepDieUp (event, target) {
+    await this._stepDie(event, target, 'up')
   }
 
-  async _stepDieDown (event) {
-    await this._stepDie(event, 'down')
+  async _stepDieDown (event, target) {
+    await this._stepDie(event, target, 'down')
   }
 
-  async _stepDie (event, direction) {
+  async _stepDie (event, button, direction) {
     event.preventDefault()
 
-    const $target = $(event.currentTarget)
-    const target = $target.data('target')
-    const targetKey = $target.data('key')
+    const target = button.dataset.target
+    const targetKey = button.dataset.key
     const currentDiceData = foundry.utils.getProperty(this.actor, target)
     const value = currentDiceData.value ?? {}
     const temporaryValue = currentDiceData.temporaryValue
@@ -615,8 +668,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
 
   async _ppNumberChange (event) {
     event.preventDefault()
-    const $field = $(event.currentTarget)
-    const parsedValue = parseInt($field.val(), 10)
+    const parsedValue = parseInt(event.currentTarget.value, 10)
     // Plot Points live at system.pp, not on the Document itself (see changePpBy in
     // entities/CortexPrimeActor.js) — and system.pp only exists once an Actor Type has been
     // confirmed (_actorTypeConfirm above), so an actor that hasn't been through that yet counts
@@ -628,7 +680,7 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     await this.actor.changePpBy(changeAmount, true)
   }
 
-  async _spendPp (event) {
+  async _spendPp (event, target) {
     event.preventDefault()
 
     const usage = await selectPlotPointUsage()
@@ -668,15 +720,15 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     await this.actor.update(set)
   }
 
-  async _traitSetEdit(event) {
-    const { traitSet } = event.currentTarget.dataset
+  async _traitSetEdit (event, target) {
+    const { traitSet } = target.dataset
 
     await this.actor.update({
       ['system.actorType.traitSetEdit']: traitSet
     })
   }
 
-  async _updateActorSettings(event) {
+  async _updateActorSettings (event, target) {
     event.preventDefault()
 
     const actorData = this.actor.system.actorType

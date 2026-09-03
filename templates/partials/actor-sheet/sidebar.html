@@ -4,11 +4,11 @@
     <div class="section-content">
       <div class="relative-section pa-2">
         <div class="section-background"></div>
-        <button class="btn btn-primary-cpt {{ternary (eq theme.buttonStyle 'square') 'btn-square-cpt ' ''}}update-actor-settings" type="button">{{localize 'UpdateSettings'}}</button>
+        <button data-action="updateActorSettings" class="btn btn-primary-cpt {{ternary (eq theme.buttonStyle 'square') 'btn-square-cpt ' ''}}update-actor-settings" type="button">{{localize 'UpdateSettings'}}</button>
         <div class="flex flex-jsb flex-ac my-1">
           <p><b class="descriptor-label-cpt">{{localize 'ActorType'}}</b> {{actorType.name}}</p>
           {{#if isGM}}
-            <button class="btn btn-icon btn-icon-plain-cpt actor-type-edit" type="button" title="{{localize 'ChangeActorType'}}">
+            <button data-action="actorTypeEdit" class="btn btn-icon btn-icon-plain-cpt actor-type-edit" type="button" title="{{localize 'ChangeActorType'}}">
               <i class="fa-solid fa-edit"></i>
             </button>
           {{/if}}

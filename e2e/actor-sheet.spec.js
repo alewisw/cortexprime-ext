@@ -293,10 +293,11 @@ test('a trait needing its dice trimmed renders correctly on its very first paint
     const firstCallDice = await gm.page.evaluate(async ({ name, tsIdx, tIdx }) => {
       const actor = window.game.actors.getName(name)
       const proto = Object.getPrototypeOf(actor.sheet)
-      const orig = proto.getData
+      // _prepareContext under ApplicationV2; this was getData under appv1.
+      const orig = proto._prepareContext
 
       let captured = null
-      proto.getData = async function (...args) {
+      proto._prepareContext = async function (...args) {
         const result = await orig.apply(this, args)
         if (captured === null) {
           captured = result?.data?.system?.actorType?.traitSets?.[tsIdx]?.traits?.[tIdx]?.dice?.value
@@ -309,12 +310,12 @@ test('a trait needing its dice trimmed renders correctly on its very first paint
         await new Promise(resolve => setTimeout(resolve, 800))
         return captured
       } finally {
-        proto.getData = orig
+        proto._prepareContext = orig
       }
     }, { name: ACTOR, tsIdx: tsIndex, tIdx: traitIndex })
 
-    // The FIRST getData() call this render performs must already reflect the corrected single
-    // die - not the stale 2-die value that used to be returned while the fix was still in flight.
+    // The FIRST _prepareContext() call this render performs must already reflect the corrected
+    // single die - not the stale 2-die value that used to be returned while the fix was in flight.
     expect(Object.keys(firstCallDice ?? {}).length).toBe(1)
   } finally {
     await updateActor(gm.page, ACTOR, { [`${dicePath}.value`]: before })

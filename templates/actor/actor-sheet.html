@@ -1,4 +1,4 @@
-<form class="{{cssClass}} sheet-cpt" autocomplete="off">
+<div class="sheet-cpt">
   <div class="sheet-background"></div>
   <div class="sheet-image"></div>
   <div class="sheet-content pa-2{{ternary showActorTypePicker ' actor-selection' ''}}">
@@ -14,7 +14,7 @@
                 <option value="{{actorTypeIndex}}"{{#if (eq actorTypeIndex ../currentActorTypeIndex)}} selected{{/if}}>{{or actorType (concat '[' (localize 'NoName') ']')}}</option>
               {{/each}}
             </select>
-            <button class="btn btn-primary-cpt {{ternary (eq theme.buttonStyle 'square') 'btn-square-cpt ' ''}}actor-type-confirm col-12" type="button">{{localize 'Confirm'}}</button>
+            <button data-action="actorTypeConfirm" class="btn btn-primary-cpt {{ternary (eq theme.buttonStyle 'square') 'btn-square-cpt ' ''}}actor-type-confirm col-12" type="button">{{localize 'Confirm'}}</button>
           </div>
         </div>
       </div>
@@ -29,14 +29,14 @@
       {{else}}
         <div class="mb-2">
           <nav class="sheet-tabs tabs mb-4" data-group="primary">
-            <a class="item tab-cpt{{ternary (eq theme.tabStyle 'rounded') ' tab-rounded-cpt' ''}}" data-tab="traits">{{localize 'Traits'}}</a>
+            <a class="item tab-cpt{{ternary (eq theme.tabStyle 'rounded') ' tab-rounded-cpt' ''}}{{#if (eq activeTab 'traits')}} active{{/if}}" data-action="tab" data-group="primary" data-tab="traits">{{localize 'Traits'}}</a>
             {{#each data.system.actorType.additionalTabs as |additionalTab|}}
-              <a class="item tab-cpt{{ternary (eq theme.tabStyle 'rounded') ' tab-rounded-cpt' ''}}" data-tab="{{additionalTab.id}}">{{additionalTab.name}}</a>
+              <a class="item tab-cpt{{ternary (eq theme.tabStyle 'rounded') ' tab-rounded-cpt' ''}}{{#if (eq ../activeTab additionalTab.id)}} active{{/if}}" data-action="tab" data-group="primary" data-tab="{{additionalTab.id}}">{{additionalTab.name}}</a>
             {{/each}}
           </nav>
         </div>
         <div class="sheet-body">
-          <article class="tab sets active" data-group="primary" data-tab="traits">
+          <article class="tab sets{{#if (eq activeTab 'traits')}} active{{/if}}" data-group="primary" data-tab="traits">
             <div class="flex-row">
               {{> "systems/cortexprime-ext/templates/partials/actor-sheet/sidebar.html"
                 actor=actor
@@ -80,10 +80,11 @@
               tab=additionalTab
               tabIndex=tabIndex
               owner=owner
+              activeTab=../activeTab
             }}
           {{/each}}
         </div>
       {{/if}}
     {{/if}}
   </div>
-</form>
+</div>

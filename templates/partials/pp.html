@@ -2,7 +2,7 @@
   <h2 class="section-primary-title-cpt mb-1 flex-col col-12">{{localize 'PlotPoints'}}</h2>
   <div class="flex-col col-12">
     {{#if owner}}
-      <button class="btn btn-pp spend-pp" type="button" {{ternary (lt pp.value 1) "disabled" ""}}>
+      <button data-action="spendPp" class="btn btn-pp spend-pp" type="button" {{ternary (lt pp.value 1) "disabled" ""}}>
         {{> "systems/cortexprime-ext/templates/partials/plot-point.html" size='lg' }}
       </button>
     {{/if}}
@@ -13,7 +13,7 @@
         <input class="input-cpt pp-number-field flex-col col-6" type="number" value="{{pp.value}}">
       </div>
       <div class="flex-col col-6 flex flex-jc">
-        <button class="btn btn-icon btn-primary-cpt add-pp" type="button">
+        <button data-action="addPp" class="btn btn-icon btn-primary-cpt add-pp" type="button">
           <i class="fa fa-plus"></i>
         </button>
       </div>

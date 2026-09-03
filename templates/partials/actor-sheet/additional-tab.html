@@ -1,4 +1,4 @@
-<section class="tab" data-group="primary" data-tab="{{tab.id}}">
+<section class="tab{{#if (eq activeTab tab.id)}} active{{/if}}" data-group="primary" data-tab="{{tab.id}}">
   <header>
     <div class="section-cpt">
       <div class="section-image"></div>
@@ -10,14 +10,14 @@
           </div>
           {{#if (listHasMore tab.deletedSections 0)}}
             <div class="flex-col">
-              <button class="btn btn-icon btn-icon-plain-cpt open-deleted-sections" data-tab-index="{{tabIndex}}" type="button"
+              <button data-action="openDeletedSections" class="btn btn-icon btn-icon-plain-cpt open-deleted-sections" data-tab-index="{{tabIndex}}" type="button"
                 title="{{localize 'DeletedSections'}}">
                 <i class="fa fa-undo"></i>
               </button>
             </div>
           {{/if}}
           <div class="flex-col">
-            <button class="btn btn-icon btn-primary-cpt add-note" data-tab-index="{{tabIndex}}" type="button">
+            <button data-action="addNote" class="btn btn-icon btn-primary-cpt add-note" data-tab-index="{{tabIndex}}" type="button">
               <i class="fa fa-plus"></i>
             </button>
           </div>
@@ -47,7 +47,7 @@
           </div>
           {{#if (and ../tab.allowShutdown (ne note.allowEdit false))}}
             <div class="flex-col">
-              <button class="btn btn-icon btn-icon-plain-cpt toggle-item shutdown-toggle" data-path="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.shutdown'}}"
+              <button data-action="toggleItem" class="btn btn-icon btn-icon-plain-cpt toggle-item shutdown-toggle" data-path="{{concat 'system.actorType.additionalTabs.' ../tabIndex '.notes.' noteIndex '.shutdown'}}"
                 title="{{localize 'Shutdown'}}" type="button">
                 <i class="fa-solid {{ternary note.shutdown 'fa-toggle-off' 'fa-toggle-on'}}"></i>
               </button>
@@ -55,7 +55,7 @@
           {{/if}}
           {{#unless (or (eq note.allowDeletion false) note.shutdown)}}
             <div class="flex-col">
-              <button class="remove-note btn btn-icon btn-secondary-cpt" data-tab-index="{{../tabIndex}}" data-note-index="{{noteIndex}}" data-note-label="{{note.label}}" type="button">
+              <button data-action="removeNote" class="remove-note btn btn-icon btn-secondary-cpt" data-tab-index="{{../tabIndex}}" data-note-index="{{noteIndex}}" data-note-label="{{note.label}}" type="button">
                 <i class="fa fa-trash"></i>
               </button>
             </div>

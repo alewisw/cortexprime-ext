@@ -22,45 +22,10 @@ export const resetDataPoint = async function (path, target, value) {
   })
 }
 
-export const toggleItems = async function (html) {
-  html.find('.toggle-item').click(async event => {
-    event.preventDefault()
-    const $target = $(event.currentTarget)
-    const path = $target.data('path')
-    const value = !foundry.utils.getProperty(this.actor, path)
-
-    await this.actor.update({
-      [path]: value
-    })
-  })
-}
-
 export const removeDataPoint = async function (data, path, target, key) {
   const currentData = data || {}
 
   const newData = objectReindexFilter(currentData, (_, currentKey) => parseInt(currentKey, 10) !== parseInt(key, 10))
 
   await resetDataPoint.call(this, path, target, newData)
-}
-
-export const removeItems = async function (html) {
-  html.find('.remove-item').click(async event => {
-    event.preventDefault()
-    const {
-      path,
-      itemKey,
-      itemName,
-      target
-    } = event.currentTarget.dataset
-
-    const confirmed = await confirmAction({
-      content: `${localizer('Remove')} ${itemName}?`
-    })
-
-    if (confirmed) {
-      const data = foundry.utils.getProperty(this.actor, `${path}.${target}`)
-
-      await removeDataPoint.call(this, data, path, target, itemKey)
-    }
-  })
 }

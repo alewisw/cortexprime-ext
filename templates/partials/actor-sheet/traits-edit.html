@@ -3,7 +3,7 @@
     <h3 class="flex-col col-12 section-secondary-title-cpt mb-0">{{label}}</h3>
     {{#if custom}}
       <div class="flex-col">
-        <button class="btn btn-primary-cpt btn-icon add-trait" data-path="{{path}}" type="button">
+        <button data-action="addTrait" class="btn btn-primary-cpt btn-icon add-trait" data-path="{{path}}" type="button">
           <i class="fa fa-plus"></i>
         </button>
       </div>
@@ -22,7 +22,7 @@
                   <div class="flex-row flex-ae">
                     {{#if ../data.hasHidableTraits}}
                       <div class="flex-col px-0">
-                        <button class="btn btn-icon btn-secondary-cpt toggle-item"
+                        <button data-action="toggleItem" class="btn btn-icon btn-secondary-cpt toggle-item"
                           data-path="{{concat ../path '.' ../target '.' traitIndex '.hidden'}}" type="button">
                           <i class="fa {{ternary trait.hidden 'fa-eye-slash' 'fa-eye'}}"></i>
                         </button>
@@ -63,7 +63,7 @@
                     }}
                   {{/if}}
                   <div>
-                    <button class="btn btn-icon btn-icon-plain-cpt toggle-item shutdown-toggle"
+                    <button data-action="toggleItem" class="btn btn-icon btn-icon-plain-cpt toggle-item shutdown-toggle"
                       data-path="{{concat ../path '.' ../target '.' traitIndex '.shutdown'}}" type="button">
                       <i class="fa-solid {{ternary trait.shutdown 'fa-toggle-off' 'fa-toggle-on'}}"></i>
                     </button>
@@ -115,7 +115,7 @@
               <div class="section-background-alternate"></div>
               <h4 class="flex-col sub-trait-label-cpt my-0">{{localize 'SubTraits'}}</h4>
               <div class="flex-col">
-                <button class="btn btn-primary-cpt btn-icon add-sub-trait"
+                <button data-action="addSubTrait" class="btn btn-primary-cpt btn-icon add-sub-trait"
                   data-path="{{concat ../path '.' ../target '.' traitIndex}}" type="button">
                   <i class="fa fa-plus"></i>
                 </button>
@@ -138,7 +138,7 @@
               <div class="section-background-alternate"></div>
               <h4 class="flex-col sub-trait-label-cpt my-0">{{localize 'Descriptors'}}</h4>
               <div class="flex-col">
-                <button class="btn btn-primary-cpt btn-icon add-descriptor" data-path="{{concat ../path '.' ../target '.' traitIndex}}"
+                <button data-action="addDescriptor" class="btn btn-primary-cpt btn-icon add-descriptor" data-path="{{concat ../path '.' ../target '.' traitIndex}}"
                   type="button">
                   <i class="fa fa-plus"></i>
                 </button>
@@ -159,7 +159,7 @@
               <div class="section-background-alternate"></div>
               <h4 class="flex-col sub-trait-label-cpt my-0">{{localize 'Sfx'}}</h4>
               <div class="flex-col">
-                <button class="btn btn-primary-cpt btn-icon add-sfx" data-path="{{concat ../path '.' ../target '.' traitIndex}}" type="button">
+                <button data-action="addSfx" class="btn btn-primary-cpt btn-icon add-sfx" data-path="{{concat ../path '.' ../target '.' traitIndex}}" type="button">
                   <i class="fa fa-plus"></i>
                 </button>
               </div>
