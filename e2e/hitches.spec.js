@@ -79,9 +79,9 @@ test('a player\'s hitch opens the GM\'s Hitches dialog, and confirming writes th
     await rollExactly(player2.page, [5, 4, 3, 1])
 
     // The dialog belongs to the GM's client alone — a player never resolves their own hitch.
-    const dialog = gm.page.locator('.window-content form.cortexprime.hitches-dialog')
+    const dialog = gm.page.locator('[id^="hitches-dialog-"]')
     await expect(dialog).toBeVisible({ timeout: 15_000 })
-    await expect(player2.page.locator('.window-content form.cortexprime.hitches-dialog')).toHaveCount(0)
+    await expect(player2.page.locator('[id^="hitches-dialog-"]')).toHaveCount(0)
 
     // One die came up 1, so there is exactly one row to resolve, and it's a HITCH not a BOTCH.
     const rows = dialog.locator('.hitch-row')
@@ -187,7 +187,7 @@ test('the Hitches dialog\'s "Choose…" button reuses ComplicationDialog\'s pick
     await expect.poll(() => anyRollButtonEnabled(player2.page)).toBe(true)
     await rollExactly(player2.page, [5, 4, 3, 1])
 
-    const dialog = gm.page.locator('.window-content form.cortexprime.hitches-dialog')
+    const dialog = gm.page.locator('[id^="hitches-dialog-"]')
     await expect(dialog).toBeVisible({ timeout: 15_000 })
 
     const rows = dialog.locator('.hitch-row')

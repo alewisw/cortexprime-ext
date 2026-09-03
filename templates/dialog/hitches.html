@@ -1,4 +1,4 @@
-<form class="cortexprime hitches-dialog sheet-cpt" autocomplete="off">
+<div class="sheet-cpt">
   <div class="sheet-background"></div>
   <div class="sheet-image"></div>
   <div class="sheet-content pa-2">
@@ -64,7 +64,7 @@
                       value="{{row.complicationName}}"
                       placeholder="{{localize 'NewComplication'}}"
                     >
-                    <button class="choose-complication-name btn btn-secondary-cpt ml-1" data-index="{{row.index}}" type="button">
+                    <button class="choose-complication-name btn btn-secondary-cpt ml-1" data-action="chooseComplicationName" data-index="{{row.index}}" type="button">
                       {{localize 'ChooseComplicationName'}}
                     </button>
                   </div>
@@ -97,7 +97,7 @@
                       value="{{row.complicationName}}"
                       placeholder="{{localize 'NewComplication'}}"
                     >
-                    <button class="choose-complication-name btn btn-secondary-cpt ml-1" data-index="{{row.index}}" type="button">
+                    <button class="choose-complication-name btn btn-secondary-cpt ml-1" data-action="chooseComplicationName" data-index="{{row.index}}" type="button">
                       {{localize 'ChooseComplicationName'}}
                     </button>
                   </div>
@@ -198,7 +198,7 @@
     </div>
 
     <div class="flex flex-je">
-      <button class="hitches-confirm btn btn-primary-cpt" type="button">{{localize 'Confirm'}}</button>
+      <button class="hitches-confirm btn btn-primary-cpt" data-action="confirmHitches" type="button">{{localize 'Confirm'}}</button>
     </div>
   </div>
-</form>
+</div>

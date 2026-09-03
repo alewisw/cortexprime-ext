@@ -1,4 +1,5 @@
-import { getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
+import { localizer } from '../scripts/foundryHelpers.js'
+import { CortexApplicationV2 } from './CortexApplicationV2.js'
 import { applyHitchOutcomes, getComplications, getDoomPool } from '../scripts/hitches.js'
 import { ComplicationDialog } from './ComplicationDialog.js'
 import {
@@ -38,11 +39,12 @@ const getActionLabel = (action, doomPoolLabel) => DOOM_POOL_ACTIONS.includes(act
   ? game.i18n.format(ACTION_LABEL_KEYS[action], { doomPool: doomPoolLabel })
   : localizer(ACTION_LABEL_KEYS[action])
 
-export class HitchesDialog extends FormApplication {
+export class HitchesDialog extends CortexApplicationV2 {
   constructor ({ actor, sceneActor, challengeType, dice, isMage, magick, canStepUpParadox = true, rolledAt = 0 }) {
     // Scoped per actor so that two players hitching at once during a Group Challenge get two
-    // separate windows instead of colliding on a single shared application id.
-    super({}, { id: `hitches-dialog-${actor.id}` })
+    // separate windows instead of colliding on a single shared application id. Instance
+    // options override DEFAULT_OPTIONS, so no id is declared there.
+    super({ id: `hitches-dialog-${actor.id}` })
 
     this.actor = actor
     this.canStepUpParadox = canStepUpParadox
@@ -69,21 +71,22 @@ export class HitchesDialog extends FormApplication {
     }))
   }
 
-  static get defaultOptions () {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: 'hitches-dialog',
-      template: 'systems/cortexprime-ext/templates/dialog/hitches.html',
-      title: localizer('Hitches'),
-      classes: ['cortexprime', 'hitches-dialog'],
-      width: 620,
-      height: 'auto',
-      closeOnSubmit: false,
-      submitOnChange: false,
-      submitOnClose: false
-    })
+  static DEFAULT_OPTIONS = {
+    classes: ['hitches-dialog'],
+    position: { width: 620, height: 'auto' },
+    actions: {
+      chooseComplicationName: HitchesDialog.#onChooseComplicationName,
+      confirmHitches: HitchesDialog.#onConfirm
+    }
   }
 
-  // Names the player, so two simultaneous Hitches windows are tellable apart.
+  static PARTS = {
+    content: { template: 'systems/cortexprime-ext/templates/dialog/hitches.html' }
+  }
+
+  // Names the player, so two simultaneous Hitches windows are tellable apart. A getter rather
+  // than window.title because it depends on instance state; ApplicationV2 reads it on the
+  // first render, which is enough - the actor never changes for a given dialog.
   get title () {
     return `${localizer('Hitches')} — ${this.actor.name}`
   }
@@ -132,9 +135,7 @@ export class HitchesDialog extends FormApplication {
     }
   }
 
-  async getData () {
-    const theme = getCurrentTheme()
-
+  async _prepareContext (options) {
     const { complications, sceneComplications, defaultComplicationLabel, doomPool, plotPoints, projection, summary } = this._getState()
 
     const doomPoolLabel = doomPool?.label ?? localizer('DoomPoolTrait')
@@ -153,6 +154,7 @@ export class HitchesDialog extends FormApplication {
     )
 
     return {
+      ...await super._prepareContext(options),
       actorName: this.actor.name,
       doomPoolLabel,
       hasSceneActor: !!this.sceneActor,
@@ -160,7 +162,6 @@ export class HitchesDialog extends FormApplication {
       plotPoints,
       projection,
       summary,
-      theme,
       rows: this.rows.map((row, index) => ({
         ...row,
         index,
@@ -196,23 +197,29 @@ export class HitchesDialog extends FormApplication {
     }
   }
 
-  activateListeners (html) {
-    super.activateListeners(html)
+  // All `change` events, which `actions` cannot express, so they stay hand-wired. Rebound on
+  // every render because the part's DOM is replaced wholesale.
+  _onRender (context, options) {
+    super._onRender(context, options)
 
-    html.find('.hitch-action').change(this._onRowChange.bind(this, 'action'))
-    html.find('.hitch-complication-select').change(this._onRowChange.bind(this, 'complicationKey'))
-    html.find('.hitch-doom-select').change(this._onRowChange.bind(this, 'doomDieSize'))
-    // .change() fires on blur rather than per keystroke, so re-rendering here can never steal
+    const bindRowField = (selector, field) => {
+      for (const element of this.element.querySelectorAll(selector)) {
+        element.addEventListener('change', event => this.#onRowChange(field, event))
+      }
+    }
+
+    bindRowField('.hitch-action', 'action')
+    bindRowField('.hitch-complication-select', 'complicationKey')
+    bindRowField('.hitch-doom-select', 'doomDieSize')
+    // `change` fires on blur rather than per keystroke, so re-rendering here can never steal
     // focus mid-word — the same trade-off CrisisPoolDialog makes for its name field.
-    html.find('.hitch-complication-name').change(this._onRowChange.bind(this, 'complicationName'))
-    html.find('.hitch-complication-rename').change(this._onRowChange.bind(this, 'renameComplication'))
-    html.find('.choose-complication-name').click(this._onChooseComplicationName.bind(this))
-    html.find('.hitches-confirm').click(this._onConfirm.bind(this))
+    bindRowField('.hitch-complication-name', 'complicationName')
+    bindRowField('.hitch-complication-rename', 'renameComplication')
 
     // Revealing a sub-field grows the form after Foundry has already measured this height:'auto'
     // window, so re-run the measurement once the new content is in the DOM.
     try {
-      this.setPosition({ width: this.options.width, height: 'auto' })
+      this.setPosition({ width: this.options.position.width, height: 'auto' })
     } catch (error) {
       console.warn('CP | Hitches: could not resize the dialog', error)
     }
@@ -234,47 +241,48 @@ export class HitchesDialog extends FormApplication {
     })
   }
 
-  async close (options) {
+  // _onClose rather than an override of close(): ApplicationV2 routes every close through it,
+  // and nothing here touches the DOM, so it does not need the earlier _preClose hook.
+  _onClose (options) {
     this._resolveHitches(0)
 
-    return super.close(options)
+    return super._onClose(options)
   }
 
-  _onRowChange (field, event) {
+  async #onRowChange (field, event) {
     event.preventDefault()
 
-    const $target = $(event.currentTarget)
-    const index = parseInt($target.data('index'), 10)
+    const target = event.currentTarget
+    const index = parseInt(target.dataset.index, 10)
 
     if (Number.isNaN(index) || !this.rows[index]) return
 
-    this.rows[index] = { ...this.rows[index], [field]: $target.val() }
+    this.rows[index] = { ...this.rows[index], [field]: target.value }
 
-    this.render(true)
+    await this.render()
   }
 
   // Reuses ComplicationDialog's own category/subcategory/severity picker to name a newly
   // introduced complication, rather than duplicating that library here.
-  _onChooseComplicationName (event) {
+  static async #onChooseComplicationName (event, target) {
     event.preventDefault()
 
-    const $target = $(event.currentTarget)
-    const index = parseInt($target.data('index'), 10)
+    const index = parseInt(target.dataset.index, 10)
 
     if (Number.isNaN(index) || !this.rows[index]) return
 
     new ComplicationDialog({
       pickOnly: true,
       initialLabel: this.rows[index].complicationName,
-      onPick: label => {
+      onPick: async label => {
         if (!this.rows[index]) return
         this.rows[index] = { ...this.rows[index], complicationName: label }
-        this.render(true)
+        await this.render()
       }
-    }).render(true)
+    }).render({ force: true })
   }
 
-  async _onConfirm (event) {
+  static async #onConfirm (event, target) {
     event.preventDefault()
 
     // Guard against a double click landing two sets of writes while the first is still in flight.
@@ -308,13 +316,11 @@ export class HitchesDialog extends FormApplication {
       // Before close(), so the real step count is what gets announced rather than close()'s zero.
       this._resolveHitches(projection.paradoxSteps)
 
-      this.close()
+      await this.close()
     } catch (error) {
       this._confirming = false
       console.error('CP | Hitches: could not apply the selected outcomes', error)
       ui.notifications.error(localizer('HitchesApplyFailed'))
     }
   }
-
-  async _updateObject () {}
 }
