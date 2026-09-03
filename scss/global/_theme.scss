@@ -5,6 +5,13 @@
     font-size: var(--cp-body-font-size, 15px);
     font-weight: var(--cp-body-font-weight, 400);
     height: 100%;
+    // Containing block for .sheet-background / .sheet-image below, which are absolutely
+    // positioned at 100% of "the sheet". Without this they resolve against whichever ancestor
+    // happens to be positioned, which differs between frameworks: appv1's Dialog gave them the
+    // dialog content box, whereas DialogV2 puts the content and the button footer in one flex
+    // form, so the overlays spilled across the footer and - at z-index 2 - swallowed every click
+    // aimed at the dialog's own buttons.
+    position: relative;
 
     .sheet-background {
       background-color: var(--cp-sheet-background-color, #dedede);

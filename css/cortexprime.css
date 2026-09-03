@@ -1186,6 +1186,14 @@
   background: none !important;
   border: none !important;
 }
+.cortexprime .standard-form input[type=checkbox]:not(.input-checkbox-cpt),
+.cortexprime .standard-form input[type=radio]:not(.input-checkbox-cpt) {
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+  height: auto;
+  width: auto;
+}
 .cortexprime nav.sheet-tabs {
   height: auto;
   margin: 0 -0.25rem 0.5rem;
@@ -1445,6 +1453,7 @@
   font-size: var(--cp-body-font-size, 15px);
   font-weight: var(--cp-body-font-weight, 400);
   height: 100%;
+  position: relative;
 }
 .cortexprime .sheet-cpt .sheet-background {
   background-color: var(--cp-sheet-background-color, #dedede);

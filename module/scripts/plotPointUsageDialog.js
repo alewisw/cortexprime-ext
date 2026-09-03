@@ -1,9 +1,8 @@
 import { getCurrentTheme, localizer } from './foundryHelpers.js'
 
-// A plain promise-resolving Dialog listing the GM-configured Plot Point usage options as a
-// single set of radio buttons (only one selectable across every group) plus a "Spend Plot
-// Point" button to commit the choice, resolving with the selected option's label, or null if
-// cancelled/closed without a choice.
+// Lists the GM-configured Plot Point usage options as a single set of radio buttons (only one
+// selectable across every group) plus a "Spend Plot Point" button to commit the choice. Resolves
+// with the selected option's label, or null if cancelled or closed without a choice.
 export const selectPlotPointUsage = async () => {
   const plotPointUses = game.settings.get('cortexprime-ext', 'plotPointUses') ?? {}
   const groups = [
@@ -16,38 +15,40 @@ export const selectPlotPointUsage = async () => {
     'systems/cortexprime-ext/templates/dialog/plot-point-use.html', { groups, theme }
   )
 
-  return new Promise(resolve => {
-    let resolved = false
-    const resolveOnce = value => {
-      if (resolved) return
-      resolved = true
-      resolve(value)
-    }
+  // The commit button lives inside the rendered content, styled as part of the themed section,
+  // rather than being one of the dialog's own footer buttons. So the choice is stashed here and
+  // handed back through the `close` callback, which DialogV2.wait resolves with.
+  let selected = null
 
-    const dialog = new Dialog({
-      title: localizer('SpendPlotPoint'),
-      content,
-      buttons: {
-        cancel: {
-          icon: '<i class="fa-solid fa-xmark"></i>',
-          label: localizer('Cancel'),
-          callback: () => resolveOnce(null)
-        }
-      },
-      default: 'cancel',
-      close: () => resolveOnce(null),
-      render (html) {
-        html.find('.spend-plot-point').click(() => {
-          const selected = html.find('.plot-point-use-option:checked').val()
-
-          if (!selected) return
-
-          resolveOnce(selected)
-          dialog.close()
-        })
+  const result = await foundry.applications.api.DialogV2.wait({
+    window: { title: localizer('SpendPlotPoint') },
+    classes: ['cortexprime', 'plot-point-use-dialog'],
+    content,
+    buttons: [
+      {
+        action: 'cancel',
+        label: 'Cancel',
+        icon: 'fa-solid fa-xmark',
+        default: true,
+        // Deliberately false rather than null: DialogV2 substitutes the button's own action id
+        // when a callback returns null or undefined, which would resolve this to the string
+        // 'cancel' and be indistinguishable from a chosen usage.
+        callback: () => false
       }
-    }, { jQuery: true, classes: ['dialog', 'plot-point-use-dialog', 'cortexprime'] })
+    ],
+    close: () => selected,
+    render: (event, dialog) => {
+      dialog.element.querySelector('.spend-plot-point')?.addEventListener('click', () => {
+        const chosen = dialog.element.querySelector('.plot-point-use-option:checked')?.value
 
-    dialog.render(true)
+        if (!chosen) return
+
+        selected = chosen
+        dialog.close()
+      })
+    }
   })
+
+  // Every non-selection path — Cancel, Escape, the window's X — lands as false or null here.
+  return typeof result === 'string' ? result : null
 }

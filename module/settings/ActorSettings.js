@@ -373,7 +373,7 @@ export default class ActorSettings extends FormApplication {
     const currentImage = source[actorTypeIndex]?.defaultImage || 'icons/svg/mystery-man.svg'
     const _this = this
 
-    const imagePicker = await new FilePicker({
+    const imagePicker = new foundry.applications.apps.FilePicker.implementation({
       type: 'image',
       current: currentImage,
       async callback (newImage) {

@@ -1,6 +1,6 @@
 import { applyActorTypeInheritance } from '../actor/actorTypeInheritanceLogic.js'
 import { getLength, objectMapKeys, objectReduce, objectReindexFilter } from '../../lib/helpers.js'
-import { localizer } from './foundryHelpers.js'
+import { confirmAction, localizer } from './foundryHelpers.js'
 
 // removeItem/reorderItem are generic over data-setting, so actorTypes gets its inheritance
 // reconcile here rather than in ActorSettings._saveActorTypes.
@@ -49,14 +49,8 @@ export const removeItem = async function (html) {
       stayOnPage
     } = event.currentTarget.dataset
 
-    let confirmed
-
-    await Dialog.confirm({
-      title: localizer('AreYouSure'),
-      content: `${localizer('Remove')} ${itemName}?`,
-      yes: () => { confirmed = true },
-      no: () => { confirmed = false },
-      defaultYes: false
+    const confirmed = await confirmAction({
+      content: `${localizer('Remove')} ${itemName}?`
     })
 
     if (confirmed) {

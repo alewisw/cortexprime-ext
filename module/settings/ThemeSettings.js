@@ -67,7 +67,7 @@ export default class ThemeSettings extends FormApplication {
     const currentImage = source?.currentSettings?.[targetSetting] || null
     const _this = this
 
-    const imagePicker = await new FilePicker({
+    const imagePicker = new foundry.applications.apps.FilePicker.implementation({
       type: 'image',
       current: currentImage,
       async callback (newImage) {

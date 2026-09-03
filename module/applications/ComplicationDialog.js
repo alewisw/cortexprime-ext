@@ -1,5 +1,5 @@
 import { getLength, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
-import { getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
+import { confirmAction, getCurrentTheme, localizer } from '../scripts/foundryHelpers.js'
 import { removeDataPoint, resetDataPoint } from '../scripts/sheetHelpers.js'
 import { SEVERITY_DICE } from '../actor/complicationPresets.js'
 import { buildPickerState, toDiceValue } from './complicationDialogLogic.js'
@@ -189,14 +189,8 @@ export class ComplicationDialog extends FormApplication {
 
     if (!this.isEditing) return
 
-    let confirmed
-
-    await Dialog.confirm({
-      title: localizer('AreYouSure'),
-      content: `${localizer('Remove')} ${this.label}?`,
-      yes: () => { confirmed = true },
-      no: () => { confirmed = false },
-      defaultYes: false
+    const confirmed = await confirmAction({
+      content: `${localizer('Remove')} ${this.label}?`
     })
 
     if (!confirmed) return

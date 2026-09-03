@@ -1,4 +1,4 @@
-import { getCurrentTheme, localizer, showPlotPointAnimation } from '../scripts/foundryHelpers.js'
+import { confirmAction, getCurrentTheme, localizer, showPlotPointAnimation } from '../scripts/foundryHelpers.js'
 import { getLength, objectFilter, objectMapValues, objectReindexFilter } from '../../lib/helpers.js'
 import rollDice from '../scripts/rollDice.js'
 import { runExclusive } from '../scripts/asyncMutex.js'
@@ -567,14 +567,8 @@ export class UserDicePool extends FormApplication {
     const opponentId = getMyBeatTargetId()
     const effectDice = opponentId ? (getTargetRecord(opponentId)?.effectDice ?? []) : []
 
-    let confirmed
-
-    await Dialog.confirm({
-      title: localizer('AreYouSure'),
-      content: localizer('GiveInConfirm'),
-      yes: () => { confirmed = true },
-      no: () => { confirmed = false },
-      defaultYes: false
+    const confirmed = await confirmAction({
+      content: localizer('GiveInConfirm')
     })
 
     if (!confirmed) return

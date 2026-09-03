@@ -1,4 +1,4 @@
-import { localizer } from '../scripts/foundryHelpers.js'
+import { confirmAction, localizer } from '../scripts/foundryHelpers.js'
 import { getLength } from '../../lib/helpers.js'
 import { removeItem, reorderItem } from '../scripts/settingsHelpers.js'
 import defaultPlotPointUses from '../actor/defaultPlotPointUses.js'
@@ -71,14 +71,8 @@ export default class PlotPointUsesSettings extends FormApplication {
   async _resetPlotPointUses (event) {
     event.preventDefault()
 
-    let confirmed
-
-    await Dialog.confirm({
-      title: localizer('AreYouSure'),
-      content: localizer('ConfirmResetPlotPointUsesMessage'),
-      yes: () => { confirmed = true },
-      no: () => { confirmed = false },
-      defaultYes: false
+    const confirmed = await confirmAction({
+      content: localizer('ConfirmResetPlotPointUsesMessage')
     })
 
     if (confirmed) {

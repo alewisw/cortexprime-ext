@@ -1,5 +1,5 @@
 import { getLength, objectReindexFilter } from '../../lib/helpers.js'
-import { localizer } from './foundryHelpers.js'
+import { confirmAction, localizer } from './foundryHelpers.js'
 
 export const addNewDataPoint = async function (data, path, value) {
   const currentData = data || {}
@@ -53,14 +53,8 @@ export const removeItems = async function (html) {
       target
     } = event.currentTarget.dataset
 
-    let confirmed
-
-    await Dialog.confirm({
-      title: localizer('AreYouSure'),
-      content: `${localizer('Remove')} ${itemName}?`,
-      yes: () => { confirmed = true },
-      no: () => { confirmed = false },
-      defaultYes: false
+    const confirmed = await confirmAction({
+      content: `${localizer('Remove')} ${itemName}?`
     })
 
     if (confirmed) {

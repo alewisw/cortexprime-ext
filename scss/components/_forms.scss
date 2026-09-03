@@ -70,3 +70,22 @@ input {
     border: none !important;
   }
 }
+
+// DialogV2 wraps its content in <form class="dialog-form standard-form">, which appv1's Dialog
+// did not - the system's dialog templates were written against V1's plain .dialog-content. Core's
+// .standard-form styling sets appearance:none on bare checkboxes and radios and then sizes them
+// with rules this .cortexprime scope overrides, so they collapse to 0x0: still in the DOM, still
+// "visible" to getComputedStyle, but impossible to click. That is how the Plot Point usage
+// dialog's radios stopped being selectable.
+//
+// Restores native rendering for plain inputs. Deliberately excludes .input-checkbox-cpt, which is
+// the system's own styled pattern - those are meant to be transparent and sized by their sibling
+// .checkmark-cpt (see _theme.scss), and must keep that treatment.
+.standard-form {
+  input[type="checkbox"]:not(.input-checkbox-cpt),
+  input[type="radio"]:not(.input-checkbox-cpt) {
+    appearance: auto;
+    height: auto;
+    width: auto;
+  }
+}

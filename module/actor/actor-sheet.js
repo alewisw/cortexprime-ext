@@ -4,7 +4,7 @@
  */
 import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReindexFilter, objectSome } from '../../lib/helpers.js'
 import { computeActorTypeChange, mergeActorTypeData } from './actorTypeChangeLogic.js'
-import { expandNotesFieldOnEdit, getCurrentTheme, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
+import { confirmAction, expandNotesFieldOnEdit, getCurrentTheme, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
 import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, reindexDiceAfterRemoval, stepFaceDown, stepFaceUp } from '../scripts/traitDiceTemporary.js'
@@ -281,14 +281,8 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     event.preventDefault()
     const { tabIndex, noteIndex, noteLabel } = event.currentTarget.dataset
 
-    let confirmed
-
-    await Dialog.confirm({
-      title: localizer('AreYouSure'),
-      content: `${localizer('Remove')} ${noteLabel}?`,
-      yes: () => { confirmed = true },
-      no: () => { confirmed = false },
-      defaultYes: false
+    const confirmed = await confirmAction({
+      content: `${localizer('Remove')} ${noteLabel}?`
     })
 
     if (!confirmed) return
@@ -454,74 +448,71 @@ export class CortexPrimeActorSheet extends foundry.appv1.sheets.ActorSheet {
     // "Nothing selected" — a fresh object each time, since the caller reads it back out.
     const noDice = () => ({ remove: [], value: {} })
 
-    return new Promise(resolve => {
-      // Every exit path has to answer, or the caller's await hangs for the rest of the session:
-      // dismissing via the window's X (or Escape) is a real way out of this dialog and means the
-      // same thing Cancel does. Foundry's appv1 Dialog#submit runs the chosen button's callback
-      // and THEN close(), so `close` below fires on the button paths too — first answer wins, and
-      // resolveOnce makes that explicit rather than leaning on Promise semantics. Same guard
-      // plotPointUsageDialog.js uses.
-      let resolved = false
+    // Every exit path answers, or the caller's await hangs for the rest of the session: dismissing
+    // via the window's X (or Escape) is a real way out and means what Cancel does. DialogV2.wait
+    // gives that for free - it resolves on the first of the submit or close paths and Promise
+    // resolution is idempotent - which is why the hand-rolled resolveOnce guard this used to carry
+    // is gone rather than ported.
+    const selection = await foundry.applications.api.DialogV2.wait({
+      window: { title: label },
+      // Merged with DialogV2's own 'dialog' class, not replacing it: ApplicationV2 concatenates
+      // class arrays down the inheritance chain and then de-duplicates.
+      classes: ['cortexprime', 'consumable-dice'],
+      content,
+      buttons: [
+        {
+          action: 'cancel',
+          label: 'Cancel',
+          icon: 'fa-solid fa-times',
+          default: true,
+          callback: () => noDice()
+        },
+        {
+          action: 'done',
+          label: 'AddToPool',
+          icon: 'fa-solid fa-check',
+          callback: (event, target, dialog) => {
+            const remove = !!dialog.element.querySelector('.remove-check')?.checked
+            const selectedDice = [...dialog.element.querySelectorAll('.die-select.selected')]
 
-      const resolveOnce = value => {
-        if (resolved) return
+            if (!selectedDice.length) return noDice()
 
-        resolved = true
-        resolve(value)
-      }
-
-      new Dialog({
-        title: label,
-        content,
-        buttons: {
-          cancel: {
-            icon: '<i class="fa-solid fa-times"></i>',
-            label: localizer('Cancel'),
-            callback () {
-              resolveOnce(noDice())
-            }
-          },
-          done: {
-            icon: '<i class="fa-solid fa-check"></i>',
-            label: localizer('AddToPool'),
-            callback (html) {
-              const remove = html.find('.remove-check').prop('checked')
-              const selectedDice = html.find('.die-select.selected').get()
-
-              if (!selectedDice.length) {
-                resolveOnce(noDice())
-                return
+            return selectedDice.reduce((selectedValues, selectedDie) => {
+              if (remove) {
+                selectedValues.remove = [...selectedValues.remove, selectedDie.dataset.key]
               }
 
-              resolveOnce(
-                selectedDice
-                  .reduce((selectedValues, selectedDie) => {
-                    const $selectedDie = $(selectedDie)
+              // Number(), because jQuery's .data('value') coerced "8" to 8 and this map is handed
+              // straight to the dice pool. dataset gives the raw string, so without this the pool
+              // would start receiving strings from this one path where it used to get numbers.
+              selectedValues.value = {
+                ...selectedValues.value,
+                [getLength(selectedValues.value)]: Number(selectedDie.dataset.value)
+              }
 
-                    if (remove) {
-                      selectedValues.remove = [...selectedValues.remove, $selectedDie.data('key')]
-                    }
-
-                    selectedValues.value = { ...selectedValues.value, [getLength(selectedValues.value)]: $selectedDie.data('value') }
-
-                    return selectedValues
-                  }, noDice())
-              )
-            }
+              return selectedValues
+            }, noDice())
           }
-        },
-        default: 'cancel',
-        close: () => resolveOnce(noDice()),
-        render(html) {
-          html.find('.die-select').click(function () {
-            const $dieContainer = $(this)
-            const $dieCpt = $dieContainer.find('.die-cpt')
-            $dieContainer.toggleClass('result selected')
-            $dieCpt.toggleClass('unchosen-cpt chosen-cpt')
+        }
+      ],
+      render: (event, dialog) => {
+        for (const die of dialog.element.querySelectorAll('.die-select')) {
+          die.addEventListener('click', () => {
+            // Two independent toggles, matching jQuery's toggleClass('a b'): the die starts as
+            // .result/.unchosen-cpt and swaps to .selected/.chosen-cpt, and back again.
+            die.classList.toggle('result')
+            die.classList.toggle('selected')
+
+            const dieCpt = die.querySelector('.die-cpt')
+
+            dieCpt?.classList.toggle('unchosen-cpt')
+            dieCpt?.classList.toggle('chosen-cpt')
           })
         }
-      }, { jQuery: true, classes: ['dialog', 'consumable-dice', 'cortexprime'] }).render(true)
+      }
     })
+
+    return selection ?? noDice()
   }
 
   async _newDie (event) {

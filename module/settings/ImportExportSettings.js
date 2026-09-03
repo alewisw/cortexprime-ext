@@ -1,6 +1,6 @@
 import defaultThemes from "../theme/defaultThemes.js"
 import { applyActorTypeInheritance } from "../actor/actorTypeInheritanceLogic.js"
-import { localizer, setCssVars } from "../scripts/foundryHelpers.js"
+import { confirmAction, localizer, setCssVars } from "../scripts/foundryHelpers.js"
 import {
   buildExportPayload,
   buildImportValues,
@@ -87,14 +87,8 @@ export default class ImportExportSettings extends FormApplication {
           warning = localizer('ImportVersionWarning')
         }
 
-        let confirmed
-
-        await Dialog.confirm({
-          title: localizer('AreYouSure'),
-          content: `<div>${warning ? '<p class="my-2 pa-2 ba-2-primary">' + warning + '</p>' : ''}<p class="my-2">${localizer('ConfirmImportMessage')}</p></div>`,
-          yes: () => { confirmed = true },
-          no: () => { confirmed = false },
-          defaultYes: false
+        const confirmed = await confirmAction({
+          content: `<div>${warning ? '<p class="my-2 pa-2 ba-2-primary">' + warning + '</p>' : ''}<p class="my-2">${localizer('ConfirmImportMessage')}</p></div>`
         })
 
         if (confirmed) {
@@ -137,14 +131,8 @@ export default class ImportExportSettings extends FormApplication {
   async _resetSettings (event) {
     event.preventDefault()
 
-    let confirmed
-
-    await Dialog.confirm({
-      title: localizer('AreYouSure'),
-      content: localizer('ConfirmResetSettingsMessage'),
-      yes: () => { confirmed = true },
-      no: () => { confirmed = false },
-      defaultYes: false
+    const confirmed = await confirmAction({
+      content: localizer('ConfirmResetSettingsMessage')
     })
 
     if (confirmed) {

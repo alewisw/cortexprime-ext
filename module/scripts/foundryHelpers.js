@@ -150,3 +150,19 @@ export const findApp = predicate => [
   ...Object.values(ui.windows ?? {}),
   ...(foundry.applications?.instances?.values() ?? [])
 ].find(predicate) ?? null
+
+// A yes/no confirmation, resolving true only when the user actively confirms.
+//
+// Replaces the appv1 `Dialog.confirm({ yes, no, defaultYes })` shape, which this system used
+// identically in eight places: declare a `confirmed` flag, let the callbacks assign it, then read
+// it back. DialogV2.confirm returns the answer directly and defaults to No, so all of that
+// collapses to this. Dismissing the window (Escape, or the X) resolves null rather than throwing,
+// which counts as "no" exactly as the old undefined-flag did.
+//
+// DialogV2 is referenced inside the function body, not at module scope, so this file stays
+// importable under unit test where the Foundry globals are absent.
+export const confirmAction = async ({ title, content }) =>
+  await foundry.applications.api.DialogV2.confirm({
+    window: { title: title ?? localizer('AreYouSure') },
+    content
+  }) === true
