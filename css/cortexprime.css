@@ -1,25 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap");
 /* Global styles */
 /* Styles limited to cortexprime sheets */
-.cortexprime .window-app {
-  font-family: "Roboto", sans-serif;
-}
-.cortexprime .window-app .window-content {
-  background: #ffffff;
-}
-.cortexprime.window-app .window-content, .cortexprime.application .window-content {
+.cortexprime.application .window-content {
   background: none;
   padding: 0;
 }
-.cortexprime.window-app .window-resizable-handle,
-.cortexprime.window-app .window-resize-handle, .cortexprime.application .window-resizable-handle,
 .cortexprime.application .window-resize-handle {
   z-index: 10;
 }
-.cortexprime.doom-pool-settings.window-app .window-content, .cortexprime.doom-pool-settings.application .window-content {
+.cortexprime.doom-pool-settings.application .window-content {
   background: #ffffff;
 }
-.cortexprime .dice-picker.window-app .window-content, .cortexprime .dice-picker.application .window-content, .cortexprime .consumable-dice.window-app .window-content, .cortexprime .consumable-dice.application .window-content {
+.cortexprime .dice-picker.application .window-content, .cortexprime .consumable-dice.application .window-content {
   background: none;
   padding: 0;
 }
@@ -1881,7 +1873,7 @@
   background-color: #ffffff;
   border: var(--cp-input-border-width, 2px) var(--cp-input-border-style, solid) var(--cp-input-border-color, #2d5931);
 }
-.cortexprime.window-app .window-header {
+.cortexprime.application .window-header {
   position: relative;
   z-index: 3;
   background-color: rgba(0, 0, 0, 0.7);

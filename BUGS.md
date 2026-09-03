@@ -212,3 +212,32 @@ an obvious place to land.
 
 Only the first of the three lists overflows at the default window size, so the visible effect is
 small - which is presumably why it went unnoticed.
+
+---
+
+## 6. A stylesheet rule that never applied, removed
+
+**Severity: trivial.** Recorded because the fix is a judgement call, not because anything is broken.
+
+`scss/global/_reset.scss` opened with:
+
+```scss
+.window-app {
+  font-family: $font-primary;
+
+  .window-content { background: #ffffff; }
+}
+```
+
+That file is imported inside a `.cortexprime { }` block, so it compiled to
+`.cortexprime .window-app` — a *descendant* selector. The rule immediately below it was
+`&.window-app`, i.e. the same class on the same element. The missing `&` looks like a typo: this
+system's windows carry both classes on one element, never nested, so the rule matched nothing.
+Confirmed live with the actor sheet and dice pool tray open — `.cortexprime .window-app` matched
+0 elements, as did `.cortexprime .application` after the migration.
+
+Deleted during the V1 → V2 finalisation rather than translated to `.application`, because
+"translating" it would have applied `font-family` and a white `.window-content` background to
+every window in the system for the first time — and it would immediately contradict the
+`background: none` the very next rule sets. If the original intent was `&.window-app`, that
+intent should be restored deliberately, with a look at how it interacts with the rule below it.

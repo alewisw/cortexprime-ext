@@ -20,7 +20,10 @@ Hooks.once('init', () => {
   preloadHandlebarsTemplates()
   registerSettings()
 
-  foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet)
+  // No unregisterSheet("core", ...) call: v13 registers no core Actor sheet for this system to
+  // displace - verified by removing the call and confirming CONFIG.Actor.sheetClasses still
+  // lists only this one, for both the base and character types. It used to reference
+  // foundry.appv1.sheets.ActorSheet, the last appv1 reference left in the system.
   foundry.documents.collections.Actors.registerSheet("cortexprime-ext", CortexPrimeActorSheet, { makeDefault: true })
 
   cortexPrimeHooks()

@@ -1,23 +1,10 @@
-.window-app {
-  font-family: $font-primary;
-
-  .window-content {
-    background: #ffffff;
-  }
-}
-
-// .window-app is the Application V1 root class, .application the ApplicationV2 one. Both are
-// listed while the system is part-migrated; drop .window-app once nothing V1 is left. The resize
-// handle was renamed between the two frameworks (window-resizable-handle -> window-resize-handle),
-// so both spellings are needed for the same reason.
-&.window-app,
+// .application is the ApplicationV2 root class, and every window in this system is one.
 &.application {
   .window-content {
     background: none;
     padding: 0;
   }
 
-  .window-resizable-handle,
   .window-resize-handle {
     z-index: 10;
   }
@@ -25,7 +12,6 @@
 
 // Doom Pool Settings has no sheet-background overlay of its own (unlike ActorSettings/ThemeSettings),
 // so it needs the plain white window background restored instead of the "none" set above.
-&.doom-pool-settings.window-app,
 &.doom-pool-settings.application {
   .window-content {
     background: #ffffff;
@@ -33,7 +19,6 @@
 }
 
 .dice-picker, .consumable-dice {
-  &.window-app,
   &.application {
     .window-content {
       background: none;

@@ -40,9 +40,10 @@ such limit, which is what lets a Player and an NPC each have their own.
 
 The tag is stored on the entry's existing `settings` sub-object
 (`settings.systemTraitSet` / `settings.systemTrait`), which is what makes this nearly free:
-`ActorSettings._updateObject` already persists any `actorTypes.<a>.…settings.<field>` binding,
+`ActorSettings`'s form submit handler already persists any `actorTypes.<a>.…settings.<field>`
+binding,
 `_updateActorSettings` already copies `settings` onto actors, and derived Actor Types already
-deep-clone it. The option lists themselves are built in `getData` rather than the template, because
+deep-clone it. The option lists themselves are built in `_prepareContext` rather than the template, because
 the registered Handlebars helpers are all binary and can't express "is this role taken by a sibling".
 
 Resolution has one wrinkle worth knowing, because getting it wrong is silent. An actor's
@@ -89,8 +90,8 @@ It's idempotent by construction, so running it on every write is safe.
 
 Storing children materialized rather than sparsely is deliberate. The settings form renders every
 view at once and binds inputs straight to storage indices (`actorTypes.<i>.traitSets.<j>...`), so
-resolving inheritance at render time would desynchronise those indices from what `_updateObject`
-writes back. A materialized child is a complete, valid Actor Type, which is why the actor sheet,
+resolving inheritance at render time would desynchronise those indices from what the submit
+handler writes back. A materialized child is a complete, valid Actor Type, which is why the actor sheet,
 every settings partial, and import/export needed no changes for it.
 
 Two consequences worth knowing:
@@ -99,10 +100,10 @@ Two consequences worth knowing:
   renaming or reordering a Trait Set keeps them attached — but a parent **deleting** a Trait Set or
   Additional Tab takes the child's additions inside it along with it.
 - Read-only is enforced in the DOM, not the data: templates mark inherited blocks `inherited-fields`
-  (and inherited list rows `inherited-row`), and `ActorSettings._lockInheritedControls` disables
+  (and inherited list rows `inherited-row`), and `ActorSettings`'s `#lockInheritedControls` disables
   those inputs and strips their buttons on every render. Disabled inputs aren't serialised by the
-  form, and `_updateObject` merges rather than replaces, so the omitted fields simply keep their
-  reconciled parent values.
+  form, and the submit handler merges rather than replaces, so the omitted fields simply keep
+  their reconciled parent values.
 
 ## Reading a roll record in a hook
 

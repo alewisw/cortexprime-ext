@@ -104,7 +104,9 @@ const handledRolls = {}
 const openHitchesDialog = async (actor, record, challenge) => {
   // Imported lazily for two reasons: HitchesDialog imports this module back (for getDoomPool /
   // getComplications / applyHitchOutcomes), so a static import here would be a load-time cycle;
-  // and it keeps `extends FormApplication` from being evaluated anywhere that global is absent.
+  // and it keeps the dialog's base class from being evaluated anywhere the Foundry globals are
+  // absent — CortexApplicationV2 destructures foundry.applications.api at module scope, which
+  // throws under unit test exactly as `extends FormApplication` used to.
   const { HitchesDialog } = await import('../applications/HitchesDialog.js')
 
   const customRuleSet = game.settings.get('cortexprime-ext', 'customRuleSet')

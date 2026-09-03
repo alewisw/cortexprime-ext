@@ -1,10 +1,13 @@
 // Open-application queries that work across BOTH application frameworks.
 //
 // Application V1 popout windows are registered in `ui.windows`. Application V2 windows are NOT —
-// they live in `foundry.applications.instances` and never appear in `ui.windows` at all. While
-// the system is part-migrated both registries are populated, so every spec that asks "what is
-// open" or "close that window" has to look in both, or it silently stops seeing an app the
-// moment that app moves to V2. Each of these runs the union inside the page.
+// they live in `foundry.applications.instances` and never appear in `ui.windows` at all. Each of
+// these runs the union of both inside the page.
+//
+// Nothing in THIS system is appv1 any more, but the ui.windows half still earns its place: it is
+// what lets closeLeftoverWindows (e2e/foundry.js) dismiss a third-party module's V1 dialog before
+// it parks itself over the UI and swallows a spec's clicks. Yendor's Scene Actors is the known
+// example, and its changelog is a FormApplication.
 //
 // The V2 half MUST be filtered to framed windows. `foundry.applications.instances` is not the
 // equivalent of `ui.windows`: it holds every live ApplicationV2, which in v13 includes all the
@@ -14,8 +17,6 @@
 // Framing is the exact discriminator: every one of those singletons is frame:false, and a real
 // popout window is frame:true — which is also precisely the popOut:true rule that decided what
 // V1 put in `ui.windows`, so the union means the same thing on both sides.
-//
-// Once the migration is finished the ui.windows half can be dropped from all three.
 
 // Serialised into page.evaluate below; kept as one string so the union is written exactly once.
 const ALL_APPS = `[

@@ -1,12 +1,9 @@
 // Dialog interactions that work across BOTH dialog frameworks.
 //
-// V1 `Dialog` renders its buttons into `.dialog-buttons` as `<button data-button="yes">`.
-// DialogV2 renders them into `footer.form-footer` as `<button data-action="yes">`. Both sit
-// inside an element carrying the `dialog` class, so matching either attribute keeps a spec
-// working whether the dialog it drives has been migrated yet or not.
-//
-// Once the migration is finished the data-button half can be dropped.
-const YES = '.dialog button[data-button="yes"], .dialog button[data-action="yes"]'
+// DialogV2 renders its buttons into `footer.form-footer` as `<button data-action="yes">`, inside
+// an element carrying the `dialog` class. (appv1's Dialog used `.dialog-buttons` and
+// `data-button="yes"`; nothing in this system raises one of those any more.)
+const YES = '.dialog button[data-action="yes"]'
 
 /** Clicks the Yes button of whichever confirmation dialog is open. */
 export async function confirmYes(page) {
