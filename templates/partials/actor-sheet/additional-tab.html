@@ -23,9 +23,11 @@
           </div>
         </div>
         {{#if tab.description}}
-          <div class="additional-tab-description notes-field">
-            {{editor tab.description content=tab.description editable=false}}
-          </div>
+          {{!-- Read-only. appv1's editor helper, with editable=false, wrapped this in
+                .editor/.editor-content just to print static HTML; <prose-mirror> is not a
+                substitute, as an untoggled one mounts a live editor. Plain markup is all this
+                ever needed. --}}
+          <div class="additional-tab-description notes-field">{{{tab.description}}}</div>
         {{/if}}
       </div>
     </div>

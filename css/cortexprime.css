@@ -1190,10 +1190,6 @@
   color: var(--cp-button-primary-color, #2d5931);
   font-weight: 700;
 }
-.cortexprime.actor-sheet .additional-tab-description .editor, .cortexprime.actor-sheet .additional-tab-description .editor-content {
-  background: none !important;
-  border: none !important;
-}
 .cortexprime .standard-form input[type=checkbox]:not(.input-checkbox-cpt),
 .cortexprime .standard-form input[type=radio]:not(.input-checkbox-cpt) {
   -webkit-appearance: auto;

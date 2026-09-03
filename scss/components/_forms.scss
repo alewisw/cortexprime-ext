@@ -63,24 +63,6 @@ input {
   }
 }
 
-// An Additional Tab's description, read-only on the actor sheet (see additional-tab.html): plain
-// text sitting inside the tab's own name box, not a boxed input area of its own - so this app's
-// own .editor-content border/padding styling (this file's :root sibling rule, further up in
-// _theme.scss), meant for an editable field, has to go. !important because that rule otherwise
-// wins. Left alone in Actor Settings, where the SAME .additional-tab-description class names an
-// actual editable field and the border is the normal, wanted "this is an input" affordance.
-//
-// `&.actor-sheet`, NOT `& .actor-sheet`: .cortexprime and .actor-sheet are both classes on the
-// SAME root element (see CortexPrimeActorSheet's defaultOptions), never on two different nested
-// elements - a descendant-combinator chain between them can never match anything, since a node
-// is never its own descendant. `&` (this file's enclosing .cortexprime context) concatenated
-// directly onto .actor-sheet compiles to the required compound selector .cortexprime.actor-sheet.
-&.actor-sheet .additional-tab-description {
-  .editor, .editor-content {
-    background: none !important;
-    border: none !important;
-  }
-}
 
 // DialogV2 wraps its content in <form class="dialog-form standard-form">, which appv1's Dialog
 // did not - the system's dialog templates were written against V1's plain .dialog-content. Core's

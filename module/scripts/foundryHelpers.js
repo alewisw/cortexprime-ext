@@ -56,16 +56,17 @@ export const showPlotPointAnimation = (count = 1) => {
 export const showPlotPointSpendAnimation = showPlotPointAnimation
 
 // The notes-field pencil button (additional-tab.html, and its Settings-page default-content
-// analogue) opens Foundry's own ProseMirror editor, which measures the CURRENT height of
-// .editor-content before mounting - if the field has shrunk to fit short content (see
-// .notes-field in _forms.scss), editing would open at that same shrunk height instead of
-// expanding to the field's max. Force both to max height first, so Foundry's measurement (and
-// the abs-positioned editor surface that then fills .editor's box once mounted) picks up the
-// expanded size. Call this once per _onRender, alongside the sheet's other listener wiring; it
-// registers on the capture phase so it runs before <prose-mirror>'s own button listener, which
-// is bound on the button itself and so fires during the bubble phase.
+// analogue) opens a ProseMirror editor whose surface is absolutely positioned to fill the
+// <prose-mirror> element - which is `height: 100%` of .notes-field, and .notes-field sizes to
+// its content (see _forms.scss). Editing short content would therefore open in a box only as
+// tall as that content. Pinning the field to its max height first gives that percentage
+// something to resolve against, so the editor opens at the field's full size.
+//
+// Call this once per _onRender, alongside the sheet's other listener wiring.
 // Takes the root HTMLElement.
 export const expandNotesFieldOnEdit = root => {
+  // Capture phase, so this runs before <prose-mirror>'s own button listener - that one is bound
+  // on the button itself and so fires during the bubble phase.
   root.addEventListener('click', event => {
     // <prose-mirror toggled> builds its own `button.icon.toggle`. This was `a.editor-edit` under
     // appv1's {{editor button=true}}, whose activation handler lived in FormApplication and has
@@ -74,12 +75,18 @@ export const expandNotesFieldOnEdit = root => {
     if (!button) return
 
     const notesField = button.closest('.notes-field')
-    const editorContent = notesField.querySelector('.editor-content')
-    const maxHeight = getComputedStyle(notesField).maxHeight
 
-    notesField.style.height = maxHeight
-    if (editorContent) editorContent.style.height = maxHeight
+    notesField.style.height = getComputedStyle(notesField).maxHeight
   }, true)
+
+  // <prose-mirror> fires a bubbling 'close' when a toggled editor saves and stands down. Release
+  // the pinned height then, so the field goes back to sizing itself to its content rather than
+  // staying stuck at max height for the rest of the session.
+  root.addEventListener('close', event => {
+    const notesField = event.target.closest?.('.notes-field')
+
+    if (notesField) notesField.style.height = ''
+  })
 }
 
 const PX_KEYS = [
