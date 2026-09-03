@@ -1,6 +1,9 @@
 <section class="flex flex-wrap flex-c mb-2">
   <h2 class="section-primary-title-cpt mb-1 flex-col col-12">{{localize 'PlotPoints'}}</h2>
-  <div class="flex-col col-12">
+  {{!-- flex flex-c to centre the token, matching the value/plus row below. The section's own
+        text-align:center used to do it, back when the button was inline-level by default; core
+        now sets display:flex on every button, so text-align no longer reaches it. --}}
+  <div class="flex-col col-12 flex flex-c">
     {{#if owner}}
       <button data-action="spendPp" class="btn btn-pp spend-pp" type="button" {{ternary (lt pp.value 1) "disabled" ""}}>
         {{> "systems/cortexprime-ext/templates/partials/plot-point.html" size='lg' }}
