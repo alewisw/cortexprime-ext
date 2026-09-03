@@ -29,14 +29,10 @@
     <div class="section-background-alternate"></div>
     <label class="input-label-cpt">{{localize 'Description'}}</label>
     <div class="notes-field">
-      {{editor
-        additionalTab.description
-        content=additionalTab.description
-        target=(concat 'actorTypes.' path '.' tabIndex '.description')
-        button=true
-        owner=true
-        editable=(not additionalTab.inherited)
-      }}
+      <prose-mirror name="{{concat 'actorTypes.' path '.' tabIndex '.description'}}"
+                    value="{{additionalTab.description}}"
+                    toggled
+                    {{#if additionalTab.inherited}}disabled{{/if}}>{{{additionalTab.description}}}</prose-mirror>
     </div>
   </div>
   <section>
@@ -111,14 +107,10 @@
             </div>
           </div>
           <div class="notes-field">
-            {{editor
-              defaultNote.value
-              content=defaultNote.value
-              target=(concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.value')
-              button=true
-              owner=true
-              editable=(not defaultNote.inherited)
-            }}
+            <prose-mirror name="{{concat 'actorTypes.' ../path '.' ../tabIndex '.defaultNotes.' noteIndex '.value'}}"
+                          value="{{defaultNote.value}}"
+                          toggled
+                          {{#if defaultNote.inherited}}disabled{{/if}}>{{{defaultNote.value}}}</prose-mirror>
           </div>
         </li>
       {{/each}}

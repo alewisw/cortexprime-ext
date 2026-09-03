@@ -1172,6 +1172,9 @@
 .cortexprime .notes-field .editor {
   min-height: 2.5rem;
 }
+.cortexprime .notes-field prose-mirror.inactive .editor-content {
+  position: static;
+}
 .cortexprime .picker-name-list {
   max-height: 22.3125rem;
   overflow-y: auto;

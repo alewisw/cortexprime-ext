@@ -61,12 +61,16 @@ export const showPlotPointSpendAnimation = showPlotPointAnimation
 // .notes-field in _forms.scss), editing would open at that same shrunk height instead of
 // expanding to the field's max. Force both to max height first, so Foundry's measurement (and
 // the abs-positioned editor surface that then fills .editor's box once mounted) picks up the
-// expanded size. Call this once per activateListeners, alongside the sheet's other listener
-// wiring; it registers on the capture phase so it runs before Foundry's own button.onclick.
-// Takes the root HTMLElement - appv1 callers pass html[0], ApplicationV2 ones this.element.
+// expanded size. Call this once per _onRender, alongside the sheet's other listener wiring; it
+// registers on the capture phase so it runs before <prose-mirror>'s own button listener, which
+// is bound on the button itself and so fires during the bubble phase.
+// Takes the root HTMLElement.
 export const expandNotesFieldOnEdit = root => {
   root.addEventListener('click', event => {
-    const button = event.target.closest('.notes-field .editor-edit')
+    // <prose-mirror toggled> builds its own `button.icon.toggle`. This was `a.editor-edit` under
+    // appv1's {{editor button=true}}, whose activation handler lived in FormApplication and has
+    // no ApplicationV2 counterpart - see the templates for why that markup had to change.
+    const button = event.target.closest('.notes-field prose-mirror button.toggle')
     if (!button) return
 
     const notesField = button.closest('.notes-field')

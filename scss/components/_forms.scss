@@ -18,13 +18,24 @@ input {
   max-height: toRem(350px);
   overflow-y: auto;
 
-  // Foundry's .editor-edit pencil button is absolutely positioned 5px from the top of .editor,
-  // at ~1.25em + padding/border tall. .editor itself (Foundry core CSS) has its own overflow:auto
-  // and sizes to its own content, independent of this wrapper - when empty/short content collapses
-  // .editor shorter than that, the button gets clipped/scrolled inside .editor, not just this
-  // outer field, so the floor has to apply to .editor directly.
+  // <prose-mirror>'s pencil button is absolutely positioned at the top-right of the element, at
+  // ~1.25em + padding/border tall. The element has its own overflow and sizes to its own content,
+  // independent of this wrapper - when empty/short content collapses it shorter than that, the
+  // button gets clipped/scrolled inside it, not just this outer field, so the floor has to apply
+  // to .editor directly.
   .editor {
     min-height: toRem(40px);
+  }
+
+  // <prose-mirror> always carries the `prosemirror` class, and core styles .editor-content under
+  // it as `position: absolute; inset: 0` - taking it out of flow, so the element has no content
+  // height of its own and collapses to the min-height above. appv1's {{editor}} produced a plain
+  // div that only gained that class once the editor was activated, so a closed field flowed to
+  // fit its content. Restore that for the closed state only. Once the editor is actually mounted
+  // it needs the absolute surface back, and by then expandNotesFieldOnEdit (foundryHelpers.js)
+  // has given this wrapper a definite height for `.editor { height: 100% }` to resolve against.
+  prose-mirror.inactive .editor-content {
+    position: static;
   }
 }
 
