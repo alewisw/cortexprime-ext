@@ -7,6 +7,16 @@ const ELIMINATION_ORDER = [12, 10, 8, 6] // largest first — a D4 can only be s
 
 export const getCrisisPool = () => ({ active: false, name: '', dice: [], ...game.settings.get('cortexprime-ext', 'crisisPool') })
 
+// Same guard reduceCrisisPoolByEffectDie/previewCrisisReduction already use inline below — a
+// crisis isn't "running" just because `active` is true, since the pool empties in place without
+// necessarily flipping it back off before the next check runs. Exported so rollToBeat.js can
+// decide, from live state, whether finishing a Test's last responder should keep it alive.
+export const isCrisisPoolActive = () => {
+  const pool = getCrisisPool()
+
+  return pool.active && pool.dice.length > 0
+}
+
 const setCrisisPoolState = async pool => {
   await game.settings.set('cortexprime-ext', 'crisisPool', pool)
 }

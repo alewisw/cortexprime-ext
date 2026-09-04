@@ -29,7 +29,13 @@ export const getChallengeDisplay = (activeChallenge, rollToBeatTargets, initiato
     return {
       displayedInitiatorId: initiatorId,
       displayedResponderId: responderId,
-      rollNowNames: initiatorHasRolled ? responderNames : [nameOf(initiatorId)].filter(Boolean),
+      // A Test kept alive with an empty responderIds (see resolveChallengeAfterRoll,
+      // rollToBeat.js - a crisis takes several rounds of the same Test) has nobody left to name
+      // here even though the initiator HAS rolled; fall back to them, since they're genuinely
+      // who acts next - tick the following batch, then roll a fresh total.
+      rollNowNames: initiatorHasRolled && responderNames.length
+        ? responderNames
+        : [nameOf(initiatorId)].filter(Boolean),
       rollNextNames: initiatorHasRolled ? [] : responderNames
     }
   }

@@ -3,7 +3,7 @@
 // since a player normally owns that document), and the GM-driven Test/Contest "challenge"
 // state that decides who currently has "Roll To Beat" available and who they're targeting.
 import { localizer, onSettingChanged } from './foundryHelpers.js'
-import { reduceCrisisPoolByEffectDie } from './crisisPool.js'
+import { isCrisisPoolActive, reduceCrisisPoolByEffectDie } from './crisisPool.js'
 import { runExclusive } from './asyncMutex.js'
 
 const blankRecord = { total: 0, effectDice: [], won: null, rolledAt: 0, dice: [], poolEntries: [] }
@@ -534,15 +534,22 @@ export const setChallengeResponders = responderIds => updateActiveChallenge(chal
   ({ ...challenge, responderIds, updatedAt: Date.now() }))
 
 // Pure: what should happen to the active challenge after a given responder's roll resolves.
-// Returns null to mean "clear the challenge", otherwise a full replacement for it.
-export const resolveChallengeAfterRoll = (challenge, responderId, responder) => {
+// Returns null to mean "clear the challenge", otherwise a full replacement for it. `crisisActive`
+// is read live (crisisPool.js's isCrisisPoolActive) by the caller and passed in rather than
+// looked up here, same as hasContestStarted/getPendingGroupParticipants below.
+export const resolveChallengeAfterRoll = (challenge, responderId, responder, crisisActive = false) => {
   if (challenge.type === 'test') {
     // Win or lose, this responder is done — everyone else still rolls against the same
     // initiator total, so updatedAt is deliberately left untouched (bumping it would wrongly
     // make the initiator's already-recorded roll look stale to the remaining responders).
     const remaining = challenge.responderIds.filter(id => id !== responderId)
 
-    if (remaining.length === 0) return null
+    // A crisis takes several rounds of the same Test to chip down. Rebuilding the whole
+    // challenge (pick Test, pick initiator) every round is needless GM busywork - keep it alive
+    // with an empty responder list instead, which is exactly what unchecks every "Roll Next" box
+    // (see getChallengeDisplayData/dice-pool.html) and leaves the GM to just tick the next batch
+    // and roll a fresh total.
+    if (remaining.length === 0 && !crisisActive) return null
 
     return { ...challenge, responderIds: remaining }
   }
@@ -587,7 +594,9 @@ export const processChallengeAdvancement = async () => {
       await reduceCrisisPoolByEffectDie(responder.effectDice)
     }
 
-    const next = resolveChallengeAfterRoll(challenge, responderId, responder)
+    // Read AFTER the reduction above, so the roll that finishes off the crisis still clears the
+    // Test outright rather than leaving it standing with nothing left to fight.
+    const next = resolveChallengeAfterRoll(challenge, responderId, responder, isCrisisPoolActive())
 
     // A Contest ending in a loss is also the moment the contest's overall winner's effect die
     // gets compared against — and possibly blunted by — the losing roll's effect die.

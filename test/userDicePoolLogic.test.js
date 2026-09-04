@@ -54,6 +54,16 @@ describe('getChallengeDisplay', () => {
       expect(display.rollNextNames).toEqual([])
     })
 
+    // A Test kept alive with an empty responderIds (see resolveChallengeAfterRoll, rollToBeat.js
+    // - a crisis takes several rounds of the same Test) has nobody left to name even though the
+    // initiator has rolled; falls back to the initiator, who is genuinely who acts next.
+    it('falls back to the initiator when the initiator has rolled but no responders remain', () => {
+      const display = getChallengeDisplay(test({ responderIds: [] }), targets, true)
+
+      expect(display.rollNowNames).toEqual(['GM'])
+      expect(display.rollNextNames).toEqual([])
+    })
+
     it('never swaps the underlying displayed ids', () => {
       for (const rolled of [false, true]) {
         const display = getChallengeDisplay(test(), targets, rolled)

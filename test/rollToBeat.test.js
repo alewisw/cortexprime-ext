@@ -241,6 +241,23 @@ describe('resolveChallengeAfterRoll', () => {
 
     expect(resolveChallengeAfterRoll(challenge, 'actor1', { id: 'actor1', won: true, rolledAt: 100 })).toBeNull()
   })
+
+  // A crisis takes several rounds of the same Test to chip down - rebuilding the whole challenge
+  // every round is needless GM busywork, so a still-running crisis keeps it alive instead of
+  // clearing it, with responderIds emptied (which is what unchecks every "Roll Next" box).
+  it('Test: with a crisis still running, stays alive with an empty responder list instead of clearing', () => {
+    const challenge = { type: 'test', initiatorId: 'gm', responderIds: ['actor1'], updatedAt: 5 }
+
+    expect(resolveChallengeAfterRoll(challenge, 'actor1', { id: 'actor1', won: true, rolledAt: 100 }, true))
+      .toEqual({ type: 'test', initiatorId: 'gm', responderIds: [], updatedAt: 5 })
+  })
+
+  it('Test: a non-final responder is unaffected by crisisActive either way', () => {
+    const challenge = { type: 'test', initiatorId: 'gm', responderIds: ['actor1', 'actor2'], updatedAt: 5 }
+
+    expect(resolveChallengeAfterRoll(challenge, 'actor1', { id: 'actor1', won: true, rolledAt: 100 }, true))
+      .toEqual({ type: 'test', initiatorId: 'gm', responderIds: ['actor2'], updatedAt: 5 })
+  })
 })
 
 describe('applyContestEffectStepDown', () => {

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openAs } from './foundry.js'
 import { TRAY, openTray, closeTray, buildUniformPool, clearPool, clearRollRecord, rollExactly } from './helpers/dicePool.js'
-import { setChallengeType, setInitiator, selectResponder, checkGroupParticipant, getActiveChallenge, challengeIdFor, anyRollButtonEnabled } from './helpers/challenge.js'
+import { setChallengeType, setInitiator, selectResponder, checkResponder, checkGroupParticipant, getActiveChallenge, challengeIdFor, anyRollButtonEnabled, rollToBeatButton } from './helpers/challenge.js'
 import {
   awaitSetting,
   clearChallenge,
@@ -151,6 +151,94 @@ test('a Contest plays out across both clients: roles swap, a player win reduces 
 
     // The losing player still keeps their own Effect die untouched.
     expect((await getRollRecord(gm.page, PLAYER1_ACTOR)).effectDice).toEqual([10])
+  } finally {
+    await resetWorld(gm.page)
+    await clearPool(gm.page)
+    await clearPool(player1.page)
+    await restoreSettings(gm.page, before)
+
+    await gm.context.close()
+    await player1.context.close()
+  }
+})
+
+test('a Test survives its last responder\'s roll while a Crisis is still running, and only clears once the Crisis itself does', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+  const player1 = await openAs(browser, 'player1')
+
+  const before = await snapshotSettings(gm.page, WRITES)
+
+  try {
+    await resetWorld(gm.page)
+    await enableTestMode(gm.page)
+    await awaitSetting(player1.page, 'testModeSelectDiceValues', true)
+
+    // Two D6s: one for each round below. A D8 Effect die eliminates a D6 outright (see
+    // chooseCrisisDieIndex/crisisPool.js), so each of the player's wins below removes exactly
+    // one, and round 2 is what empties the pool.
+    await startCrisis(gm.page, { name: 'Playwright Crisis', dice: [6, 6] })
+
+    await openTray(gm.page)
+    await openTray(player1.page)
+
+    const gmId = await challengeIdFor(gm.page, 'gm')
+    const player1Id = await challengeIdFor(gm.page, 'player1')
+
+    await setChallengeType(gm.page, 'test')
+    await setInitiator(gm.page, gmId)
+    await checkResponder(gm.page, player1Id)
+
+    // --- Round 1: the player wins, but a Crisis die remains. --------------------------
+    await buildUniformPool(gm.page, { count: 3, face: 6, prefix: 'GM Die' })
+    await rollExactly(gm.page, [2, 2, 2])
+
+    await buildUniformPool(player1.page, { count: 3, face: 8, prefix: 'P1 Die' })
+    await expect.poll(() => anyRollButtonEnabled(player1.page)).toBe(true)
+    await rollExactly(player1.page, [3, 3, 2])
+
+    const player1Roll = await getRollRecord(gm.page, PLAYER1_ACTOR)
+    expect(player1Roll.total).toBe(6)
+    expect(player1Roll.won).toBe(true)
+
+    // One D6 eliminated outright, one left — so the Crisis is still active and the Test must
+    // survive: still a Test, still targeting the GM, but with every "Roll Next" box cleared
+    // rather than the whole challenge being torn down.
+    await expect.poll(() => getCrisisDice(gm.page)).toEqual([6])
+    await expect.poll(() => getActiveChallenge(gm.page).then(c => c.type)).toBe('test')
+    await expect.poll(() => getActiveChallenge(gm.page).then(c => c.responderIds)).toEqual([])
+    await expect.poll(() => getActiveChallenge(gm.page).then(c => c.initiatorId)).toBe(gmId)
+
+    // Nobody left checked, so nobody can roll — the tray has to say who acts next even though
+    // rollNextNames is now empty: the GM, who ticks the following batch.
+    await openTray(gm.page)
+    await expect(gm.page.locator(TRAY)).toContainText('Roll Now: GM')
+
+    // The "Roll Next" heading above the checkbox list is static UI chrome, always present for a
+    // Test regardless of who's ticked — it's the checkbox itself that has to have cleared.
+    await expect(gm.page.locator(`${TRAY} input.challenge-responder-checkbox[value="${player1Id}"]`))
+      .not.toBeChecked()
+
+    // --- Round 2: the GM ticks the same responder again. ------------------------------
+    // Checking a responder writes a fresh activeChallenge.updatedAt (setChallengeResponders),
+    // which makes the GM's round 1 roll look stale again - by design, per the plan's "GM
+    // re-rolls each round" - so the button must go back to disabled until the GM rolls afresh.
+    // Roll buttons only render once the pool has dice, so build player1's pool before asking
+    // about them (matches challenge.spec.js's own ordering for this same check).
+    await checkResponder(gm.page, player1Id)
+    await buildUniformPool(player1.page, { count: 3, face: 8, prefix: 'P1 Die' })
+    await expect(rollToBeatButton(player1.page)).toHaveCount(1)
+    await expect(rollToBeatButton(player1.page)).toBeDisabled()
+
+    await buildUniformPool(gm.page, { count: 3, face: 6, prefix: 'GM Die' })
+    await rollExactly(gm.page, [2, 2, 2])
+
+    await expect.poll(() => anyRollButtonEnabled(player1.page)).toBe(true)
+    await rollExactly(player1.page, [3, 3, 2])
+
+    // The last Crisis die is gone, so THIS win clears the Test outright - the same rule a
+    // Test with no Crisis at all already follows (challenge.spec.js covers that path).
+    await expect.poll(() => getCrisisDice(gm.page)).toEqual([])
+    await expect.poll(() => getActiveChallenge(gm.page).then(c => c.type ?? null)).toBeNull()
   } finally {
     await resetWorld(gm.page)
     await clearPool(gm.page)
