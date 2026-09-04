@@ -51,6 +51,33 @@ export default () => {
     }, 'd2')
   })
 
+  // Injects the Dice Pool toggle button into the chat log's roll-privacy control row (the same
+  // row Foundry's own d20-icon privacy dropdown lives in). Registered below on BOTH 'ready' (the
+  // first paint) and 'renderChatLog' (every one after) — ui.chat.render() rebuilds that row's DOM
+  // from scratch, and both Foundry's own periodic sidebar refreshes and rollUndo.js's fallback
+  // "can't find this roll's own card, so refresh the whole log" path call it, either of which
+  // would otherwise silently drop this button after the very first render.
+  //
+  // Idempotent: bails out if the button is already there, so a render that didn't actually
+  // replace #roll-privacy's DOM (or a 'ready'/'renderChatLog' double-fire) never ends up with two.
+  const injectDicePoolButton = () => {
+    const $rollPrivacy = $(document.querySelector('#roll-privacy'))
+
+    if (!$rollPrivacy.length || $rollPrivacy.find('.dice-pool-control').length) return
+
+    const $dicePoolButton = $(
+      `<button class="control dice-pool-control ui-control fa-solid fa-dice icon" type="button" data-control="dice-pool" aria-label="${game.i18n.localize("DicePool")}">
+        </button>`
+    )
+
+    $rollPrivacy.prepend($dicePoolButton)
+    $rollPrivacy
+      .find('.dice-pool-control')
+      .on('click', async () => {
+        await game.cortexprime.UserDicePool.toggle()
+      })
+  }
+
   Hooks.once('ready', async () => {
     const theme = getCurrentTheme()
     setCssVars(theme)
@@ -73,23 +100,10 @@ export default () => {
       }
     }
 
-    const $rollPrivacy = $(document.querySelector('#roll-privacy'))
-
-    if ($rollPrivacy) {
-      const $dicePoolButton = $(
-        `<button class="control dice-pool-control ui-control fa-solid fa-dice icon" type="button" data-control="dice-pool" aria-label="${game.i18n.localize("DicePool")}">
-          </button>`
-      )
-
-      $rollPrivacy
-        .prepend($dicePoolButton)
-      $rollPrivacy
-        .find('.dice-pool-control')
-        .on('click', async () => {
-          await game.cortexprime.UserDicePool.toggle()
-        })
-    }
+    injectDicePoolButton()
   })
+
+  Hooks.on('renderChatLog', injectDicePoolButton)
 
   Hooks.on('ready', async () => {
     game.cortexprime.UserDicePool = new UserDicePool()
