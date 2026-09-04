@@ -84,6 +84,101 @@ export const applyTraitToPool = (poolBySource, { source, traitPath, label, value
   return appendEntry(corrected, source, newEntry)
 }
 
+// ---- Add-to-pool guard ----
+//
+// Every dice-holding element on the sheet (a Trait Set's main/custom Trait, a Sub-Trait, a
+// Simple Trait, an Asset, a Complication) computes its own `add-to-pool` CSS class from a mix of
+// live actor data — shutdown state, hasDice/subTraitsHaveDice/valueType, and whether the die
+// actually has a value (see traits.html/simple-traits.html/temporary-traits.html). The
+// `data-action="addToPool"` attribute on that same element is unconditional though: ApplicationV2
+// dispatches on the attribute alone, regardless of which classes ended up next to it — so a
+// shutdown Trait, a text-type Simple Trait (which still carries a default `dice` value — see
+// ActorSettings.#onAddSimpleTrait), or a freshly-configured Trait with no `dice` object at all
+// yet (mergeActorTypeData in actorTypeChangeLogic.js deliberately omits it) could otherwise reach
+// _setTraitInPool — the last case throwing outright.
+//
+// canAddDicePointToPool/canHinderDicePointToPool re-derive the SAME decision straight from
+// `actorType` (the actor's system.actorType, a plain object) and the clicked element's own
+// `data-path`, so actor-sheet.js's _addToPool/_hinderToPool can refuse anything the sheet
+// wouldn't actually have offered. Every data-path built by these partials starts with
+// 'system.actorType.' — what follows that root selects which of the five rules applies; an
+// unrecognised shape is treated as not addable.
+const hasDiceValue = diceData => !!diceData?.value?.[0]
+
+const resolveDicePoint = (actorType, path) => {
+  const relative = (path ?? '').replace(/^system\.actorType\./, '')
+
+  const simpleTraitMatch = /^simpleTraits\.(\d+)\.dice$/.exec(relative)
+  if (simpleTraitMatch) {
+    const trait = actorType?.simpleTraits?.[simpleTraitMatch[1]]
+    return { kind: 'simpleTrait', diceData: trait?.dice, valueType: trait?.settings?.valueType }
+  }
+
+  const assetMatch = /^assets\.(\d+)\.dice$/.exec(relative)
+  if (assetMatch) return { kind: 'plain', diceData: actorType?.assets?.[assetMatch[1]]?.dice }
+
+  const complicationMatch = /^complications\.(\d+)\.dice$/.exec(relative)
+  if (complicationMatch) return { kind: 'plain', diceData: actorType?.complications?.[complicationMatch[1]]?.dice }
+
+  const subTraitMatch = /^traitSets\.(\d+)\.(traits|customTraits)\.(\d+)\.subTraits\.(\d+)\.dice$/.exec(relative)
+  if (subTraitMatch) {
+    const [, tsIndex, collection, traitIndex, subIndex] = subTraitMatch
+    const traitSet = actorType?.traitSets?.[tsIndex]
+    const trait = traitSet?.[collection]?.[traitIndex]
+
+    return {
+      kind: 'subTrait',
+      diceData: trait?.subTraits?.[subIndex]?.dice,
+      hasDice: traitSet?.settings?.subTraitsHaveDice,
+      traitSetShutdown: traitSet?.shutdown,
+      traitShutdown: trait?.shutdown
+    }
+  }
+
+  const traitMatch = /^traitSets\.(\d+)\.(traits|customTraits)\.(\d+)\.dice$/.exec(relative)
+  if (traitMatch) {
+    const [, tsIndex, collection, traitIndex] = traitMatch
+    const traitSet = actorType?.traitSets?.[tsIndex]
+    const trait = traitSet?.[collection]?.[traitIndex]
+
+    return {
+      kind: 'trait',
+      diceData: trait?.dice,
+      hasDice: traitSet?.settings?.hasDice,
+      traitSetShutdown: traitSet?.shutdown,
+      traitShutdown: trait?.shutdown,
+      enableHinder: trait?.enableHinder
+    }
+  }
+
+  return null
+}
+
+// The shutdown/hasDice/value gate shared by 'trait' and 'subTrait' points — both key off the SAME
+// Trait Set settings (settings.hasDice or settings.subTraitsHaveDice, already folded into
+// `hasDice` by resolveDicePoint) and the same two shutdown flags; a Sub-Trait has no shutdown of
+// its own, it inherits its parent Trait's.
+const isShutdownGated = point =>
+  !point.traitSetShutdown && !point.traitShutdown && !!point.hasDice && hasDiceValue(point.diceData)
+
+export const canAddDicePointToPool = (actorType, path) => {
+  const point = resolveDicePoint(actorType, path)
+
+  if (!point) return false
+  if (point.kind === 'simpleTrait') return point.valueType === 'dice' && hasDiceValue(point.diceData)
+  if (point.kind === 'plain') return hasDiceValue(point.diceData)
+
+  return isShutdownGated(point)
+}
+
+// Hinder is only ever offered on a Trait Set's main/custom Trait (see traits.html) — the same
+// gate as canAddDicePointToPool for that path, plus the Trait's own enableHinder flag.
+export const canHinderDicePointToPool = (actorType, path) => {
+  const point = resolveDicePoint(actorType, path)
+
+  return point?.kind === 'trait' && !!point.enableHinder && isShutdownGated(point)
+}
+
 const CHALLENGE_TYPES = ['test', 'contest', 'group']
 
 /**

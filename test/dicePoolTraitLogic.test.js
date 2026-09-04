@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyTraitToPool, getHinderRewards } from '../module/scripts/dicePoolTraitLogic.js'
+import { applyTraitToPool, canAddDicePointToPool, canHinderDicePointToPool, getHinderRewards } from '../module/scripts/dicePoolTraitLogic.js'
 
 const place = (pool, overrides) => applyTraitToPool(pool, {
   source: 'Distinctions',
@@ -139,5 +139,168 @@ describe('getHinderRewards', () => {
     expect(getHinderRewards([{ label: 'Distinction 2', hindered: false }], 'test')).toEqual([])
     expect(getHinderRewards([], 'test')).toEqual([])
     expect(getHinderRewards(undefined, 'test')).toEqual([])
+  })
+})
+
+// The Actor Type fixture below mirrors what actor.system.actorType actually looks like: a Trait
+// Set with a main Trait (that has a Sub-Trait), a Simple Trait of each valueType, an Asset and a
+// Complication — every shape canAddDicePointToPool/canHinderDicePointToPool has to resolve a
+// data-path against.
+const actorType = () => ({
+  traitSets: {
+    0: {
+      settings: { hasDice: true, subTraitsHaveDice: true },
+      shutdown: false,
+      traits: {
+        0: {
+          id: '_t1',
+          enableHinder: true,
+          shutdown: false,
+          dice: { value: { 0: '8' } },
+          subTraits: {
+            0: { label: 'Sub', dice: { value: { 0: '6' } } }
+          }
+        }
+      },
+      customTraits: {
+        0: { id: '_c1', shutdown: false, dice: { value: { 0: '10' } } }
+      }
+    }
+  },
+  simpleTraits: {
+    0: { settings: { valueType: 'dice' }, dice: { value: { 0: '8' } } },
+    // A text Simple Trait still gets a `dice` object with a default value from
+    // ActorSettings.#onAddSimpleTrait (see settings.js) - valueType is what actually decides
+    // whether it may be added, not whether `dice` happens to be populated.
+    1: { settings: { valueType: 'text' }, dice: { value: { 0: '8' } } }
+  },
+  assets: {
+    0: { label: 'Sword', dice: { value: { 0: '6' } } },
+    1: { label: 'Empty Asset', dice: { value: {} } }
+  },
+  complications: {
+    0: { label: 'Hunted', dice: { value: { 0: '6' } } }
+  }
+})
+
+describe('canAddDicePointToPool', () => {
+  it('allows a normal main Trait', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.traitSets.0.traits.0.dice')).toBe(true)
+  })
+
+  it('allows a normal custom Trait', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.traitSets.0.customTraits.0.dice')).toBe(true)
+  })
+
+  it('refuses a Trait with no dice object at all', () => {
+    // The exact shape mergeActorTypeData leaves a freshly-configured Trait in (see
+    // actorTypeChangeLogic.test.js) - `system.actorType` snapshot never got a `dice` key for it.
+    // canAddDicePointToPool must say no rather than the caller reading .value off undefined.
+    const type = actorType()
+    delete type.traitSets[0].traits[0].dice
+
+    expect(canAddDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+  })
+
+  it('refuses a Trait whose dice value is empty', () => {
+    const type = actorType()
+    type.traitSets[0].traits[0].dice = { value: {} }
+
+    expect(canAddDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+  })
+
+  it('refuses a Trait on a shut-down Trait Set', () => {
+    const type = actorType()
+    type.traitSets[0].shutdown = true
+
+    expect(canAddDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+  })
+
+  it('refuses a shut-down Trait', () => {
+    const type = actorType()
+    type.traitSets[0].traits[0].shutdown = true
+
+    expect(canAddDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+  })
+
+  it('refuses a Trait when the Trait Set has dice turned off', () => {
+    const type = actorType()
+    type.traitSets[0].settings.hasDice = false
+
+    expect(canAddDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+  })
+
+  it('allows a normal Sub-Trait', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.traitSets.0.traits.0.subTraits.0.dice')).toBe(true)
+  })
+
+  it('refuses a Sub-Trait whose PARENT Trait is shut down, even though the Sub-Trait itself has dice', () => {
+    const type = actorType()
+    type.traitSets[0].traits[0].shutdown = true
+
+    expect(canAddDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.subTraits.0.dice')).toBe(false)
+  })
+
+  it('refuses a Sub-Trait when the Trait Set has Sub-Trait dice turned off', () => {
+    const type = actorType()
+    type.traitSets[0].settings.subTraitsHaveDice = false
+
+    expect(canAddDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.subTraits.0.dice')).toBe(false)
+  })
+
+  it('allows a dice-type Simple Trait with a value', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.simpleTraits.0.dice')).toBe(true)
+  })
+
+  it('refuses a text-type Simple Trait even though it carries a default dice value', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.simpleTraits.1.dice')).toBe(false)
+  })
+
+  it('allows an Asset with a value, refuses one with an empty value', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.assets.0.dice')).toBe(true)
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.assets.1.dice')).toBe(false)
+  })
+
+  it('allows a Complication with a value', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.complications.0.dice')).toBe(true)
+  })
+
+  it('refuses an unrecognised path shape without throwing', () => {
+    expect(canAddDicePointToPool(actorType(), 'system.actorType.traitSets.0.dice')).toBe(false)
+    expect(canAddDicePointToPool(actorType(), 'garbage')).toBe(false)
+  })
+
+  it('refuses everything when actorType itself is missing, without throwing', () => {
+    expect(canAddDicePointToPool(undefined, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+    expect(canAddDicePointToPool(null, 'system.actorType.simpleTraits.0.dice')).toBe(false)
+  })
+})
+
+describe('canHinderDicePointToPool', () => {
+  it('allows a main Trait with Hinder enabled', () => {
+    expect(canHinderDicePointToPool(actorType(), 'system.actorType.traitSets.0.traits.0.dice')).toBe(true)
+  })
+
+  it('refuses a Trait with Hinder not enabled', () => {
+    const type = actorType()
+    type.traitSets[0].traits[0].enableHinder = false
+
+    expect(canHinderDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+  })
+
+  it('refuses a Hinder-enabled Trait that is otherwise not addable (shut down)', () => {
+    const type = actorType()
+    type.traitSets[0].traits[0].shutdown = true
+
+    expect(canHinderDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.dice')).toBe(false)
+  })
+
+  it('never offers Hinder on a Sub-Trait, a Simple Trait, an Asset or a Complication', () => {
+    const type = actorType()
+
+    expect(canHinderDicePointToPool(type, 'system.actorType.traitSets.0.traits.0.subTraits.0.dice')).toBe(false)
+    expect(canHinderDicePointToPool(type, 'system.actorType.simpleTraits.0.dice')).toBe(false)
+    expect(canHinderDicePointToPool(type, 'system.actorType.assets.0.dice')).toBe(false)
+    expect(canHinderDicePointToPool(type, 'system.actorType.complications.0.dice')).toBe(false)
   })
 })

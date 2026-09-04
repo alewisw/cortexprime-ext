@@ -8,6 +8,7 @@ import { confirmAction, dialogContent, expandNotesFieldOnEdit, getCurrentTheme, 
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
 import { computeSteppedTemporaryValue, getEffectiveDiceMap, getEffectiveValue, reindexDiceAfterRemoval, stepFaceDown, stepFaceUp } from '../scripts/traitDiceTemporary.js'
+import { canAddDicePointToPool, canHinderDicePointToPool } from '../scripts/dicePoolTraitLogic.js'
 import { pushDeletedSection } from '../scripts/deletedSectionsLogic.js'
 import { DeletedSectionsDialog } from '../applications/DeletedSectionsDialog.js'
 import { ComplicationDialog } from '../applications/ComplicationDialog.js'
@@ -418,6 +419,15 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     if (!this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return
 
     const { consumable, path, label } = target.dataset
+
+    // data-action="addToPool" is on the element unconditionally; only its 'add-to-pool' CLASS is
+    // conditional on shutdown/hasDice/valueType/dice-value state (see traits.html and friends).
+    // Re-check the same decision here so a shutdown Trait, a text-type Simple Trait, or a Trait
+    // with no `dice` object at all yet (mergeActorTypeData omits it - see
+    // actorTypeChangeLogic.js) can't reach _setTraitInPool - the last case would otherwise throw
+    // on currentDiceData.value below.
+    if (!canAddDicePointToPool(this.actor.system.actorType, path)) return
+
     const currentDiceData = foundry.utils.getProperty(this.actor, path)
     let value = currentDiceData.value
 
@@ -468,6 +478,10 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     if (!this.actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)) return
 
     const { path, label } = target.dataset
+
+    // Same defense-in-depth as _addToPool above: the Hinder icon only renders when
+    // trait.enableHinder AND the surrounding add-to-pool conditions hold (see traits.html).
+    if (!canHinderDicePointToPool(this.actor.system.actorType, path)) return
 
     await game.cortexprime.UserDicePool._setTraitInPool(this.actor.name, {
       label,
