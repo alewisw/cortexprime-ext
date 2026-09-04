@@ -338,10 +338,16 @@ export class UserDicePool extends CortexApplicationV2 {
       // The Crisis Pool is a standing resource the GM keeps rolling with, not a one-shot trait
       // addition — a roll shouldn't wipe it out along with everything else.
       const crisisPoolSource = preserveCrisisPool ? current?.pool?.[CRISIS_POOL_SOURCE] : undefined
+      // A clone, not blankPool itself - same reasoning as readDicePool's fallback above: blankPool
+      // is shared module state and this gets written straight into the flag, so handing out the
+      // original (or even a shallow spread of it, which still shares its nested customAdd object)
+      // would leak whatever a later mutation does to this pool into blankPool itself, corrupting
+      // every future "never had a pool" fallback and every other clear.
+      const blank = foundry.utils.deepClone(blankPool)
 
       return crisisPoolSource
-        ? { ...blankPool, pool: { [CRISIS_POOL_SOURCE]: crisisPoolSource } }
-        : blankPool
+        ? { ...blank, pool: { [CRISIS_POOL_SOURCE]: crisisPoolSource } }
+        : blank
     })
 
     await this.render(true)
