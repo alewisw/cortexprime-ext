@@ -1,6 +1,7 @@
 import { getCurrentTheme, setCssVars } from '../scripts/foundryHelpers.js'
 import { CortexApplicationV2 } from '../applications/CortexApplicationV2.js'
 import defaultThemes from '../theme/defaultThemes.js'
+import { resolveActiveTheme } from './importExportLogic.js'
 import { resolveUpdatedPresetCurrent } from './themeSettingsLogic.js'
 
 export default class ThemeSettings extends CortexApplicationV2 {
@@ -118,9 +119,11 @@ export default class ThemeSettings extends CortexApplicationV2 {
 
     const source = game.settings.get('cortexprime-ext', 'themes')
 
-    source.currentSettings = source.current === 'custom'
-      ? source.custom
-      : source.list[source.current]
+    // resolveActiveTheme, not the same expression inline: `current` can be left pointing at a
+    // preset the list no longer has (e.g. after an import from a newer version - see
+    // resolveImportedThemes/importExportLogic.js), and that inline expression had no fallback -
+    // setCssVars(undefined) below would throw.
+    source.currentSettings = resolveActiveTheme(source)
 
     await game.settings.set('cortexprime-ext', 'themes', source)
 

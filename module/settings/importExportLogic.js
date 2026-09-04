@@ -1,4 +1,5 @@
 import { SYNCED_SETTINGS } from './syncedSettings.js'
+import defaultThemes from '../theme/defaultThemes.js'
 
 // The decidable half of ImportExportSettings.js: what counts as an importable file, when to warn
 // about a version mismatch, and how the settings and theme values resolve. Kept free of Foundry
@@ -54,7 +55,14 @@ export const resolveImportedThemes = (themeSettings, data) => {
 
 // Which theme object is actually active: the custom one, or the named preset from the list.
 // Used on both the import and the reset path, which previously duplicated this expression.
+//
+// Never returns undefined/null — setCssVars(theme) (foundryHelpers.js) does Object.entries(theme)
+// and throws on either. An imported file can name a preset this world's list doesn't have (a
+// newer system version's export, or a stale one), or carry current: 'custom' with no custom
+// theme actually saved — either leaves the primary lookup empty, so this falls back to the
+// list's own 'Default', and — belt-and-braces, in case even that is somehow missing — to the
+// shipped default theme, which always exists.
 export const resolveActiveTheme = themeSettings =>
-  themeSettings.current === 'custom'
-    ? themeSettings.custom
-    : themeSettings.list?.[themeSettings.current]
+  (themeSettings.current === 'custom' ? themeSettings.custom : themeSettings.list?.[themeSettings.current]) ??
+  themeSettings.list?.Default ??
+  defaultThemes.currentSettings

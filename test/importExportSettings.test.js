@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { SYNCED_SETTINGS } from '../module/settings/syncedSettings.js'
+import defaultThemes from '../module/theme/defaultThemes.js'
 import {
   buildExportPayload,
   buildImportValues,
@@ -268,10 +269,24 @@ describe('resolveActiveTheme', () => {
       .toEqual({ b: 2 })
   })
 
-  // An imported file can name a theme this world doesn't ship. Undefined means setCssVars
-  // writes nothing rather than throwing, leaving the stylesheet defaults in place.
-  it('is undefined for a named theme the world does not have', () => {
-    expect(resolveActiveTheme({ current: 'Ghost', custom: {}, list: { Default: {} } })).toBeUndefined()
-    expect(resolveActiveTheme({ current: 'Default', custom: {} })).toBeUndefined()
+  // An imported file can name a theme this world doesn't ship (a newer version's file), or carry
+  // current: 'custom' with no custom theme ever actually saved. setCssVars(undefined) throws
+  // (computeCssVars does Object.entries(theme)) - so this must never return undefined; it falls
+  // back to the world's own list.Default rather than leaving the caller with nothing to apply.
+  it('falls back to the list\'s own Default for a named theme the world does not have', () => {
+    expect(resolveActiveTheme({ current: 'Ghost', custom: {}, list: { Default: { b: 2 } } }))
+      .toEqual({ b: 2 })
+  })
+
+  it('falls back to the list\'s own Default for "custom" with no custom theme saved', () => {
+    expect(resolveActiveTheme({ current: 'custom', custom: null, list: { Default: { b: 2 } } }))
+      .toEqual({ b: 2 })
+  })
+
+  // Belt-and-braces: even a themeSettings with no list at all (or one missing Default) still
+  // gets a real theme back, never undefined.
+  it('falls back to the shipped default theme when the list itself has no Default', () => {
+    expect(resolveActiveTheme({ current: 'Ghost', custom: {} })).toEqual(defaultThemes.currentSettings)
+    expect(resolveActiveTheme({ current: 'Ghost', custom: {}, list: {} })).toEqual(defaultThemes.currentSettings)
   })
 })
