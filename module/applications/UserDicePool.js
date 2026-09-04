@@ -166,7 +166,10 @@ export class UserDicePool extends CortexApplicationV2 {
       ...dice,
       isGM: game.user.isGM,
       canRollToBeat,
-      hasPlotPoints: !game.user.isGM && (game.user.character?.system.pp.value ?? 0) >= 1,
+      // system.pp only exists once an Actor Type has been confirmed (_actorTypeConfirm in
+      // actor-sheet.js) - a player assigned a not-yet-typed character must not throw opening
+      // the tray, just show no Plot Points.
+      hasPlotPoints: !game.user.isGM && (game.user.character?.system.pp?.value ?? 0) >= 1,
       dicePoolInvalidReason,
       // Covers both a bystander with no stake in the active challenge, and a designated
       // responder who shouldn't be able to dodge the "wait for the initiator" rule by rolling

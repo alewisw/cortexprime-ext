@@ -3,8 +3,10 @@ import { localizer } from '../scripts/foundryHelpers.js'
 export class CortexPrimeActor extends Actor {
   // add or subtract plot point value assigned to the actor by specified amount
   async changePpBy (value, directChange = false, usage = null) {
-    // ensure current value is an integer
-    const currentValue = +(this.system.pp.value ?? 0)
+    // ensure current value is an integer. system.pp only exists once an Actor Type has been
+    // confirmed (_actorTypeConfirm in actor-sheet.js) - callers reachable before that (e.g. an
+    // Actor without a type at all) must not throw here.
+    const currentValue = +(this.system.pp?.value ?? 0)
 
     const newValue = currentValue + value
 

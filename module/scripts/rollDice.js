@@ -39,7 +39,9 @@ const getRollResults = async pool => {
 const dicePicker = async rollResults => {
   const theme = getCurrentTheme()
   const challengeTarget = getMyChallengeTarget()
-  const availablePlotPoints = game.user.character?.system.pp.value ?? 0
+  // system.pp only exists once an Actor Type has been confirmed (_actorTypeConfirm in
+  // actor-sheet.js) - a player with a not-yet-typed character has 0, not a throw.
+  const availablePlotPoints = game.user.character?.system.pp?.value ?? 0
 
   // Lets the GM's Dice Pool panel show a "SELECTING - <name>" row (see selectingRollers in
   // UserDicePool.js) with a Re-roll button while this dialog is open, and re-roll it from a
