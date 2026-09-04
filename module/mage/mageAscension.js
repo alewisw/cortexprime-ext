@@ -16,6 +16,7 @@ import {
   getCurrentRollerIds,
   getMagickLabelKey,
   isMageRuleSetActive,
+  resolvePoolSourceWrite,
   shouldShowChallengeBox
 } from './mageAscensionLogic.js'
 
@@ -203,35 +204,33 @@ const getRealityReinforcementDiceValue = () => {
   return getEffectiveDiceMap(trait.dice.value, trait.dice.temporaryValue)
 }
 
-// Adds/removes the fixed 'Reality Reinforcement' pool source on a given User's Dice Pool flag,
-// using the same getFlag -> setFlag(null) -> setFlag(mutated) reset already used throughout
-// UserDicePool.js (e.g. its own Crisis Pool source sync) — a plain merge-based update() wouldn't
-// reliably delete the source once removed.
+// Adds/removes the fixed 'Reality Reinforcement' pool source on a given User's Dice Pool flag.
+//
+// This runs on the GM's client but `user` can be a DIFFERENT connected user (the roller side of
+// the sync below) — unlike every other dicePool mutator in this codebase (UserDicePool.js's own
+// handlers, all scoped to game.user), a getFlag -> mutate-in-JS -> setFlag(null) -> setFlag(whole
+// object) reset here could genuinely race against that OTHER user's own client editing the very
+// same flag at the same time (e.g. adding a die from their own sheet) — two separate JS runtimes,
+// so no in-memory mutex (asyncMutex.js) could ever serialize the two, and the whole-object
+// overwrite could silently drop whatever the other client just wrote under a different pool key.
+//
+// resolvePoolSourceWrite decides what's needed; every write here is a SINGLE, narrowly-scoped
+// setFlag/unsetFlag on `dicePool.pool.<source>` alone. Foundry's document update() merges a
+// dotted flag path without disturbing sibling keys, so whichever client's write lands last can
+// never clobber an entry the other client just added elsewhere in the same pool — the race is
+// sidestepped rather than won.
 const syncPoolSource = async (user, action, diceValue) => {
-  if (!user || action === 'none') return
+  if (!user) return
 
   const currentDice = user.getFlag('cortexprime-ext', 'dicePool')
+  const write = resolvePoolSourceWrite(currentDice, REALITY_REINFORCEMENT_SOURCE, action, diceValue)
 
-  if (!currentDice) return
+  if (!write) return
 
-  const hasEntry = !!currentDice.pool?.[REALITY_REINFORCEMENT_SOURCE]
+  const path = `dicePool.pool.${REALITY_REINFORCEMENT_SOURCE}`
 
-  if (action === 'remove') {
-    if (!hasEntry) return
-
-    delete currentDice.pool[REALITY_REINFORCEMENT_SOURCE]
-  } else {
-    const existingValue = currentDice.pool?.[REALITY_REINFORCEMENT_SOURCE]?.[0]?.value
-
-    if (existingValue && JSON.stringify(existingValue) === JSON.stringify(diceValue)) return
-
-    foundry.utils.setProperty(currentDice, `pool.${REALITY_REINFORCEMENT_SOURCE}`, {
-      0: { label: REALITY_REINFORCEMENT_SOURCE, value: diceValue }
-    })
-  }
-
-  await user.setFlag('cortexprime-ext', 'dicePool', null)
-  await user.setFlag('cortexprime-ext', 'dicePool', currentDice)
+  if (write.op === 'unset') await user.unsetFlag('cortexprime-ext', path)
+  else await user.setFlag('cortexprime-ext', path, write.value)
 }
 
 const syncRealityReinforcement = async () => {

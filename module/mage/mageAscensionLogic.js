@@ -98,3 +98,37 @@ export const computeGmRealityReinforcementDiceMap = (diceMap, magick, realityRei
 
   return objectMapValues(diceMap, face => stepFaceUp(face))
 }
+
+// Pure decision for syncPoolSource (mageAscension.js): given a User's CURRENT dicePool flag (or
+// null/undefined for a user who has never opened their tray), the fixed pool source's key
+// (doubling as its entry label), the desired action, and — for 'add' — the dice map it should
+// hold, decides what write, if any, is actually needed.
+//
+// Returns null when nothing should change: no dicePool flag at all (this must never CREATE one —
+// see readDicePool in UserDicePool.js, whose blankPool shape a bare { pool: {...} } write would
+// not reproduce), action 'none', a 'remove' with nothing there to remove, or an 'add' whose value
+// already matches what's there. Otherwise { op: 'set', value } or { op: 'unset' } — a thin shell
+// syncPoolSource turns straight into a SINGLE, narrowly-scoped user.setFlag/unsetFlag call on
+// `dicePool.pool.<sourceKey>` alone, never the whole dicePool object. That scoping is the actual
+// fix, not this function: syncPoolSource runs on the GM's client but can target a DIFFERENT
+// connected user's flag, which can genuinely race against that user's own client editing the same
+// flag (e.g. adding a die from their own sheet) — two separate JS runtimes, so no in-memory mutex
+// (asyncMutex.js) can ever serialize the two. A scoped flag-path write sidesteps the race instead
+// of trying to win it: Foundry's own document update() merges a dotted flag path without
+// disturbing sibling keys, so whichever client's write lands last can never clobber a pool entry
+// the OTHER client just added under a different key, the way overwriting the whole flag could.
+export const resolvePoolSourceWrite = (currentDice, sourceKey, action, diceValue) => {
+  if (!currentDice || action === 'none') return null
+
+  const existingEntry = currentDice.pool?.[sourceKey]
+
+  if (action === 'remove') {
+    return existingEntry ? { op: 'unset' } : null
+  }
+
+  const existingValue = existingEntry?.[0]?.value
+
+  if (existingValue && JSON.stringify(existingValue) === JSON.stringify(diceValue)) return null
+
+  return { op: 'set', value: { 0: { label: sourceKey, value: diceValue } } }
+}

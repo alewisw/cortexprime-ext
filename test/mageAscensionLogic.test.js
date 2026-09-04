@@ -6,6 +6,7 @@ import {
   getCurrentRollerIds,
   getMagickLabelKey,
   isMageRuleSetActive,
+  resolvePoolSourceWrite,
   shouldShowChallengeBox
 } from '../module/mage/mageAscensionLogic.js'
 
@@ -200,5 +201,62 @@ describe('computeGmRealityReinforcementDiceMap', () => {
     const diceMap = { 0: '8' }
     computeGmRealityReinforcementDiceMap(diceMap, 'vulgar-witnessed', 'opposes')
     expect(diceMap).toEqual({ 0: '8' })
+  })
+})
+
+describe('resolvePoolSourceWrite', () => {
+  const SOURCE = 'Reality Reinforcement'
+  const diceValue = { 0: '8' }
+
+  it('does nothing for a user with no dicePool flag at all, regardless of action', () => {
+    // Must never CREATE the flag - a user who has never opened their tray has none (see
+    // readDicePool in UserDicePool.js), and a bare { pool: {...} } write would not reproduce
+    // blankPool's other fields (customAdd, spendPlotPointForExtraDie).
+    expect(resolvePoolSourceWrite(null, SOURCE, 'add', diceValue)).toBeNull()
+    expect(resolvePoolSourceWrite(undefined, SOURCE, 'remove', diceValue)).toBeNull()
+  })
+
+  it('does nothing for action "none"', () => {
+    const currentDice = { pool: { [SOURCE]: { 0: { label: SOURCE, value: diceValue } } } }
+    expect(resolvePoolSourceWrite(currentDice, SOURCE, 'none', diceValue)).toBeNull()
+  })
+
+  it('unsets the source when removing an entry that is present', () => {
+    const currentDice = { pool: { [SOURCE]: { 0: { label: SOURCE, value: diceValue } } } }
+    expect(resolvePoolSourceWrite(currentDice, SOURCE, 'remove', diceValue)).toEqual({ op: 'unset' })
+  })
+
+  it('does nothing when removing an entry that is already absent', () => {
+    const currentDice = { pool: {} }
+    expect(resolvePoolSourceWrite(currentDice, SOURCE, 'remove', diceValue)).toBeNull()
+  })
+
+  it('sets the source when adding and no entry exists yet', () => {
+    const currentDice = { pool: {} }
+    expect(resolvePoolSourceWrite(currentDice, SOURCE, 'add', diceValue)).toEqual({
+      op: 'set',
+      value: { 0: { label: SOURCE, value: diceValue } }
+    })
+  })
+
+  it('sets the source with a DIFFERENT sourceKey used as the entry label', () => {
+    const currentDice = { pool: {} }
+    expect(resolvePoolSourceWrite(currentDice, 'Crisis Pool', 'add', diceValue)).toEqual({
+      op: 'set',
+      value: { 0: { label: 'Crisis Pool', value: diceValue } }
+    })
+  })
+
+  it('replaces the source when adding a value that differs from what is already there', () => {
+    const currentDice = { pool: { [SOURCE]: { 0: { label: SOURCE, value: { 0: '6' } } } } }
+    expect(resolvePoolSourceWrite(currentDice, SOURCE, 'add', diceValue)).toEqual({
+      op: 'set',
+      value: { 0: { label: SOURCE, value: diceValue } }
+    })
+  })
+
+  it('does nothing when adding a value that already matches what is there', () => {
+    const currentDice = { pool: { [SOURCE]: { 0: { label: SOURCE, value: diceValue } } } }
+    expect(resolvePoolSourceWrite(currentDice, SOURCE, 'add', diceValue)).toBeNull()
   })
 })
