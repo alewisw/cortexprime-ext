@@ -1,6 +1,7 @@
 import { getCurrentTheme, setCssVars } from '../scripts/foundryHelpers.js'
 import { CortexApplicationV2 } from '../applications/CortexApplicationV2.js'
 import defaultThemes from '../theme/defaultThemes.js'
+import { resolveUpdatedPresetCurrent } from './themeSettingsLogic.js'
 
 export default class ThemeSettings extends CortexApplicationV2 {
   static DEFAULT_OPTIONS = {
@@ -148,9 +149,10 @@ export default class ThemeSettings extends CortexApplicationV2 {
 
     const source = game.settings.get('cortexprime-ext', 'themes')
 
-    source.current = source.current !== 'custom'
-      ? source[source.current] || defaultThemes.current
-      : 'custom'
+    // Checked against the INCOMING list (defaultThemes.list, about to replace source.list below)
+    // - a preset this update renames or removes must fall back to the default rather than stay
+    // selected pointing at a name that's about to disappear. See resolveUpdatedPresetCurrent.
+    source.current = resolveUpdatedPresetCurrent(source.current, defaultThemes.list, defaultThemes.current)
     source.list = defaultThemes.list
     source.version = defaultThemes.version
     source.currentSettings = source.current === 'custom'
