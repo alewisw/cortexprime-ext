@@ -1,12 +1,6 @@
 # Known Issues
 
-s
-
 8. _${Date.now()} as an id generator. Used for every new Actor Type, Trait Set, Trait, Simple Trait, Tab, and by #onDuplicateItem. Two creations in the same millisecond collide, and ids are the matching key for mergeActorTypeData, System Traits, and inheritance. Also #onDuplicateItem (ActorSettings.js:434) only regenerates the top-level id — a duplicated Trait Set keeps its children's original ids verbatim.
-
-9. Dead truthiness guards. cortexPrimeHooks.js:78 if ($rollPrivacy) and :106 if ($rollResult) — a jQuery object is always truthy. Harmless today (empty sets no-op) but the roll-decoration block runs for every chat message, and a missing #roll-privacy fails silently.
-
-10. Inert Trait duplicate button. templates/partials/settings/trait-set.html:259 renders a Duplicate control for an individual Trait carrying class="duplicate-item", data-path and data-id — but no data-action="duplicateItem". ApplicationV2 dispatches actions purely from data-action, so the button renders and does nothing; it presumably worked under appv1's jQuery .duplicate-item selector, making this a port regression. Found while mapping the three duplicate buttons that DO work (Actor Type, Trait Set, Simple Trait). Fix is the one missing attribute — #onDuplicateItem and #lockInheritedControls already cover it.
 
 11. Misplaced id in the shipped Scene actor type. module/actor/defaultActorTypes.js:139 — the "Doom Pool" Simple Trait carries id: '_21' nested inside dice ({ dice: { id, value } }) rather than on the trait itself, and '_21' appears twice in that file. That Simple Trait therefore has no id at all, so getDoomPool (hitches.js:29, which matches simpleTraits[key].id === doomPoolTraitId) and resolveSystemSimpleTraitIndex cannot resolve it by id on any actor built from the shipped default. configs/mage.json is clean — only the shipped defaults are affected. A fix needs the data corrected AND a migration for actors already carrying the broken snapshot.
 
