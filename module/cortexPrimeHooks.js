@@ -117,7 +117,7 @@ export default () => {
     const $html = $(html)
     const $rollResult = $html.find('.roll-result').first()
 
-    if ($rollResult) {
+    if ($rollResult.length) {
       const $chatMessage = $rollResult.closest('.chat-message')
       
       $chatMessage
