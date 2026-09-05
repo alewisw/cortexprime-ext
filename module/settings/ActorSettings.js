@@ -2,6 +2,7 @@ import { applyActorTypeInheritance, buildActorTypeTree } from '../actor/actorTyp
 import { buildSystemTraitOptions } from './systemTraitsLogic.js'
 import { expandNotesFieldOnEdit, localizer } from '../scripts/foundryHelpers.js'
 import { getLength, objectFindKey, objectFindValue, objectMapValues, objectReduce, objectReindexFilter } from '../../lib/helpers.js'
+import { newId } from '../../lib/id.js'
 import { onRemoveItem, onReorderItem } from '../scripts/settingsHelpers.js'
 import { CortexApplicationV2 } from '../applications/CortexApplicationV2.js'
 
@@ -159,7 +160,7 @@ export default class ActorSettings extends CortexApplicationV2 {
 
     const newActorType = {
       [newKey]: {
-        id: `_${Date.now()}`,
+        id: newId(),
         name: localizer('NewActorType'),
         showProfileImage: true
       }
@@ -181,7 +182,7 @@ export default class ActorSettings extends CortexApplicationV2 {
       [actorTypeKey]: {
         additionalTabs: {
           [newKey]: {
-            id: `_${Date.now()}`,
+            id: newId(),
             name
           }
         }
@@ -226,7 +227,7 @@ export default class ActorSettings extends CortexApplicationV2 {
     // from the parent.
     const newActorType = {
       [newKey]: {
-        id: `_${Date.now()}`,
+        id: newId(),
         name,
         parentId: actorTypeId
       }
@@ -310,7 +311,7 @@ export default class ActorSettings extends CortexApplicationV2 {
                 0: '8'
               }
             },
-            id: `_${Date.now()}`,
+            id: newId(),
             label: localizer('NewSimpleTrait'),
             settings: {
               editable: true,
@@ -336,7 +337,7 @@ export default class ActorSettings extends CortexApplicationV2 {
     const newTraits = {
       ...currentTraits,
       [newKey]: {
-        id: `_${Date.now()}`,
+        id: newId(),
         name: localizer('NewTrait'),
         dice: {
           value: {
@@ -363,7 +364,7 @@ export default class ActorSettings extends CortexApplicationV2 {
       [actorTypeKey]: {
         traitSets: {
           [newKey]: {
-            id: `_${Date.now()}`,
+            id: newId(),
             label: localizer('NewTraitSet')
           }
         }
@@ -451,7 +452,7 @@ export default class ActorSettings extends CortexApplicationV2 {
 
     const newTarget = {
       [newKey]: objectMapValues(item, (value, key) => {
-        if (key === 'id') return `_${Date.now()}`
+        if (key === 'id') return newId()
 
         return value
       })

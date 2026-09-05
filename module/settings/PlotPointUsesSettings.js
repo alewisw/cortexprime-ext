@@ -1,5 +1,6 @@
 import { confirmAction, localizer } from '../scripts/foundryHelpers.js'
 import { getLength } from '../../lib/helpers.js'
+import { newId } from '../../lib/id.js'
 import { onRemoveItem, onReorderItem } from '../scripts/settingsHelpers.js'
 import { CortexApplicationV2 } from '../applications/CortexApplicationV2.js'
 import defaultPlotPointUses from '../actor/defaultPlotPointUses.js'
@@ -78,7 +79,7 @@ export default class PlotPointUsesSettings extends CortexApplicationV2 {
       ...current,
       [group]: {
         ...currentGroup,
-        [newKey]: { id: `_${Date.now()}`, label: localizer('NewPlotPointUse') }
+        [newKey]: { id: newId(), label: localizer('NewPlotPointUse') }
       }
     })
 

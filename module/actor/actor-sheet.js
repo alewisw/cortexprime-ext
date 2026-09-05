@@ -13,6 +13,7 @@ import { pushDeletedSection } from '../scripts/deletedSectionsLogic.js'
 import { DeletedSectionsDialog } from '../applications/DeletedSectionsDialog.js'
 import { ComplicationDialog } from '../applications/ComplicationDialog.js'
 import { removeDataPoint } from '../scripts/sheetHelpers.js'
+import { newId } from '../../lib/id.js'
 
 export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
@@ -510,7 +511,7 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     await this._resetDataPoint(path, 'customTraits', {
       ...currentCustomTraits,
       [getLength(currentCustomTraits)]: {
-        id: `_${Date.now()}`,
+        id: newId(),
         name: localizer('NewTrait'),
         dice: {
           value: {
