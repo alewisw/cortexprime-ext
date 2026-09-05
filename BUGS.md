@@ -1,32 +1,26 @@
 # Known Issues
 
-Problems found but deliberately not fixed in the change that surfaced them. Each entry states
-what is wrong, how it was observed, and what a fix would need to do.
-Functional bugs
-
-1. data-action="addToPool" fires regardless of whether trait is addable. Every trait template puts data-action="addToPool" on the element unconditionally and only makes the add-to-pool class conditional — and that class is pure cosmetics (_misc.scss:51 is cursor:pointer + a glyph). ApplicationV2 dispatches on [data-action], so the guard does nothing. Three consequences:
-
-Text-valueType Simple Traits are addable. simple-traits.html:36 gates the class on (eq settings.valueType 'dice'), but clicking a text trait's label still runs _addToPool — and ActorSettings.#onAddSimpleTrait creates every Simple Trait with dice.value.0 = '8', so a d8 lands in the pool from a field that has no dice at all.
-Shutdown traits are addable. traits.html:12-16 gates on (not traitSetShutdown)/(not trait.shutdown); the click bypasses it.
-Traits with no dice throw. actor-sheet.js:422 does currentDiceData.value with no guard. mergeActorTypeData deliberately gives a newly-configured trait only {id, name, enableHinder} — no dice (encoded in actorTypeChangeLogic.test.js:239). So: add a Trait in Actor Settings → "Update Settings" on an existing actor → click its name → TypeError: Cannot read properties of undefined (reading 'value').
-Fix belongs in _addToPool/_hinderToPool — re-check the same conditions the template renders the class from, rather than trusting markup.
-
-2. system.pp.value dereferenced without optional chaining, three places. UserDicePool.js:169, rollDice.js:42, CortexPrimeActor.js:7. system.pp only exists after _actorTypeConfirm — actor-sheet.js:696 and :250 already use ?. for exactly that reason, so the other three are oversights, not policy. Player assigned a not-yet-typed actor → opening the dice tray throws in _prepareContext.
-
-3. "Update Presets" always resets the selected preset. ThemeSettings.js:152: source[source.current] || defaultThemes.current. source.current is a preset name ('Tales of Xadia'); presets live under source.list, so source['Tales of Xadia'] is always undefined and it always falls through to defaultThemes.current. Should be source.list[source.current] ? source.current : defaultThemes.current.
-
-4. Import crashes on an unknown theme preset. resolveActiveTheme returns list?.[current] → undefined for a preset name not in list (file from a newer version, or current: 'custom' with custom: null). ImportExportSettings.js then calls setCssVars(undefined) → Object.entries(undefined) throws mid-import, after the settings writes have already landed. Needs a fallback to list.Default.
-
-Correctness risks
-5. Mage's pool sync bypasses the dice-pool mutex and mutates live flag data. mageAscension.js:210-235 syncPoolSource does its own getFlag → mutate-in-place → setFlag(null) → setFlag, outside updateDicePool's runExclusive(DICE_POOL_KEY). That's the exact lost-update race asyncMutex.js exists to close — a GM-side Reality Reinforcement sync landing between a player's read and write silently drops one of them. Also delete currentDice.pool[...] mutates the document's own flag object rather than a copy.
-
-6. _clearDicePool writes the shared blankPool module object. UserDicePool.js:341 returns blankPool by reference, while readDicePool at :55 explicitly clones it because callers mutate what they get back. Same hazard, one line apart. Should be foundry.utils.deepClone(blankPool).
-
-7. Chat-sidebar re-render silently drops the Dice Pool button. cortexPrimeHooks.js:78 injects it once on ready, with no renderChatLog/renderSidebar re-injection. rollUndo.js calls ui.chat?.render() as its fallback refresh path, which would wipe it.
+s
 
 8. _${Date.now()} as an id generator. Used for every new Actor Type, Trait Set, Trait, Simple Trait, Tab, and by #onDuplicateItem. Two creations in the same millisecond collide, and ids are the matching key for mergeActorTypeData, System Traits, and inheritance. Also #onDuplicateItem (ActorSettings.js:434) only regenerates the top-level id — a duplicated Trait Set keeps its children's original ids verbatim.
 
 9. Dead truthiness guards. cortexPrimeHooks.js:78 if ($rollPrivacy) and :106 if ($rollResult) — a jQuery object is always truthy. Harmless today (empty sets no-op) but the roll-decoration block runs for every chat message, and a missing #roll-privacy fails silently.
+
+10. Inert Trait duplicate button. templates/partials/settings/trait-set.html:259 renders a Duplicate control for an individual Trait carrying class="duplicate-item", data-path and data-id — but no data-action="duplicateItem". ApplicationV2 dispatches actions purely from data-action, so the button renders and does nothing; it presumably worked under appv1's jQuery .duplicate-item selector, making this a port regression. Found while mapping the three duplicate buttons that DO work (Actor Type, Trait Set, Simple Trait). Fix is the one missing attribute — #onDuplicateItem and #lockInheritedControls already cover it.
+
+11. Misplaced id in the shipped Scene actor type. module/actor/defaultActorTypes.js:139 — the "Doom Pool" Simple Trait carries id: '_21' nested inside dice ({ dice: { id, value } }) rather than on the trait itself, and '_21' appears twice in that file. That Simple Trait therefore has no id at all, so getDoomPool (hitches.js:29, which matches simpleTraits[key].id === doomPoolTraitId) and resolveSystemSimpleTraitIndex cannot resolve it by id on any actor built from the shipped default. configs/mage.json is clean — only the shipped defaults are affected. A fix needs the data corrected AND a migration for actors already carrying the broken snapshot.
+
+12. Duplicating an entity silently double-claims its System Trait role. #onDuplicateItem copies settings.systemTraitSet / settings.systemTrait verbatim. For a Simple Trait the copy is inert but armed — findSystemSimpleTraitIndex takes the first match by position, so the original wins until someone reorders the copy above it or deletes the original, at which point Paradox/Trauma silently starts writing into the copy. For a Trait Set both stay live — getSystemTraitSetIds returns both ids, so a duplicated Powers set immediately satisfies computeMagePoolInvalidReason's "a magickal roll requires a Powers trait" and feeds the Limit calculation in paradox.js. The settings UI cannot produce this state by hand (optionsFor filters out any role a sibling already claims) and offers no way to see or repair it, since both dropdowns render their own role as selected.
+
+13. A duplicated Trait Set's mutuallyExclusiveWith still points at the ORIGINAL's sibling. Copied verbatim by #onDuplicateItem. Because dicePoolValidation.getAllTraitSets() flattens Trait Sets across every Actor Type, that reference stays live rather than dangling — so duplicating an Actor Type creates a cross-actor-type mutual-exclusion rule the GM never asked for.
+
+14. #onDuplicateItem throws on a stale data-id. objectFindValue returns undefined and objectMapValues(undefined, ...) then throws. Reachable when the settings form is left open while the actorTypes setting changes elsewhere. Needs an if (!item) return guard.
+
+15. getAllTraitSets() relies on an unstated global-uniqueness invariant. dicePoolValidation.js:13-15 flattens Trait Sets across every Actor Type and matches by bare id with no Actor Type scoping, so limitOnePerDicePool and mutuallyExclusiveWith are only correct while Trait Set ids are unique across the entire world. Item 8's shallow duplicate was actively violating that.
+
+16. Default Sections, Descriptors, SFX and Sub-Traits are created with no id. ActorSettings' #onAddAdditionalTabDefaultNote, #onAddDescriptor, #onAddSfx and #onAddSubTrait write no id field at all. Consequence: mergeActorTypeData is forced to match Default Notes by label (actorTypeChangeLogic.js:62), so renaming a Default Section in settings adds a SECOND note to every actor rather than renaming the existing one. Descriptors, SFX and Sub-Traits are never id-matched at all — they survive Update Settings only via the ...matchingSetting spread of their owning (id-matched) container.
+
+17. plotPointUses ids are dead weight. PlotPointUsesSettings.js:81 mints one per new entry and defaultPlotPointUses.js assigns stable _1.._10, but nothing reads them — plotPointUsageDialog.js works entirely from labels. Either wire them up or drop the field.
 
 Lower priority
 Stored HTML injection. traits.html:82 (descriptor.value) and :155 (sfx.description) use {{{ }}}, but both are plain <textarea> fields, not ProseMirror. A player can put markup in their own sheet that executes on the GM's client. The other {{{ }}} uses (rich-text, tab description) are legitimate.
