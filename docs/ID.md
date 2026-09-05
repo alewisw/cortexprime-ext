@@ -6,8 +6,8 @@ names the file that decides it.
 
 The short version:
 
-- There are **two unrelated id systems**: Foundry document ids, and the system's own
-  `_<timestamp>` config ids. Only the second one is ours.
+- There are **two unrelated id systems**: Foundry document ids, and the system's own config ids
+  minted by `newId()` (`lib/id.js`). Only the second one is ours.
 - An Actor stores a **snapshot copy** of its Actor Type, not a reference. Config ids are the only
   thing stitching the snapshot back to the live configuration.
 - A **derived Actor Type gets a new id of its own and keeps every inner id of its parent
@@ -23,7 +23,7 @@ The short version:
 | Namespace | Shape | Minted by | Examples |
 |---|---|---|---|
 | Foundry document ids | 16-char alphanumeric | Foundry, on document creation | `actor.id`, `scene.id`, `user.id`, `message.id` |
-| System config ids | `_` + `Date.now()` ms | This system, in settings/sheet handlers | `_1787047140985`, plus shipped literals `_1`, `_2`, `_11` … |
+| System config ids | `_` + base36 ms stamp + `-` + 3 random base36 chars | `newId()` (`lib/id.js`), called from settings/sheet handlers | `_mtnvyo8m-bqq`, plus legacy `_<timestamp>` ids already stored in older worlds/exports, and shipped literals `_1`, `_2`, `_11` … |
 
 Foundry ids identify *documents*: which Actor is the Doom Pool actor (`doomPoolActorId`), who is in
 a challenge (`initiatorId` / `responderIds` in `module/scripts/rollToBeat.js`), which Actor is linked
@@ -42,23 +42,40 @@ Actor document ids.
 
 ## 2. Where config ids are minted
 
-Every one is `` `_${Date.now()}` ``. There is no central mint, no counter, no uniqueness check.
+Every one comes from a single helper, `newId()` (`lib/id.js`):
+
+```js
+_mtnvyo8m-bqq
+ └───┬────┘ └┬┘
+     │       3 random base36 chars — guards two clients minting in the same millisecond
+     base36 of a monotonic ms stamp — never repeats within one loaded client, however
+     tightly two calls land, because it takes `max(Date.now(), lastStamp + 1)`
+```
+
+This replaced a bare `` `_${Date.now()}` `` at each call site (still what you'll find in an older
+git blame, and still the shape of every id already sitting in a world or an export made before this
+change — see §7). The `-` is the reason the two schemes can never collide: no legacy id ever
+contains one.
 
 | Producer | File | What gets the id |
 |---|---|---|
-| New Actor Type | `module/settings/ActorSettings.js:162` | the Actor Type |
-| New **derived** Actor Type | `module/settings/ActorSettings.js:229` | the child Actor Type (plus `parentId` = parent's id) |
-| New Additional Tab | `module/settings/ActorSettings.js:184` | the tab |
-| New Simple Trait | `module/settings/ActorSettings.js:313` | the Simple Trait |
-| New Trait Set | `module/settings/ActorSettings.js:366` | the Trait Set |
-| New Trait (settings side) | `module/settings/ActorSettings.js:339` | the Trait |
-| Duplicate anything | `module/settings/ActorSettings.js:454` | **only the top-level `id` of the duplicated object** — see §6 |
-| New custom Trait (Actor sheet) | `module/actor/actor-sheet.js:513` | the Actor's own `customTraits` entry |
-| Migrated Notes tab | `module/scripts/migrateNotesToTabsLogic.js:9` | derived, not random: `` `_notes-${actorTypeId}` `` |
+| New Actor Type | `module/settings/ActorSettings.js:163` | the Actor Type |
+| New **derived** Actor Type | `module/settings/ActorSettings.js:230` | the child Actor Type (plus `parentId` = parent's id) |
+| New Additional Tab | `module/settings/ActorSettings.js:185` | the tab |
+| New Simple Trait | `module/settings/ActorSettings.js:314` | the Simple Trait |
+| New Trait Set | `module/settings/ActorSettings.js:367` | the Trait Set |
+| New Trait (settings side) | `module/settings/ActorSettings.js:340` | the Trait |
+| Duplicate anything | `module/settings/ActorSettings.js:455` | **only the top-level `id` of the duplicated object** — see §6 |
+| New custom Trait (Actor sheet) | `module/actor/actor-sheet.js:514` | the Actor's own `customTraits` entry |
+| New Plot Point Use | `module/settings/PlotPointUsesSettings.js:82` | the use |
+| Migrated Notes tab | `module/scripts/migrateNotesToTabsLogic.js:9` | derived, not `newId()`: `` `_notes-${actorTypeId}` `` |
 | Shipped defaults | `module/actor/defaultActorTypes.js` | hand-written literals `_1`, `_2`, `_11`, `_12`, `_13`, `_21` … |
 
 The migration id is the only *deterministic* id in the system, and deliberately so: re-running the
-migration must not produce a second Notes tab.
+migration must not produce a second Notes tab. `test/id.test.js` covers `newId()` directly —
+uniqueness under a frozen clock (10,000 calls, no repeat), that the legacy scheme collides under
+that same frozen clock (proving the test isn't vacuous), the monotonic stamp settling back onto the
+real clock once it catches up, and non-collision against real legacy/shipped ids.
 
 ---
 
@@ -93,7 +110,7 @@ on an Actor Type cannot be reconciled onto existing Actors.
 
 `template.json` gives an Actor exactly one system field: `actorType`, initially `null`.
 
-When a type is first chosen, `_actorTypeConfirm` (`module/actor/actor-sheet.js:214`) writes the
+When a type is first chosen, `_actorTypeConfirm` (`module/actor/actor-sheet.js:215`) writes the
 **whole configured Actor Type object** onto the Actor:
 
 ```js
@@ -110,8 +127,8 @@ the configuration. The copied ids are the entire linkage back to settings:
 
 | Consumer | Looks up by | Where |
 |---|---|---|
-| "Update Settings" button | Actor Type id → config, then per-entry ids | `actor-sheet.js:769`, `mergeActorTypeData` |
-| Actor Type picker (current selection) | Actor Type id → config index | `actor-sheet.js:104` |
+| "Update Settings" button | Actor Type id → config, then per-entry ids | `actor-sheet.js:770`, `mergeActorTypeData` |
+| Actor Type picker (current selection) | Actor Type id → config index | `actor-sheet.js:105` |
 | System Traits (Mage etc.) | Actor Type id → config, then Simple Trait id → Actor index | `module/settings/systemTraits.js`, `systemTraitsLogic.js:107` |
 | Doom Pool | `doomPoolTraitId` → Actor's Simple Trait id | `module/scripts/hitches.js:29` |
 | Dice Pool composition rules | pool entry `traitSetId` → Trait Set in settings | `module/scripts/dicePoolValidation.js:40` |
@@ -155,7 +172,7 @@ So:
 
 | Element | Child's id vs parent's |
 |---|---|
-| The Actor Type itself | **different** — its own `_<timestamp>`, minted at `ActorSettings.js:229` |
+| The Actor Type itself | **different** — a fresh `newId()`, minted at `ActorSettings.js:230` |
 | Inherited Trait Set | **identical** (`structuredClone`, plus an `inherited: true` stamp) |
 | Inherited Trait inside it | **identical** |
 | Inherited Simple Trait | **identical** |
@@ -204,12 +221,12 @@ an id unique to it.
 
 ## 6. Duplication — what changes and what doesn't
 
-`#onDuplicateItem` (`ActorSettings.js:445`) is the copy path for Actor Types, Trait Sets, Simple
+`#onDuplicateItem` (`ActorSettings.js:443`) is the copy path for Actor Types, Trait Sets, Simple
 Traits and Traits:
 
 ```js
 const newTarget = {
-  [newKey]: objectMapValues(item, (value, key) => key === 'id' ? `_${Date.now()}` : value)
+  [newKey]: objectMapValues(item, (value, key) => key === 'id' ? newId() : value)
 }
 ```
 
@@ -241,7 +258,7 @@ parent. That reads as correct.
 - It is also the failure mode: importing a config into a world whose Actors were built from
   *locally created* Actor Types replaces the configuration with one whose ids no existing Actor
   matches. Those Actors keep working (they hold complete snapshots) but silently lose their link —
-  "Update Settings" reports `MissingActorTypeMessage` (`actor-sheet.js:771`), System Trait
+  "Update Settings" reports `MissingActorTypeMessage` (`actor-sheet.js:772`), System Trait
   resolution falls back to a tag on the Actor's own copy (`resolveSystemSimpleTraitIndex`), and the
   type picker shows nothing selected.
 - The shipped defaults use short literal ids (`_1`, `_2`, `_11` …). They cannot collide with
@@ -258,8 +275,8 @@ Worth knowing before assuming "everything is matched by id":
 | Thing | Identity used | File |
 |---|---|---|
 | Dice Pool entry → the trait it came from | `traitPath`, an **index path** (`system.actorType.traitSets.0.traits.1.dice`) | `dicePoolTraitLogic.js:63` |
-| Dice Pool entry → its Trait Set | `traitSetId`, a **stable id** | `actor-sheet.js:498` |
-| Dice Pool grouping | the **Actor's name**, not its id (`_setTraitInPool(this.actor.name, …)`) | `actor-sheet.js:459` |
+| Dice Pool entry → its Trait Set | `traitSetId`, a **stable id** | `actor-sheet.js:499` |
+| Dice Pool grouping | the **Actor's name**, not its id (`_setTraitInPool(this.actor.name, …)`) | `actor-sheet.js:460` |
 | Default Section ↔ Actor's note | `label` | `actorTypeChangeLogic.js` |
 | Sheet tab selection | Additional Tab `id`, sheet-instance state only | `templates/actor/actor-sheet.html:34` |
 | Challenge participants | Actor document id, or `'gm'` | `rollToBeat.js:79` |
@@ -281,7 +298,7 @@ Trait, not on the trait itself:
 simpleTraits: { 0: { dice: { id: '_21', value: { 0: '6', 1: '6' } }, label: 'Doom Pool', … } }
 ```
 
-Every other Simple Trait producer (`ActorSettings.js:313`) puts `id` at the top level, and every
+Every other Simple Trait producer (`ActorSettings.js:314`) puts `id` at the top level, and every
 consumer reads it there. On a fresh world using the shipped Scene type:
 
 - The Doom Pool settings dropdown renders `<option value="">`
@@ -311,12 +328,14 @@ top-level notes stay where they are. Narrow in practice — a world old enough t
 predates derived types — but the assumption it encodes ("an Actor Type's inner ids derive from its
 own id") is exactly the one inheritance breaks.
 
-### 9.4 `Date.now()` uniqueness
+### 9.4 `Date.now()` uniqueness — resolved
 
-Two ids minted in the same millisecond collide. Reachable only by two GMs clicking simultaneously on
-different clients, or by scripted creation; not by a human clicking twice. Flagged as a known
-property rather than a bug — `foundry.utils.randomID()` would remove the question entirely, at the
-cost of unreadable ids in exported configs.
+Previously: two ids minted in the same millisecond collided (reachable by two GMs clicking
+simultaneously on different clients, or by scripted creation — not by a human clicking twice).
+Fixed by `newId()` (§2, `lib/id.js`): the stamp is monotonic per loaded client
+(`max(Date.now(), lastStamp + 1)`), so no two calls in one session ever share a stamp, and a
+3-character random block absorbs the remaining cross-client case. `test/id.test.js` asserts both
+under a frozen clock.
 
 ---
 
