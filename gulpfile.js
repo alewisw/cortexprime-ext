@@ -46,7 +46,11 @@ const PACKAGE_SOURCES = [
   "cortexprime.js",
   "README.md",
   "assets/**/*",
-  "configs/**/*",
+  // Only the one config file CLAUDE.md documents as an intentional, GM-importable settings
+  // export (via Import Settings) - configs/**/* also swept in mage-2.json (a temporary backup,
+  // per its own commit message) and playwright-export.zip (an e2e test artifact), neither of
+  // which belongs in a release.
+  "configs/mage.json",
   "css/**/*",
   "lang/**/*",
   "lib/**/*",

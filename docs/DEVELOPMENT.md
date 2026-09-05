@@ -83,8 +83,10 @@ straight from `system.json`, so the filename and the manifest inside the
 archive can never disagree.
 
 The archive contains only what Foundry needs at runtime — `system.json`,
-`template.json`, `cortexprime.js`, `README.md`, and the `assets/`, `configs/`,
-`css/`, `lang/`, `lib/`, `module/` and `templates/` directories. Sass sources,
+`template.json`, `cortexprime.js`, `README.md`, the `assets/`, `css/`, `lang/`,
+`lib/`, `module/` and `templates/` directories, and `configs/mage.json` (a
+checked-in settings export used to configure the Mage rule set — see
+CLAUDE.md); nothing else in `configs/` ships. Sass sources,
 tests, `node_modules/` and build config are excluded. `system.json` sits at the
 root of the zip (not inside a wrapper folder), which is what package hosts
 expect. `dist/` is gitignored.
