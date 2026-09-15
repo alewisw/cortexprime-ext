@@ -28,6 +28,21 @@
 .cortexprime.doom-pool-settings.application .window-content {
   background: #ffffff;
 }
+.cortexprime.import-export-settings.application .section-content {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+}
+.cortexprime.import-export-settings.application .btn {
+  width: 100%;
+}
 .cortexprime h1, .cortexprime h2, .cortexprime h3, .cortexprime h4, .cortexprime h5, .cortexprime h6 {
   border: 0;
   margin: 0;

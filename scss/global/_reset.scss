@@ -56,6 +56,24 @@
   }
 }
 
+// The three actions (Export/Import/Reset) are a plain flow of a <button>, a <label> wrapping a
+// hidden file input, and another <button> - text-align: center (from .section-cpt.text-center)
+// only ever centers each one within its own line box, so with three different label lengths they
+// read as a ragged, off-center stack rather than an aligned one. Laying them out as a centered
+// flex column and stretching each to the same width (100% of the column) gives a single common
+// edge instead of three different centered widths.
+&.import-export-settings.application {
+  .section-content {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
 h1, h2, h3, h4, h5, h6 {
   border: 0;
   margin: 0;
