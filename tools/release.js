@@ -9,9 +9,17 @@ const path = require('path')
 
 const ROOT = path.resolve(__dirname, '..')
 
+// npm itself is a .cmd shim on Windows, not a real executable. execFileSync resolves the command
+// directly via the OS loader, so plain "npm" fails with ENOENT there; renaming it to "npm.cmd"
+// alone still fails (EINVAL) because Node refuses to spawn a .cmd/.bat file without shell:true.
+// Only npm needs this; git and gh are real binaries on every platform. The args passed to it here
+// are always fixed literals, never external input, so shell:true carries no injection risk.
+const isWindowsNpm = command => command === 'npm' && process.platform === 'win32'
+const resolveCommand = command => isWindowsNpm(command) ? 'npm.cmd' : command
+
 function run(command, args) {
   console.log(`$ ${command} ${args.join(' ')}`)
-  execFileSync(command, args, { cwd: ROOT, stdio: 'inherit' })
+  execFileSync(resolveCommand(command), args, { cwd: ROOT, stdio: 'inherit', shell: isWindowsNpm(command) })
 }
 
 function capture(command, args) {
