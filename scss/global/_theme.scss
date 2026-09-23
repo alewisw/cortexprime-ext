@@ -432,6 +432,18 @@
     }
   }
 
+  // input.input-cpt already renders full-width, block-stacked under a preceding label span -
+  // Foundry core styles bare <input> that way, but not <textarea>. Without this, a
+  // <label><span class="input-label-cpt">Description</span><textarea class="input-cpt">...
+  // stays inline: the label text and the textarea sit side by side on one line, baseline-aligned,
+  // so the label reads squeezed against the box's bottom-left instead of sitting above it, and the
+  // box itself shrinks to a bare <textarea>'s intrinsic ~20-column width instead of filling the
+  // row. Forcing block matches input's behaviour and puts the textarea on its own full-width line.
+  textarea.input-cpt {
+    display: block;
+    width: 100%;
+  }
+
   color-picker > input[type=color] {
     height: 26px;
     flex: 0 0 26px;

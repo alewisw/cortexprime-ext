@@ -1847,6 +1847,10 @@
 .cortexprime .input-cpt option, .cortexprime color-picker > input[type=text] option {
   color: black;
 }
+.cortexprime textarea.input-cpt {
+  display: block;
+  width: 100%;
+}
 .cortexprime color-picker > input[type=color] {
   height: 26px;
   -webkit-box-flex: 0;

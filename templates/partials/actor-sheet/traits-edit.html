@@ -100,7 +100,11 @@
         </div>
         {{#if ../settings.hasDescription}}
           <div class="separator-cpt"></div>
-          <div class="pa-2 relative-section">
+          {{!-- pl-4 (1rem), not pa-2's own 0.5rem: this block sits directly under the flex/pa-2
+                wrapper above, one .flex-col nesting level shallower than the Label box (which
+                picks up an extra flex-col's worth of left padding through the label/dice row
+                structure) - without it, Description's left edge sits 8px left of Label's. --}}
+          <div class="pa-2 pl-4 relative-section">
             <div class="section-background"></div>
             <label>
               <span class="input-label-cpt">{{localize 'Description'}}</span>
