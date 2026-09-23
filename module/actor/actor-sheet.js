@@ -107,6 +107,9 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
       isGM: game.user.isGM,
       // Either the actor has no type yet (first-time selection) or a GM asked to change it.
       showActorTypePicker: !this.actor.system.actorType || !!this._actorTypeEdit,
+      // Sheet-instance state (see _traitSetEdit below), not read off the actor - which trait set
+      // a client is editing must not affect any other client's already-open sheet.
+      traitSetEditIndex: this._traitSetEditIndex ?? null,
       theme,
     }
   }
@@ -256,6 +259,8 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     )
 
     this._actorTypeEdit = false
+    // The old type's trait set indices don't necessarily mean anything in the new type.
+    this._traitSetEditIndex = null
 
     // Unset-then-set, so trait sets and tabs the new type doesn't have actually disappear rather
     // than surviving Foundry's update() merge - see the comment above _resetDataPoints.
@@ -267,8 +272,10 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
   /** @override */
   _onClose (options) {
     // Foundry caches the sheet instance on the document, so without this a GM who opens the picker
-    // and closes the window without confirming reopens straight back into the picker.
+    // (or a trait set's edit view) and closes the window without confirming reopens straight back
+    // into it.
     this._actorTypeEdit = false
+    this._traitSetEditIndex = null
 
     return super._onClose(options)
   }
@@ -279,8 +286,7 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     if (!game.user.isGM) return
 
     // Deliberately sheet-instance state rather than a flag on the actor: writing it to the document
-    // (as _traitSetEdit does) would broadcast, dropping every other client with this sheet open
-    // into the picker too.
+    // would broadcast, dropping every other client with this sheet open into the picker too.
     this._actorTypeEdit = true
     this.render()
   }
@@ -525,10 +531,9 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     })
   }
 
-  async _closeTraitSetEdit (event, target) {
-    await this.actor.update({
-      ['system.actorType.traitSetEdit']: null
-    })
+  _closeTraitSetEdit (event, target) {
+    this._traitSetEditIndex = null
+    this.render()
   }
 
   async _getConsumableDiceSelection (options, label) {
@@ -758,12 +763,14 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     await this.actor.update(set)
   }
 
-  async _traitSetEdit (event, target) {
+  _traitSetEdit (event, target) {
     const { traitSet } = target.dataset
 
-    await this.actor.update({
-      ['system.actorType.traitSetEdit']: traitSet
-    })
+    // Sheet-instance state, not a document flag - see _actorTypeEditStart above for why: writing
+    // this to the actor would broadcast, pulling every other client's open sheet into the same
+    // trait set's edit view.
+    this._traitSetEditIndex = traitSet
+    this.render()
   }
 
   async _updateActorSettings (event, target) {

@@ -19,11 +19,11 @@
         </div>
       </div>
     {{else}}
-      {{#if (and (or data.system.actorType.traitSetEdit (eq data.system.actorType.traitSetEdit 0)) owner)}}
+      {{#if (and (or traitSetEditIndex (eq traitSetEditIndex 0)) owner)}}
         {{> "systems/cortexprime-ext/templates/partials/actor-sheet/trait-set-edit.html"
           data=data.system.actorType
-          traitSet=(lookup data.system.actorType.traitSets data.system.actorType.traitSetEdit)
-          traitSetIndex=data.system.actorType.traitSetEdit
+          traitSet=(lookup data.system.actorType.traitSets traitSetEditIndex)
+          traitSetIndex=traitSetEditIndex
           path="system.actorType.traitSets"
         }}
       {{else}}
