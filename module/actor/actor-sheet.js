@@ -227,9 +227,12 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     const currentActorType = this.actor.system.actorType
 
     if (!currentActorType) {
+      // Through mergeActorTypeData, not the raw settings entry - it's what turns an Additional
+      // Tab's defaultNotes template into the actor's own notes (and matches every other path that
+      // writes system.actorType: Update Settings and _actorTypeChange below both go through it).
       await this.actor.update({
         'img': actorType.defaultImage,
-        'system.actorType': actorType,
+        'system.actorType': mergeActorTypeData({}, actorType),
         'system.pp.value': actorType.hasPlotPoints ? 1 : 0
       })
 
