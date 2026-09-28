@@ -103,6 +103,20 @@ describe('computeDerivedActorType', () => {
     expect(result.additionalTabs[0].inherited).toBe(true)
   })
 
+  it('carries an Additional Tab\'s ownerOnly onto the stamped child untouched', () => {
+    const parent = {
+      ...parentType(),
+      additionalTabs: {
+        0: { id: '_ptab1', name: 'Secrets', ownerOnly: true }
+      }
+    }
+
+    const result = computeDerivedActorType(parent, bareChild())
+
+    expect(result.additionalTabs[0].ownerOnly).toBe(true)
+    expect(result.additionalTabs[0].inherited).toBe(true)
+  })
+
   it('carries a Default Section\'s allowRename/allowDeletion/allowEdit onto the stamped child untouched', () => {
     const parent = {
       ...parentType(),

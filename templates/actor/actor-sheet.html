@@ -30,8 +30,12 @@
         <div class="mb-2">
           <nav class="sheet-tabs tabs mb-4" data-group="primary">
             <a class="item tab-cpt{{ternary (eq theme.tabStyle 'rounded') ' tab-rounded-cpt' ''}}{{#if (eq activeTab 'traits')}} active{{/if}}" data-action="tab" data-group="primary" data-tab="traits">{{localize 'Traits'}}</a>
+            {{! Owner-only rule mirrors isAdditionalTabVisible (additionalTabVisibilityLogic.js) - not
+                filtered in JS, as tabIndex must stay the tab's real index for the update paths. }}
             {{#each data.system.actorType.additionalTabs as |additionalTab|}}
-              <a class="item tab-cpt{{ternary (eq theme.tabStyle 'rounded') ' tab-rounded-cpt' ''}}{{#if (eq ../activeTab additionalTab.id)}} active{{/if}}" data-action="tab" data-group="primary" data-tab="{{additionalTab.id}}">{{additionalTab.name}}</a>
+              {{#if (or ../owner (not additionalTab.ownerOnly))}}
+                <a class="item tab-cpt{{ternary (eq theme.tabStyle 'rounded') ' tab-rounded-cpt' ''}}{{#if (eq ../activeTab additionalTab.id)}} active{{/if}}" data-action="tab" data-group="primary" data-tab="{{additionalTab.id}}">{{additionalTab.name}}</a>
+              {{/if}}
             {{/each}}
           </nav>
         </div>
@@ -76,12 +80,14 @@
             </div>
           </article>
           {{#each data.system.actorType.additionalTabs as |additionalTab tabIndex|}}
-            {{> "systems/cortexprime-ext/templates/partials/actor-sheet/additional-tab.html"
-              tab=additionalTab
-              tabIndex=tabIndex
-              owner=owner
-              activeTab=../activeTab
-            }}
+            {{#if (or ../owner (not additionalTab.ownerOnly))}}
+              {{> "systems/cortexprime-ext/templates/partials/actor-sheet/additional-tab.html"
+                tab=additionalTab
+                tabIndex=tabIndex
+                owner=owner
+                activeTab=../activeTab
+              }}
+            {{/if}}
           {{/each}}
         </div>
       {{/if}}

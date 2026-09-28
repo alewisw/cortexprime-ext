@@ -250,6 +250,7 @@
   "OpenMyCharacter": "Open My Character",
   "OpenSceneJournal": "Open Scene Journal",
   "Outset": "outset",
+  "OwnerOnly": "Only visible to player and GM",
   "Paradox": "Paradox",
   "ParadoxApplyFailed": "The Paradox outcome could not be applied. See the console for details.",
   "ParadoxApplyLimit": "Apply Limit to avoid paradox",

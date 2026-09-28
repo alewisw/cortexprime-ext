@@ -344,3 +344,14 @@ What survives the change:
 
 **Update Settings** (the button just above) is unrelated and unchanged: it re-syncs an actor
 against its *own* Actor Type after that type has been edited in Actor Settings.
+
+## Owner-only Additional Tabs
+
+Ticking **Only visible to player and GM** on an Additional Tab in Actor Settings hides that tab
+from anyone without Owner permission on the actor — the GM and the owning player still see it,
+while an Observer sees only the other tabs. Like every Actor Type option, it reaches existing
+actors via **Update Settings**. If someone is viewing the tab when it becomes hidden to them,
+their sheet falls back to Traits.
+
+This hides the tab on screen only. Foundry sends every client the full actor data, so a player
+who goes looking in the browser console can still read it — it's table etiquette, not security.

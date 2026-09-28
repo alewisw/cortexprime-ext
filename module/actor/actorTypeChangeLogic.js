@@ -54,7 +54,7 @@ export const mergeActorTypeData = (actorData, actorTypeSettings) => ({
     }
 
     if (key === 'additionalTabs') {
-      return objectMapValues(propValue, ({ id, name, defaultNotes, description, allowShutdown }) => {
+      return objectMapValues(propValue, ({ id, name, defaultNotes, description, allowShutdown, ownerOnly }) => {
         const matchingSetting = objectFindValue((actorData.additionalTabs ?? {}), ({ id: matchId }) => matchId === id) ?? {}
         const existingNotes = matchingSetting.notes ?? {}
 
@@ -77,7 +77,7 @@ export const mergeActorTypeData = (actorData, actorTypeSettings) => ({
         // Config fields, not per-actor values - like name/notes above, they have to come from
         // settings every time or a change made after actors already have this Actor Type would
         // never reach them (the same trap fixed for enableHinder on traits).
-        return { ...matchingSetting, id, name, notes, description, allowShutdown }
+        return { ...matchingSetting, id, name, notes, description, allowShutdown, ownerOnly }
       })
     }
 

@@ -4,6 +4,7 @@
  */
 import { getLength, objectFindKey, objectMapValues, objectFindValue, objectReindexFilter, objectSome } from '../../lib/helpers.js'
 import { computeActorTypeChange, mergeActorTypeData } from './actorTypeChangeLogic.js'
+import { resolveActiveTab } from './additionalTabVisibilityLogic.js'
 import { confirmAction, dialogContent, expandNotesFieldOnEdit, getCurrentTheme, localizer, showPlotPointSpendAnimation } from '../scripts/foundryHelpers.js'
 import { selectPlotPointUsage } from '../scripts/plotPointUsageDialog.js'
 import { computeTraitDiceNormalization } from '../scripts/traitDiceNormalization.js'
@@ -86,6 +87,8 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     // re-render caught up. That gap between a briefly-wrong render and the correction arriving
     // moments later is what showed up as a torn/misaligned row on a skill needing the trim.
     const context = await super._prepareContext(options)
+
+    this.tabGroups.primary = resolveActiveTab(this.tabGroups.primary, this.actor.system.actorType?.additionalTabs, this.actor.isOwner)
 
     const actorTypes = game.settings.get('cortexprime-ext', 'actorTypes')
     const currentActorTypeId = this.actor.system.actorType?.id

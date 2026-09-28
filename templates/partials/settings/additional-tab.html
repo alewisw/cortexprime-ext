@@ -15,6 +15,15 @@
         <span class="input-label-cpt mb-0 ml-2">{{localize 'AllowShutdown'}}</span>
       </label>
     </div>
+    <div class="flex-col col-12">
+      <label class="flex flex-ac">
+        <div class="checkmark-container">
+          <input class="input-checkbox-cpt" name="{{concat 'actorTypes.' path '.' tabIndex '.ownerOnly'}}" type="checkbox" {{checked additionalTab.ownerOnly}}>
+          <div class="checkmark-cpt"></div>
+        </div>
+        <span class="input-label-cpt mb-0 ml-2">{{localize 'OwnerOnly'}}</span>
+      </label>
+    </div>
     <div class="flex-col">
       {{> "systems/cortexprime-ext/templates/partials/remove-button.html"
         group=path

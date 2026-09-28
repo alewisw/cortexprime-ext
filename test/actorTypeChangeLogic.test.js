@@ -197,6 +197,24 @@ describe('mergeActorTypeData', () => {
     expect(disabled.allowShutdown).toBeUndefined()
   })
 
+  it('takes an Additional Tab\'s ownerOnly from settings every time - Update Settings can turn it on, or off, for an existing actor', () => {
+    const settingsOwnerOnly = newTypeSettings()
+    settingsOwnerOnly.additionalTabs[0].ownerOnly = true
+
+    const enabled = mergeActorTypeData(actorSnapshot(), settingsOwnerOnly).additionalTabs[0]
+    expect(enabled.ownerOnly).toBe(true)
+    // The actor's own notes are still untouched by turning the option on.
+    expect(enabled.notes[0]).toEqual({ label: 'Background', value: 'Grew up on Mars', allowRename: true, allowDeletion: true, allowEdit: true })
+
+    // Actor previously had it on; the GM unticks it in settings - Update Settings must turn it
+    // back off rather than leaving the actor's last-known value in place.
+    const actorOwnerOnly = actorSnapshot()
+    actorOwnerOnly.additionalTabs[0].ownerOnly = true
+
+    const disabled = mergeActorTypeData(actorOwnerOnly, newTypeSettings()).additionalTabs[0]
+    expect(disabled.ownerOnly).toBeUndefined()
+  })
+
   it('syncs the three permission fields on a defaultNote whose label the actor already has, without touching its value', () => {
     const settings = newTypeSettings()
     settings.additionalTabs[0].defaultNotes[0] = { label: 'Background', value: 'ignored', allowRename: false, allowDeletion: false, allowEdit: false }
