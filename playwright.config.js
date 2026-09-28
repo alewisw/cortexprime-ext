@@ -33,6 +33,13 @@ export default defineConfig({
       name: 'chromium',
       // Override devices['Desktop Chrome']'s own viewport with the one above.
       use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } }
+    },
+    {
+      // Only for layout defects Chromium doesn't exhibit. Scoped to named specs so the rest of
+      // the suite isn't run twice. Needs `npx playwright install firefox`.
+      name: 'firefox',
+      testMatch: ['**/trait-set-columns.spec.js'],
+      use: { ...devices['Desktop Firefox'], viewport: { width: 1366, height: 768 } }
     }
   ]
 })

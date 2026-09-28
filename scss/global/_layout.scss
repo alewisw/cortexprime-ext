@@ -15,10 +15,16 @@
   }
 }
 
+// Firefox treats break-inside: avoid as a hint and will still split an item across columns,
+// leaving a grey band where the sheet background shows between the fragments. An inline-block
+// can't be fragmented, so it's what actually keeps an item whole.
 .column-item {
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
   break-inside: avoid;
+  display: inline-block;
+  vertical-align: top;
+  width: 100%;
 }
 
 .flex, .flex-row {

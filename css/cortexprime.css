@@ -180,6 +180,9 @@
   page-break-inside: avoid;
   -moz-column-break-inside: avoid;
   break-inside: avoid;
+  display: inline-block;
+  vertical-align: top;
+  width: 100%;
 }
 .cortexprime .flex, .cortexprime .flex-row {
   display: -webkit-box;
