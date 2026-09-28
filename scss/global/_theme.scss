@@ -1,3 +1,10 @@
+// Sheet Scale: `zoom` rather than transform, so it changes layout - fonts, spacing, dice and icons
+// all shrink together and a `height: auto` window shrinks with them. Content only; the window
+// header stays at Foundry's size.
+.cortexprime.actor-sheet > .window-content {
+  zoom: var(--cp-sheet-scale, 100%);
+}
+
 .cortexprime {
   .sheet-cpt {
     color: var(--cp-body-font-color, #000000);

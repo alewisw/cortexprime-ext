@@ -43,6 +43,7 @@ export const preloadHandlebarsTemplates = async function () {
     'settings/theme/font-style',
     'settings/theme/font-weight',
     'settings/theme/image',
+    'settings/theme/percent',
     'settings/theme/misc',
     'settings/theme/opacity',
     'settings/theme/inputs',

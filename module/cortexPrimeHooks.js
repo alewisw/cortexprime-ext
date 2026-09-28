@@ -1,6 +1,7 @@
 import { FloatingPanel } from './applications/FloatingPanel.js'
 import { UserDicePool } from './applications/UserDicePool.js'
-import { getCurrentTheme, localizer, setCssVars } from './scripts/foundryHelpers.js'
+import { CortexPrimeActorSheet } from './actor/actor-sheet.js'
+import { getCurrentTheme, localizer, onSettingChanged, setCssVars } from './scripts/foundryHelpers.js'
 import rollDice from './scripts/rollDice.js'
 import { registerCrisisPool } from './scripts/crisisPoolPanel.js'
 import { registerDoomPool } from './scripts/doomPool.js'
@@ -77,6 +78,19 @@ export default () => {
         await game.cortexprime.UserDicePool.toggle()
       })
   }
+
+  // The theme is a world setting, so every client - not just the GM who edited it - repaints
+  // when it changes. Open actor sheets re-render too: their templates read the theme (button and
+  // tab styles, input borders) and their window width follows its Sheet Scale.
+  onSettingChanged(setting => {
+    if (setting.key !== 'cortexprime-ext.themes') return
+
+    setCssVars(getCurrentTheme())
+
+    for (const app of foundry.applications.instances.values()) {
+      if (app instanceof CortexPrimeActorSheet && app.rendered) app.render()
+    }
+  })
 
   Hooks.once('ready', async () => {
     const theme = getCurrentTheme()

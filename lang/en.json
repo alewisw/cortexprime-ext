@@ -349,6 +349,8 @@
   "Sfx": "SFX",
   "SfxBullet": "SFX Bullet",
   "SfxLabel": "SFX Label",
+  "SheetScale": "Sheet Scale",
+  "SheetScaleHint": "Scales everything on actor sheets - text, spacing, dice and icons - by this percentage. Lower it for a more compact sheet.",
   "ShowProfileImage": "Show Profile Image",
   "Shutdown": "Shutdown",
   "SimpleTraits": "Simple Traits",

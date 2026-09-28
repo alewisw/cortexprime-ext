@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { computeCssVars, getBorderWidth } from '../module/scripts/foundryHelpers.js'
+import { computeCssVars, getBorderWidth, withThemeDefaults } from '../module/scripts/foundryHelpers.js'
+import defaultThemes from '../module/theme/defaultThemes.js'
 
 // computeCssVars returns pairs; most assertions here only care about one key at a time.
 const varsFor = theme => Object.fromEntries(computeCssVars(theme))
@@ -25,6 +26,25 @@ describe('getBorderWidth', () => {
 
   it('carries a zero width through rather than dropping it', () => {
     expect(getBorderWidth('t', 0)).toBe('0px 0 0 0')
+  })
+})
+
+describe('withThemeDefaults', () => {
+  // A custom preset saved before a key existed must still write that key, or switching to it
+  // leaves the previous theme's value on the page.
+  it('backfills keys the theme is missing from the Default preset', () => {
+    expect(withThemeDefaults({ bodyFontSize: 12 }).sheetScale).toBe(defaultThemes.list.Default.sheetScale)
+  })
+
+  it('keeps the theme\'s own values over the defaults, including null', () => {
+    const theme = withThemeDefaults({ sheetScale: 80, sheetBackgroundImage: null })
+
+    expect(theme.sheetScale).toBe(80)
+    expect(theme.sheetBackgroundImage).toBeNull()
+  })
+
+  it('treats a missing theme as all defaults', () => {
+    expect(withThemeDefaults(undefined)).toEqual(defaultThemes.list.Default)
   })
 })
 
@@ -58,6 +78,10 @@ describe('computeCssVars', () => {
 
   it('does not suffix keys outside the px list', () => {
     expect(varsFor({ sheetBackgroundColor: 12 })).toEqual({ '--cp-sheet-background-color': 12 })
+  })
+
+  it('suffixes the sheet scale with % rather than px', () => {
+    expect(varsFor({ sheetScale: 85 })).toEqual({ '--cp-sheet-scale': '85%' })
   })
 
   describe('background images', () => {

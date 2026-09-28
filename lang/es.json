@@ -162,6 +162,8 @@
   "Sfx": "SFX",
   "SfxBullet": "Viñeta de SFX",
   "SfxLabel": "Etiqueta de SFX",
+  "SheetScale": "Escala de la hoja",
+  "SheetScaleHint": "Escala todo en las hojas de actor - texto, espaciado, dados e iconos - según este porcentaje. Redúcelo para una hoja más compacta.",
   "ShowProfileImage": "Mostrar imagen del perfil",
   "SimpleTraits": "Rasgos sencillos",
   "SimpleTraitsDescription": "Estos rasgos aparecerían en la barra lateral de la pestaña de rasgos, generalmente como combinaciones de etiquetas y contadores o etiquetas y dados. Útiles para cosas como puntos de vida, dados de héroe, dado de escala, etc.",

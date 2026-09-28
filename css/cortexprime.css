@@ -1514,6 +1514,10 @@
   font-weight: bold;
 }
 
+.cortexprime.actor-sheet > .window-content {
+  zoom: var(--cp-sheet-scale, 100%);
+}
+
 .cortexprime .sheet-cpt {
   color: var(--cp-body-font-color, #000000);
   font-family: "Roboto", sans-serif;

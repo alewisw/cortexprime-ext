@@ -24,6 +24,16 @@
       }}
     </div>
     <div class="separator-cpt my-4"></div>
+    <h3 class="section-secondary-title-cpt">{{localize 'SheetScale'}}</h3>
+    <p class="my-2">{{localize 'SheetScaleHint'}}</p>
+    <div class="flex-row my-2">
+      {{> "systems/cortexprime-ext/templates/partials/settings/theme/percent.html"
+        label=(localize 'Size')
+        name='themes.currentSettings.sheetScale'
+        value=themes.currentSettings.sheetScale
+      }}
+    </div>
+    <div class="separator-cpt my-4"></div>
     <h3 class="section-secondary-title-cpt">{{localize 'Background'}}</h3>
     <div class="flex-row my-2">
       {{> "systems/cortexprime-ext/templates/partials/settings/theme/color.html"

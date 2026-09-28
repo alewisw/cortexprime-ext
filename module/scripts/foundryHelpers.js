@@ -1,3 +1,5 @@
+import defaultThemes from '../theme/defaultThemes.js'
+
 export const getBorderWidth = (borderPosition, borderWidth) => {
   switch (borderPosition) {
     case 'a':
@@ -104,6 +106,8 @@ const PX_KEYS = [
   'traitTitleFontSize'
 ]
 
+const PERCENT_KEYS = ['sheetScale']
+
 const IMAGE_KEYS = ['sheetBackgroundImage', 'sectionBackgroundImage']
 
 // Pure: the theme -> CSS custom property transform, as [property, value] pairs. Split out from
@@ -123,6 +127,10 @@ export const computeCssVars = (theme) =>
       value = `${value}px`
     }
 
+    if (PERCENT_KEYS.includes(key)) {
+      value = `${value}%`
+    }
+
     if (IMAGE_KEYS.includes(key)) {
       value = value
         ? value.startsWith('http')
@@ -136,8 +144,13 @@ export const computeCssVars = (theme) =>
     return [property, value]
   })
 
+// setCssVars only writes the keys it is given and never clears a property, so a theme missing a
+// key (a custom preset saved before that key existed) would leave the previous theme's value on
+// document.body. Backfilling from Default makes every apply write the full set.
+export const withThemeDefaults = theme => ({ ...defaultThemes.list.Default, ...theme })
+
 export const setCssVars = (theme) => {
-  computeCssVars(theme).forEach(([ property, value ]) => {
+  computeCssVars(withThemeDefaults(theme)).forEach(([ property, value ]) => {
     document.body.style.setProperty(property, value)
   })
 }

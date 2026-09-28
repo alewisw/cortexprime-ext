@@ -14,7 +14,16 @@ import { pushDeletedSection } from '../scripts/deletedSectionsLogic.js'
 import { DeletedSectionsDialog } from '../applications/DeletedSectionsDialog.js'
 import { ComplicationDialog } from '../applications/ComplicationDialog.js'
 import { removeDataPoint } from '../scripts/sheetHelpers.js'
+import { scaledSheetWidth } from './sheetScaleLogic.js'
 import { newId } from '../../lib/id.js'
+
+// Width at 100% Sheet Scale. The window's actual width is this scaled by the theme - see
+// _initializeApplicationOptions and _resizeToFitContent.
+const BASE_WIDTH = 960
+
+// A module function rather than a private method: _initializeApplicationOptions runs inside the
+// ApplicationV2 constructor, before the subclass's private members exist.
+const currentSheetWidth = () => scaledSheetWidth(BASE_WIDTH, getCurrentTheme()?.sheetScale)
 
 export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.sheets.ActorSheetV2
@@ -22,7 +31,7 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
   static DEFAULT_OPTIONS = {
     classes: ['cortexprime', 'sheet', 'actor', 'actor-sheet'],
     tag: 'form',
-    position: { width: 960, height: 'auto' },
+    position: { width: BASE_WIDTH, height: 'auto' },
     window: { resizable: true },
     form: {
       // MUST be set explicitly. appv1's ActorSheet defaulted submitOnChange to true, whereas
@@ -67,6 +76,15 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
   // through activeTab to mark the nav item and section active, because changeTab() only
   // applies those classes in response to a click.
   tabGroups = { primary: 'traits' }
+
+  _initializeApplicationOptions (options) {
+    const applicationOptions = super._initializeApplicationOptions(options)
+
+    // A fresh object, so this can never write through to a position shared with DEFAULT_OPTIONS.
+    applicationOptions.position = { ...applicationOptions.position, width: currentSheetWidth() }
+
+    return applicationOptions
+  }
 
   async _prepareContext (options) {
     const theme = getCurrentTheme()
@@ -204,7 +222,8 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     if (this.#userResized) return
 
     try {
-      this.setPosition({ width: this.options.position.width, height: 'auto' })
+      // Read live, not from options, so a Sheet Scale change applies on the sheet's next render.
+      this.setPosition({ width: currentSheetWidth(), height: 'auto' })
     } catch (error) {
       console.warn('CP | Actor Sheet: could not resize to fit content', error)
     }
