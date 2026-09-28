@@ -24,6 +24,10 @@
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
+  // Core gives .application color-scheme: dark and transparent option backgrounds under the dark
+  // theme. Firefox draws the open list from those - dark grey behind the black options below -
+  // where Chromium ignores them and draws white. Pin the list to light so both render the same.
+  color-scheme: light;
   color: transparent;
   cursor: pointer;
   height: toRem(32px);
