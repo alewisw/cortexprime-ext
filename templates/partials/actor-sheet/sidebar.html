@@ -14,7 +14,10 @@
           {{/if}}
         </div>
         {{#if actorType.showProfileImage}}
-          <img class="profile-image bkg-light-grey" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
+          {{!-- data-action opens the picker (DocumentSheetV2's built-in editImage); data-edit names the
+                field the form submission reads the new src back into. Owner-only: the core handler
+                doesn't check permissions, so an observer would get a picker whose save then fails. --}}
+          <img class="profile-image bkg-light-grey" src="{{actor.img}}" data-edit="img"{{#if owner}} data-action="editImage"{{/if}} title="{{actor.name}}" />
         {{/if}}
         <div class="input-label-cpt mt-2">{{localize 'Name'}}</div>
         <div class="mb-4">

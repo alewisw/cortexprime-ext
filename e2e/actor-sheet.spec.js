@@ -3,6 +3,7 @@ import { openAs } from './foundry.js'
 import { SHEET, openActorSheet, closeAllSheets, getActorPath, updateActor } from './helpers/sheet.js'
 import { clearPool, getPool } from './helpers/dicePool.js'
 import { confirmYes } from './helpers/dialog.js'
+import { closeOpenApps } from './helpers/apps.js'
 
 const ACTOR = 'Amanda Singh'
 
@@ -184,6 +185,45 @@ test('opening a note for editing expands it to the field\'s max height', async (
       .toBe(maxHeight)
   } finally {
     await updateActor(gm.page, ACTOR, { [deleteKey]: null })
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})
+
+// Clicking the sidebar portrait should open Foundry's FilePicker, and picking a file should save
+// it as the actor's image. Under ApplicationV2 that is DocumentSheetV2's built-in `editImage`
+// action: the click handler is bound by data-action, while data-edit only names the field the
+// form submission reads the new src back from.
+test('clicking the profile image opens a file picker, and the chosen image is saved to the actor', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  // A core asset that every Foundry install ships, so the path is valid in any world.
+  const NEW_IMAGE = 'icons/svg/item-bag.svg'
+
+  const originalImage = await getActorPath(gm.page, ACTOR, 'img')
+  const originalShowProfileImage = await getActorPath(gm.page, ACTOR, 'system.actorType.showProfileImage')
+  test.skip(originalImage === NEW_IMAGE, `${ACTOR} already uses ${NEW_IMAGE}, so a change could not be observed`)
+
+  try {
+    // The portrait only renders when the actor type turns it on.
+    await updateActor(gm.page, ACTOR, { 'system.actorType.showProfileImage': true })
+
+    const sheet = await openActorSheet(gm.page, ACTOR)
+    await sheet.locator('img.profile-image').click()
+
+    const picker = gm.page.locator('#file-picker')
+    await expect(picker).toBeVisible()
+
+    await picker.locator('input[name="file"]').fill(NEW_IMAGE)
+    await picker.locator('button[type="submit"]').click()
+
+    await expect.poll(() => getActorPath(gm.page, ACTOR, 'img')).toBe(NEW_IMAGE)
+  } finally {
+    await closeOpenApps(gm.page, { id: 'file-picker' })
+    await updateActor(gm.page, ACTOR, {
+      img: originalImage,
+      'system.actorType.showProfileImage': originalShowProfileImage ?? false
+    })
     await closeAllSheets(gm.page)
     await gm.context.close()
   }
