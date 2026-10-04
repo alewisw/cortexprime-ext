@@ -78,7 +78,7 @@ npm run package
 ```
 
 This compiles Sass first, then writes `dist/<id>-<version>.zip` (currently
-`dist/cortexprime-ext-1.1.0.zip`). Both `<id>` and `<version>` are read
+`dist/cortexprime-ext-1.1.1.zip`). Both `<id>` and `<version>` are read
 straight from `system.json`, so the filename and the manifest inside the
 archive can never disagree.
 

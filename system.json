@@ -11,7 +11,7 @@
     "verified": "13.351"
   },
   "description": "Cortex Prime System. A full implementation of the Cortex Prime tabletop RPG toolkit, with configurable Actor Types, Trait Sets, Dice Pools, and support for custom rule sets.",
-  "download": "https://github.com/alewisw/cortexprime-ext/releases/download/v1.1.0/cortexprime-ext-1.1.0.zip",
+  "download": "https://github.com/alewisw/cortexprime-ext/releases/download/v1.1.1/cortexprime-ext-1.1.1.zip",
   "esmodules": ["cortexprime.js"],
   "id": "cortexprime-ext",
   "grid": {
@@ -31,5 +31,5 @@
   "styles": ["css/cortexprime.css"],
   "title": "Cortex Prime Extended",
   "url": "https://github.com/alewisw/cortexprime-ext",
-  "version": "1.1.0"
+  "version": "1.1.1"
 }
