@@ -109,22 +109,27 @@ test('a GM shutting down a trait set re-renders the owning player\'s open sheet'
 test('additional tabs configured for an actor type render on the sheet', async ({ browser }) => {
   const gm = await openAs(browser, 'gm')
 
-  const tabs = await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs')
-  const names = Object.values(tabs ?? {}).map(tab => tab.name)
-  test.skip(names.length === 0, `${ACTOR}'s actor type has no additional tabs configured`)
+  const tabs = Object.values(await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs') ?? {})
+  test.skip(tabs.length === 0, `${ACTOR}'s actor type has no additional tabs configured`)
 
   try {
     const sheet = await openActorSheet(gm.page, ACTOR)
 
-    // The default Traits tab plus one per configured additional tab.
-    await expect(sheet.locator('nav.sheet-tabs a.item')).toHaveCount(names.length + 1)
+    // The default Traits tab plus one per configured additional tab. The GM sees owner-only
+    // tabs too, so every configured tab counts.
+    await expect(sheet.locator('nav.sheet-tabs a.item')).toHaveCount(tabs.length + 1)
 
-    for (const name of names) {
-      await expect(sheet.locator('nav.sheet-tabs a.item', { hasText: name })).toHaveCount(1)
+    // Located by id, and the name matched exactly: a `hasText` filter is a case-insensitive
+    // substring match, so a tab called "Notes" also matched "Private Notes".
+    for (const { id, name } of tabs) {
+      const tab = sheet.locator(`nav.sheet-tabs a.item[data-tab="${id}"]`)
+
+      await expect(tab).toHaveCount(1)
+      await expect(tab).toHaveText(name)
     }
 
     // Switching to one actually shows its panel.
-    const firstId = Object.values(tabs)[0].id
+    const firstId = tabs[0].id
     await sheet.locator(`nav.sheet-tabs a.item[data-tab="${firstId}"]`).click()
     await expect(sheet.locator(`section.tab[data-tab="${firstId}"]`)).toBeVisible()
   } finally {
