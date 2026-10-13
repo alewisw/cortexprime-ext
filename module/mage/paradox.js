@@ -10,6 +10,7 @@
 import { getLength } from '../../lib/helpers.js'
 import { localizer } from '../scripts/foundryHelpers.js'
 import { getEffectiveDiceMap } from '../scripts/traitDiceTemporary.js'
+import { replaceAt } from '../scripts/documentUpdateLogic.js'
 import { getActiveChallenge, getBeatTargetIdFor, getTargetRecord } from '../scripts/rollToBeat.js'
 import {
   applyShielding,
@@ -271,14 +272,10 @@ const postParadoxLog = async log => {
   await ChatMessage.create({ content })
 }
 
-// Same unset-then-set reset used throughout actor-sheet.js and hitches.js. The two update() calls
-// MUST stay separate — combined, Foundry applies the deletion after the merge and wipes the value
-// that was just written.
+// Same single replacing update used throughout actor-sheet.js and hitches.js - see replaceAt
+// (documentUpdateLogic.js) for why it must not be an unset-then-set pair.
 const setSimpleTraitDie = async (actor, index, face) => {
-  const path = `system.actorType.simpleTraits.${index}.dice`
-
-  await actor.update({ [`${path}.-=value`]: null })
-  await actor.update({ [`${path}.value`]: { 0: String(face) } })
+  await actor.update(replaceAt(`system.actorType.simpleTraits.${index}.dice`, { value: { 0: String(face) } }))
 }
 
 export const applyParadoxOutcome = async ({ actor, pending, limitApplied }) => {

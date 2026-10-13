@@ -52,8 +52,7 @@ describe('computeTraitDiceNormalization', () => {
     }
 
     expect(computeTraitDiceNormalization(actorType)).toEqual({
-      unset: { 'system.actorType.traitSets.0.traits.0.dice.-=value': null },
-      set: { 'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' } }
+      update: { 'system.actorType.traitSets.0.traits.0.dice.==value': { 0: '8' } }
     })
   })
 
@@ -65,8 +64,7 @@ describe('computeTraitDiceNormalization', () => {
     }
 
     expect(computeTraitDiceNormalization(actorType)).toEqual({
-      unset: { 'system.actorType.traitSets.0.customTraits.0.dice.-=value': null },
-      set: { 'system.actorType.traitSets.0.customTraits.0.dice.value': { 0: '6' } }
+      update: { 'system.actorType.traitSets.0.customTraits.0.dice.==value': { 0: '6' } }
     })
   })
 
@@ -80,11 +78,8 @@ describe('computeTraitDiceNormalization', () => {
     }
 
     expect(computeTraitDiceNormalization(actorType)).toEqual({
-      unset: {
-        'system.actorType.traitSets.0.traits.1.dice.-=value': null
-      },
-      set: {
-        'system.actorType.traitSets.0.traits.1.dice.value': { 0: '8' }
+      update: {
+        'system.actorType.traitSets.0.traits.1.dice.==value': { 0: '8' }
       }
     })
   })
@@ -97,8 +92,7 @@ describe('computeTraitDiceNormalization', () => {
     }
 
     expect(computeTraitDiceNormalization(actorType, 'foo.bar')).toEqual({
-      unset: { 'foo.bar.traitSets.0.traits.0.dice.-=value': null },
-      set: { 'foo.bar.traitSets.0.traits.0.dice.value': { 0: '6' } }
+      update: { 'foo.bar.traitSets.0.traits.0.dice.==value': { 0: '6' } }
     })
   })
 
@@ -121,8 +115,7 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: { 'system.actorType.traitSets.0.traits.0.subTraits.0.dice.-=value': null },
-        set: { 'system.actorType.traitSets.0.traits.0.subTraits.0.dice.value': { 0: '6' } }
+        update: { 'system.actorType.traitSets.0.traits.0.subTraits.0.dice.==value': { 0: '6' } }
       })
     })
 
@@ -134,8 +127,7 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: { 'system.actorType.traitSets.0.traits.0.dice.-=value': null },
-        set: { 'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' } }
+        update: { 'system.actorType.traitSets.0.traits.0.dice.==value': { 0: '8' } }
       })
     })
 
@@ -147,8 +139,7 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: { 'system.actorType.traitSets.0.traits.0.subTraits.0.dice.-=value': null },
-        set: { 'system.actorType.traitSets.0.traits.0.subTraits.0.dice.value': { 0: '6' } }
+        update: { 'system.actorType.traitSets.0.traits.0.subTraits.0.dice.==value': { 0: '6' } }
       })
     })
   })
@@ -162,13 +153,9 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: {
-          'system.actorType.traitSets.0.traits.0.dice.-=value': null,
-          'system.actorType.traitSets.0.traits.0.dice.-=temporaryValue': null
-        },
-        set: {
-          'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' },
-          'system.actorType.traitSets.0.traits.0.dice.temporaryValue': { 0: '10' }
+        update: {
+          'system.actorType.traitSets.0.traits.0.dice.==value': { 0: '8' },
+          'system.actorType.traitSets.0.traits.0.dice.==temporaryValue': { 0: '10' }
         }
       })
     })
@@ -181,13 +168,9 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: {
-          'system.actorType.traitSets.0.traits.0.dice.-=value': null,
-          'system.actorType.traitSets.0.traits.0.dice.-=temporaryValue': null
-        },
-        set: {
-          'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' },
-          'system.actorType.traitSets.0.traits.0.dice.temporaryValue': {}
+        update: {
+          'system.actorType.traitSets.0.traits.0.dice.==value': { 0: '8' },
+          'system.actorType.traitSets.0.traits.0.dice.==temporaryValue': {}
         }
       })
     })
@@ -200,8 +183,7 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: { 'system.actorType.traitSets.0.traits.0.dice.-=value': null },
-        set: { 'system.actorType.traitSets.0.traits.0.dice.value': { 0: '8' } }
+        update: { 'system.actorType.traitSets.0.traits.0.dice.==value': { 0: '8' } }
       })
     })
   })
@@ -225,8 +207,7 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: { 'system.actorType.simpleTraits.0.dice.-=value': null },
-        set: { 'system.actorType.simpleTraits.0.dice.value': { 0: '6' } }
+        update: { 'system.actorType.simpleTraits.0.dice.==value': { 0: '6' } }
       })
     })
 
@@ -285,8 +266,7 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: { 'system.actorType.assets.0.dice.-=value': null },
-        set: { 'system.actorType.assets.0.dice.value': { 0: '8' } }
+        update: { 'system.actorType.assets.0.dice.==value': { 0: '8' } }
       })
     })
 
@@ -299,13 +279,9 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: {
-          'system.actorType.assets.0.dice.-=value': null,
-          'system.actorType.assets.0.dice.-=temporaryValue': null
-        },
-        set: {
-          'system.actorType.assets.0.dice.value': { 0: '8' },
-          'system.actorType.assets.0.dice.temporaryValue': { 0: '10' }
+        update: {
+          'system.actorType.assets.0.dice.==value': { 0: '8' },
+          'system.actorType.assets.0.dice.==temporaryValue': { 0: '10' }
         }
       })
     })
@@ -332,8 +308,7 @@ describe('computeTraitDiceNormalization', () => {
       }
 
       expect(computeTraitDiceNormalization(actorType)).toEqual({
-        unset: { 'system.actorType.assets.1.dice.-=value': null },
-        set: { 'system.actorType.assets.1.dice.value': { 0: '8' } }
+        update: { 'system.actorType.assets.1.dice.==value': { 0: '8' } }
       })
     })
   })

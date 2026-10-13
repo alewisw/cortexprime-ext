@@ -603,3 +603,68 @@ test('the Deleted Sections button is absent on a tab that has never had a deleti
     await gm.context.close()
   }
 })
+
+// A tab section add (and delete/restore) used to be written as two updates: unset the whole notes
+// object, then set the new one. A second "+" click landing between them read the empty mid-gap
+// state, and its own write-back merged over entry 0 - an existing section silently replaced by a
+// blank "Notes" one, with nothing in Deleted Sections to undo it. A refresh or disconnect in the
+// same gap left the tab with neither its sections nor its undo queue. Each change is now one
+// replacing update, so there is no gap to land in.
+//
+// The second click is fired from the updateActor hook of the first click's write, which is the
+// earliest moment the first click's data has landed on this client - the exact timing that used
+// to hit the gap.
+test('a second Add click while the first is still saving never overwrites an existing section', async ({ browser }) => {
+  const gm = await openAs(browser, 'gm')
+
+  const tabs = await getActorPath(gm.page, ACTOR, 'system.actorType.additionalTabs')
+  const tabEntries = Object.entries(tabs ?? {})
+  test.skip(tabEntries.length === 0, `${ACTOR}'s actor type has no additional tabs configured`)
+
+  const [tabIndex, tab] = tabEntries[0]
+  const tabPath = `system.actorType.additionalTabs.${tabIndex}`
+  const SEED = ['E2E Race A', 'E2E Race B', 'E2E Race C']
+
+  const replaceTab = (notes, deletedSections) => updateActor(gm.page, ACTOR, {
+    [`${tabPath}.==notes`]: notes,
+    [`${tabPath}.==deletedSections`]: deletedSections
+  })
+
+  try {
+    await replaceTab(
+      Object.fromEntries(SEED.map((label, i) => [i, {
+        label, value: `<p>${label} content</p>`, allowRename: true, allowDeletion: true, allowEdit: true
+      }])),
+      {}
+    )
+
+    const sheet = await openActorSheet(gm.page, ACTOR)
+    await sheet.locator(`nav.sheet-tabs a.item[data-tab="${tab.id}"]`).click()
+
+    const addButton = `.actor-sheet section.tab[data-tab="${tab.id}"] .add-note`
+    await gm.page.evaluate(selector => {
+      window.Hooks.once('updateActor', () => document.querySelector(selector)?.click())
+    }, addButton)
+    await gm.page.locator(addButton).click()
+
+    // Both clicks have finished writing once two "Notes" sections exist, or the overwritten
+    // seed has shown up as a stray one - either way the count stops at five or fewer.
+    await expect
+      .poll(async () => Object.keys(await getActorPath(gm.page, ACTOR, `${tabPath}.notes`) ?? {}).length)
+      .toBeGreaterThanOrEqual(4)
+    await gm.page.waitForTimeout(1000)
+
+    const notes = Object.values(await getActorPath(gm.page, ACTOR, `${tabPath}.notes`) ?? {})
+
+    for (const label of SEED) {
+      const note = notes.find(n => n.label === label)
+
+      expect(note, `"${label}" was overwritten by the second Add click`).toBeTruthy()
+      expect(note.value).toBe(`<p>${label} content</p>`)
+    }
+  } finally {
+    await replaceTab(tab.notes ?? {}, tab.deletedSections ?? {})
+    await closeAllSheets(gm.page)
+    await gm.context.close()
+  }
+})

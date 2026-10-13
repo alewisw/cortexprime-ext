@@ -6,6 +6,7 @@ import { getLength } from '../../lib/helpers.js'
 import { localizer, showPlotPointAnimation } from './foundryHelpers.js'
 import { getActiveChallenge } from './rollToBeat.js'
 import { toComplicationsObject, toDiceObject } from './hitchesLogic.js'
+import { replaceAt } from './documentUpdateLogic.js'
 import { canHitchesStepUpParadox, getParadoxOutcome } from '../mage/paradoxLogic.js'
 
 // Re-exported so HitchesDialog.js keeps importing it from here alongside applyHitchOutcomes and
@@ -49,12 +50,10 @@ export const getSceneActor = () => {
   return actorId ? game.actors.get(actorId) : null
 }
 
-// Same unset-then-set reset used throughout actor-sheet.js. The two update() calls MUST stay
-// separate: combining "path.-=key": null and "path.key": value into one call makes Foundry apply
-// the deletion after the merge, silently wiping the value that was just written.
+// Same single replacing update used throughout actor-sheet.js - see replaceAt
+// (documentUpdateLogic.js) for why it must not be an unset-then-set pair.
 const resetDataPoint = async (actor, path, target, value) => {
-  await actor.update({ [`${path}.-=${target}`]: null })
-  await actor.update({ [`${path}.${target}`]: value })
+  await actor.update(replaceAt(path, { [target]: value }))
 }
 
 export const applyHitchOutcomes = async ({ actor, sceneActor, projection, plotPoints, summaryHtml }) => {

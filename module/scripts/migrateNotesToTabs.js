@@ -35,12 +35,14 @@ export const migrateNotesToTabs = async () => {
 
     if (!migrated) continue
 
-    // Two separate calls, matching the unset-then-set convention used throughout actor-sheet.js —
-    // only additionalTabs is actually changing here, but the stale top-level notes key still needs
-    // an explicit -= unset of its own; a merge-based update() never deletes a removed key on its own.
+    // One update: the stale top-level notes key needs an explicit -= unset (a merge-based update()
+    // never deletes a removed key on its own), and it is a different key from additionalTabs, so the
+    // two can share a call - only an unset and a set of the SAME key conflict.
     try {
-      await actor.update({ 'system.actorType.-=notes': null })
-      await actor.update({ 'system.actorType.additionalTabs': migrated.additionalTabs })
+      await actor.update({
+        'system.actorType.-=notes': null,
+        'system.actorType.additionalTabs': migrated.additionalTabs
+      })
     } catch (error) {
       console.warn('CP | Could not migrate notes to Additional Tabs for actor', actor.name, error)
     }

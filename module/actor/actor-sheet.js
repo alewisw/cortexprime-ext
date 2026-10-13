@@ -14,6 +14,7 @@ import { pushDeletedSection } from '../scripts/deletedSectionsLogic.js'
 import { DeletedSectionsDialog } from '../applications/DeletedSectionsDialog.js'
 import { ComplicationDialog } from '../applications/ComplicationDialog.js'
 import { removeDataPoint } from '../scripts/sheetHelpers.js'
+import { replaceAt } from '../scripts/documentUpdateLogic.js'
 import { scaledSheetWidth } from './sheetScaleLogic.js'
 import { newId } from '../../lib/id.js'
 
@@ -92,10 +93,7 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     if (this.actor.isOwner) {
       const normalization = computeTraitDiceNormalization(this.actor.system.actorType)
 
-      if (normalization) {
-        await this.actor.update(normalization.unset)
-        await this.actor.update(normalization.set)
-      }
+      if (normalization) await this.actor.update(normalization.update)
     }
 
     // Read AFTER the fix above, not before: the context snapshots the actor's CURRENT state,
@@ -757,32 +755,15 @@ export class CortexPrimeActorSheet extends foundry.applications.api.HandlebarsAp
     showPlotPointSpendAnimation()
   }
 
+  // Replaces `path.target` wholesale in ONE update - see replaceAt (documentUpdateLogic.js) for why
+  // this must not go back to an unset-then-set pair of updates.
   async _resetDataPoint(path, target, value) {
-    await this.actor.update({
-      [`${path}.-=${target}`]: null
-    })
-
-    await this.actor.update({
-      [`${path}.${target}`]: value
-    })
+    await this.actor.update(replaceAt(path, { [target]: value }))
   }
 
-  // Same unset-then-set semantics as _resetDataPoint (needed so a shrinking object, e.g. a
-  // temporaryValue losing an index, actually drops the removed key instead of Foundry's default
-  // update() merge silently leaving it in place), but for one or more targets under the same path.
-  // IMPORTANT: the unset and the set must remain two SEPARATE actor.update() calls — combining
-  // "path.-=X": null and "path.X": value into a single update() silently drops the set (Foundry
-  // applies the deletion after merging, wiping the just-written value along with it), which was
-  // observed as right-clicking one die in a multi-die pool deleting the entire pool instead of
-  // just that die. Still batches multiple targets (e.g. value + temporaryValue) into one unset
-  // call and one set call, instead of a separate unset/set pair per target.
+  // As _resetDataPoint, for several targets under the same path (e.g. value + temporaryValue).
   async _resetDataPoints(path, entries) {
-    const targets = Object.keys(entries)
-    const unset = targets.reduce((acc, target) => ({ ...acc, [`${path}.-=${target}`]: null }), {})
-    const set = targets.reduce((acc, target) => ({ ...acc, [`${path}.${target}`]: entries[target] }), {})
-
-    await this.actor.update(unset)
-    await this.actor.update(set)
+    await this.actor.update(replaceAt(path, entries))
   }
 
   _traitSetEdit (event, target) {

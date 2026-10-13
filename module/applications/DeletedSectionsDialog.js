@@ -1,6 +1,7 @@
 import { getLength } from '../../lib/helpers.js'
 import { CortexApplicationV2 } from './CortexApplicationV2.js'
 import { previewText, removeDeletedSection } from '../scripts/deletedSectionsLogic.js'
+import { replaceAt } from '../scripts/documentUpdateLogic.js'
 
 export class DeletedSectionsDialog extends CortexApplicationV2 {
   constructor (actor, tabIndex) {
@@ -64,18 +65,9 @@ export class DeletedSectionsDialog extends CortexApplicationV2 {
     const newNotes = { ...currentNotes, [getLength(currentNotes)]: note }
     const newDeletedSections = removeDeletedSection(deletedSections, index)
 
-    // Unset-then-set, in two separate calls, per the warning in actor-sheet.js's
-    // _resetDataPoints - combining an unset with its accompanying set in one actor.update() lets
-    // Foundry apply the deletion after the merge, silently dropping the value just written.
-    await this.actor.update({
-      [`${this.path}.-=notes`]: null,
-      [`${this.path}.-=deletedSections`]: null
-    })
-
-    await this.actor.update({
-      [`${this.path}.notes`]: newNotes,
-      [`${this.path}.deletedSections`]: newDeletedSections
-    })
+    // One replacing update for both - see replaceAt (documentUpdateLogic.js). As an unset-then-set
+    // pair, an interruption between the two left the tab with neither its sections nor its queue.
+    await this.actor.update(replaceAt(this.path, { notes: newNotes, deletedSections: newDeletedSections }))
 
     await this.render()
   }

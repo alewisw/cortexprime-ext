@@ -5,6 +5,7 @@
 // version-gate setting — same shape as migrateNotesToTabs.js.
 import { applyActorTypeInheritance } from '../actor/actorTypeInheritanceLogic.js'
 import { computeMigratedActorNotes, computeMigratedActorTypes } from './migrateSectionPermissionsLogic.js'
+import { replaceAt } from './documentUpdateLogic.js'
 
 export const migrateSectionPermissions = async () => {
   if (game.user !== game.users.activeGM) return
@@ -22,8 +23,7 @@ export const migrateSectionPermissions = async () => {
     if (!migrated) continue
 
     try {
-      await actor.update({ 'system.actorType.-=additionalTabs': null })
-      await actor.update({ 'system.actorType.additionalTabs': migrated })
+      await actor.update(replaceAt('system.actorType', { additionalTabs: migrated }))
     } catch (error) {
       console.warn('CP | Could not migrate section permissions for actor', actor.name, error)
     }
