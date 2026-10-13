@@ -166,8 +166,8 @@ npx playwright install chromium
 **Disable modules that render their own floating windows** in the test world. The suite clicks
 real controls, and a module window parked over the Dice Pool tray silently intercepts those
 clicks — the button underneath stays in the DOM, so the spec hangs until it times out rather than
-failing with anything useful. `yendors-scene-actors` is the known offender; `00-preflight.spec.js`
-fails up front if any window is open right after login.
+failing with anything useful. `00-preflight.spec.js` fails up front if any window is open right
+after login.
 
 ### Running the tests
 

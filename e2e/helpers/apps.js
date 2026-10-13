@@ -6,8 +6,7 @@
 //
 // Nothing in THIS system is appv1 any more, but the ui.windows half still earns its place: it is
 // what lets closeLeftoverWindows (e2e/foundry.js) dismiss a third-party module's V1 dialog before
-// it parks itself over the UI and swallows a spec's clicks. Yendor's Scene Actors is the known
-// example, and its changelog is a FormApplication.
+// it parks itself over the UI and swallows a spec's clicks.
 //
 // The V2 half MUST be filtered to framed windows. `foundry.applications.instances` is not the
 // equivalent of `ui.windows`: it holds every live ApplicationV2, which in v13 includes all the

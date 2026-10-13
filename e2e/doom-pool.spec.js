@@ -49,7 +49,17 @@ test('the Doom Pool button opens the configured actor sheet', async ({ browser }
     const openedId = await openActorSheetActorId(gm.page)
     expect(openedId).toBe(configuredId)
 
-    // It is a toggle, not just an opener.
+    // It is a toggle, not just an opener. Foundry centres the sheet vertically, so a tall Doom
+    // Pool actor's sheet reaches the top of the screen and covers the floating panel - move it
+    // below the button first, so the second click lands on the real button whichever actor the
+    // world has configured. Shrunk as well as moved: Foundry keeps a window on screen, so a
+    // near-full-height sheet given only a new top is pushed straight back up over the panel.
+    const { y, height } = await button(gm.page).boundingBox()
+    await gm.page.evaluate(
+      ({ id, top }) => window.game.actors.get(id).sheet.setPosition({ top, height: window.innerHeight - top - 10 }),
+      { id: configuredId, top: Math.ceil(y + height) + 10 }
+    )
+
     await button(gm.page).click()
     await expect(button(gm.page)).not.toHaveClass(/active/)
   } finally {

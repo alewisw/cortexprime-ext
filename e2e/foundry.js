@@ -23,16 +23,6 @@ function foundryUrl() {
   return process.env.FOUNDRY_URL || FOUNDRY_URL_DEFAULT
 }
 
-// The "Yendor's Scene Actors" module (installed locally) shows a changelog
-// dialog (Documentation, a FormApplication with classes ['yendors-dialog',
-// 'scene-actors-selector-documentation']) on ready whenever its "seen
-// version" setting is behind the module's current version. That setting is
-// client-scoped (browser localStorage), so a fresh Playwright context with
-// no localStorage sees it as unseen every time and the dialog reappears,
-// sitting on top of the game UI. Close it if present so it can't interfere
-// with anything the test does afterward. Uses a short timeout rather than
-// an instant check, since the dialog can render a beat after game.ready
-// fires; harmless/near-instant when it never shows up.
 // Closes every application window that is on screen at login.
 //
 // Nothing this suite drives is open yet at this point, so whatever is showing was put there by
@@ -68,20 +58,6 @@ async function dismissNotifications(page) {
     await page.evaluate(() => window.ui?.notifications?.clear?.())
   } catch {
     // Notifications not up yet — nothing to clear.
-  }
-}
-
-// Counted before clicking, deliberately. Clicking straight through and catching the failure costs
-// the FULL action timeout every time the dialog is absent - which is almost always, since it only
-// appears when the module's version has moved on. Measured at 3.1-3.3s per session in a trace, on
-// every openAs in the suite. count() answers immediately.
-async function closeYendorsChangelogIfPresent(page) {
-  try {
-    const close = page.locator('.window-app.yendors-dialog .header-button.close')
-
-    if (await close.count()) await close.first().click({ timeout: 3_000 })
-  } catch {
-    // Not shown, or it went away on its own — nothing to close.
   }
 }
 
@@ -141,7 +117,6 @@ export async function joinAs(browser, { user = ROLE_USERS.gm, password = '' } = 
     timeout: 60_000
   })
 
-  await closeYendorsChangelogIfPresent(page)
   await closeLeftoverWindows(page)
   await dismissNotifications(page)
   await disableDiceAnimations(page)
@@ -173,7 +148,6 @@ export async function openAs(browser, role) {
     timeout: 60_000
   })
 
-  await closeYendorsChangelogIfPresent(page)
   await closeLeftoverWindows(page)
   await dismissNotifications(page)
   await disableDiceAnimations(page)

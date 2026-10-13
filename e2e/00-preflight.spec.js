@@ -11,7 +11,7 @@ import { listOpenAppNames } from './helpers/apps.js'
 //   - Magick left armed at "Vulgar" after a session at the table makes the Mage rule set disable
 //     the roll buttons of any roller whose pool has no Powers trait, and nearly every spec rolls
 //     plain custom dice. Seven specs timed out on "the roll button never enabled" with no hint why.
-//   - A third-party module (yendors-scene-actors) parked a window over the Dice Pool tray and
+//   - A third-party module parked a window over the Dice Pool tray and
 //     swallowed the clicks aimed at it. The button under it was in the DOM the whole time, so the
 //     spec hung for its full six-minute timeout and only the Playwright trace showed the cause.
 //   - Foundry elects the FIRST connected GM as the active one, and the GM-side reactions (Paradox,
@@ -73,7 +73,7 @@ test('preflight: the world is in a fit state for the suite', async ({ browser })
         `The ${role} client has ${open.length} application window(s) open right after login ` +
         `(${open.join(', ')}). A window parked over the Dice Pool tray intercepts clicks meant ` +
         'for it and hangs the spec until it times out. Disable modules that render their own ' +
-        'floating windows in this world — yendors-scene-actors is the known offender.'
+        'floating windows in this world.'
       ).toEqual([])
     }
 
