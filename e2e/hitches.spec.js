@@ -256,3 +256,147 @@ test('the Hitches dialog\'s "Choose…" button reuses ComplicationDialog\'s pick
     await player2.context.close()
   }
 })
+
+// Two hitches in one roll. computePlotPoints (hitchesLogic.js) pays one Plot Point per UNIQUE
+// complication touched, so spending both hitches on the same complication (introduce it, then step
+// that same new one up) pays 1, while spending them on two different complications pays 2.
+// Shared setup: Cameron rolls four d6 with two of them forced to natural 1s.
+async function rollTwoHitches (gm, player2) {
+  await clearChallenge(gm.page)
+  await clearRollRecord(gm.page)
+  await clearRollRecord(gm.page, PLAYER2_ACTOR)
+  await enableTestMode(gm.page)
+  await awaitSetting(player2.page, 'testModeSelectDiceValues', true)
+
+  await openTray(gm.page)
+  await openTray(player2.page)
+
+  await setChallengeType(gm.page, 'test')
+  await setInitiator(gm.page, await challengeIdFor(gm.page, 'gm'))
+  await checkResponder(gm.page, await challengeIdFor(gm.page, 'player2'))
+  await seedRollRecord(gm.page, { total: 6, effectDice: [8] })
+
+  await buildUniformPool(player2.page, { count: 4, face: 6, prefix: 'P2 Die' })
+  await expect.poll(() => anyRollButtonEnabled(player2.page)).toBe(true)
+
+  // Descending, with both 1s last - the same reasoning as the single-hitch test above.
+  await rollExactly(player2.page, [5, 4, 1, 1])
+
+  const dialog = gm.page.locator('[id^="hitches-dialog-"]')
+  await expect(dialog).toBeVisible({ timeout: 15_000 })
+  await expect(dialog.locator('.hitch-row')).toHaveCount(2)
+
+  return dialog
+}
+
+async function introduceComplication (dialog, rowIndex, name) {
+  const row = dialog.locator('.hitch-row').nth(rowIndex)
+
+  await row.locator('select.hitch-action').selectOption('introduce-complication')
+
+  const nameField = row.locator('.hitch-complication-name:visible')
+  await expect(nameField).toHaveCount(1)
+  await nameField.fill(name)
+  await nameField.blur()
+  await expect(nameField).toHaveValue(name)
+}
+
+for (const { title, plan, expectedPlotPoints, expectedComplications } of [
+  {
+    title: 'two hitches spent on the SAME complication pay exactly 1 Plot Point',
+    plan: async dialog => {
+      await introduceComplication(dialog, 0, 'Playwright Same Complication')
+
+      // The second hitch steps up the complication the first one is introducing - offered in the
+      // step-up list as a pending complication before anything has been written.
+      const row = dialog.locator('.hitch-row').nth(1)
+      await row.locator('select.hitch-action').selectOption('step-up-complication')
+
+      // :visible - each row carries a character and a scene complication select, one hidden.
+      const select = row.locator('select.hitch-complication-select:visible')
+      await expect(select).toBeVisible()
+      const option = select.locator('option', { hasText: 'Playwright Same Complication' })
+      await expect(option).toHaveCount(1)
+      await select.selectOption(await option.getAttribute('value'))
+    },
+    expectedPlotPoints: 1,
+    // Introduced at D6, then stepped up once by the second hitch.
+    expectedComplications: { 'Playwright Same Complication': ['8'] }
+  },
+  {
+    title: 'two hitches spent on two DIFFERENT complications pay exactly 2 Plot Points',
+    plan: async dialog => {
+      await introduceComplication(dialog, 0, 'Playwright First Complication')
+      await introduceComplication(dialog, 1, 'Playwright Second Complication')
+    },
+    expectedPlotPoints: 2,
+    expectedComplications: { 'Playwright First Complication': ['6'], 'Playwright Second Complication': ['6'] }
+  }
+]) {
+  test(title, async ({ browser }) => {
+    const gm = await openAs(browser, 'gm')
+    const player2 = await openAs(browser, 'player2')
+
+    const notActiveGM = await requireActiveGM(gm.page)
+
+    if (notActiveGM) {
+      await gm.context.close()
+      await player2.context.close()
+      test.skip(true, notActiveGM)
+    }
+
+    const before = await snapshotSettings(gm.page, WRITES)
+    const complicationsBefore = await getActorPath(gm.page, PLAYER2_ACTOR, COMPLICATIONS)
+    const ppBefore = await getActorPath(gm.page, PLAYER2_ACTOR, PP)
+
+    try {
+      const dialog = await rollTwoHitches(gm, player2)
+      const messagesBefore = await getChatMessageIds(gm.page)
+
+      await plan(dialog)
+
+      // Still only a projection until Confirm.
+      expect(await getActorPath(gm.page, PLAYER2_ACTOR, PP)).toBe(ppBefore)
+
+      await dialog.locator('.hitches-confirm').click()
+      await expect(dialog).toBeHidden({ timeout: 15_000 })
+
+      const labels = Object.keys(expectedComplications)
+
+      await expect
+        .poll(async () => Object.values(await getActorPath(gm.page, PLAYER2_ACTOR, COMPLICATIONS) ?? {}).map(entry => entry.label))
+        .toEqual(expect.arrayContaining(labels))
+
+      const complications = Object.values(await getActorPath(gm.page, PLAYER2_ACTOR, COMPLICATIONS))
+
+      for (const label of labels) {
+        const matching = complications.filter(entry => entry.label === label)
+
+        expect(matching, `exactly one "${label}" complication`).toHaveLength(1)
+        expect(Object.values(matching[0].dice.value)).toEqual(expectedComplications[label])
+      }
+
+      await expect.poll(() => getActorPath(gm.page, PLAYER2_ACTOR, PP)).toBe(ppBefore + expectedPlotPoints)
+
+      // Settle, then make sure nothing pays out a second time. The award is one changePpBy call,
+      // so exactly one Plot Point card announces it however many points it carries.
+      await gm.page.waitForTimeout(2_000)
+      expect(await getActorPath(gm.page, PLAYER2_ACTOR, PP)).toBe(ppBefore + expectedPlotPoints)
+      expect(await plotPointMessagesSince(gm.page, messagesBefore)).toHaveLength(1)
+    } finally {
+      await updateActor(gm.page, PLAYER2_ACTOR, {
+        [`${COMPLICATIONS.replace(/\.complications$/, '')}.==complications`]: complicationsBefore ?? {},
+        [PP]: ppBefore ?? 1
+      })
+
+      await clearChallenge(gm.page)
+      await clearRollRecord(gm.page)
+      await clearRollRecord(gm.page, PLAYER2_ACTOR)
+      await clearPool(player2.page)
+      await restoreSettings(gm.page, before)
+
+      await gm.context.close()
+      await player2.context.close()
+    }
+  })
+}
