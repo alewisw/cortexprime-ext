@@ -264,6 +264,48 @@
                 </div>
               </div>
               {{/if}}
+              {{#if isGM}}
+              {{!-- Read-only views of what each player is doing (promptMirror.js), at any stage of a
+                    challenge - including before anyone has rolled. --}}
+              {{#if playerPrompts}}
+              <div class="player-prompts mt-2">
+                <span class="input-label-cpt">{{localize 'PlayerPrompts'}}</span>
+                {{#each playerPrompts as |prompt|}}
+                <div class="player-prompt-row mt-1 flex flex-ac flex-jsb">
+                  <p class="sub-trait-label-cpt mb-0">{{prompt.playerName}} &mdash; {{prompt.title}}</p>
+                  <button data-action="viewPrompt" class="btn btn-secondary-cpt view-prompt" data-user-id="{{prompt.userId}}" data-app-id="{{prompt.appId}}" type="button">
+                    {{localize 'ViewPrompt'}}
+                  </button>
+                </div>
+                {{/each}}
+              </div>
+              {{/if}}
+              {{#if playerPools}}
+              <div class="player-pools mt-2">
+                <span class="input-label-cpt">{{localize 'PlayerPools'}}</span>
+                {{#each playerPools as |row|}}
+                <div class="player-pool-row mt-1" data-user-id="{{row.userId}}">
+                  <p class="sub-trait-label-cpt mb-0">{{row.playerName}}</p>
+                  <div class="flex flex-ac flex-wrap">
+                    {{#each row.entries as |entry|}}
+                    <div class="player-pool-entry dice-tag flex flex-ac ma-1 py-1 px-1">
+                      {{#if entry.label}}<span class="pr-1">{{entry.label}}</span>{{/if}}
+                      {{#each entry.dice as |face|}}
+                      <div class="die-icon-wrapper">
+                        {{> (concat "systems/cortexprime-ext/templates/partials/dice/d" face ".html")
+                          number=face
+                          type='die-rating'
+                        }}
+                      </div>
+                      {{/each}}
+                    </div>
+                    {{/each}}
+                  </div>
+                </div>
+                {{/each}}
+              </div>
+              {{/if}}
+              {{/if}}
           </div>
         </div>
         <div class="separator-cpt"></div>

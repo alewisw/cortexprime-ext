@@ -186,10 +186,14 @@ export const findApp = predicate => [
 //
 // DialogV2 is referenced inside the function body, not at module scope, so this file stays
 // importable under unit test where the Foundry globals are absent.
-export const confirmAction = async ({ title, content }) =>
+//
+// `classes` is optional extra window classes, e.g. so promptMirror.js can recognise a confirm it
+// mirrors to the GM.
+export const confirmAction = async ({ title, content, classes }) =>
   await foundry.applications.api.DialogV2.confirm({
     window: { title: title ?? localizer('AreYouSure') },
-    content
+    content,
+    ...(classes ? { classes } : {})
   }) === true
 
 // Content for a DialogV2 that must keep inline SVG.

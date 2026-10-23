@@ -11,6 +11,7 @@ import { registerParadox } from './mage/paradox.js'
 import { registerMigrateNotesToTabs } from './scripts/migrateNotesToTabs.js'
 import { registerMigrateSectionPermissions } from './scripts/migrateSectionPermissions.js'
 import { registerMyCharacter } from './scripts/myCharacter.js'
+import { registerPromptMirror } from './scripts/promptMirror.js'
 import { registerRollToBeat } from './scripts/rollToBeat.js'
 import { registerRollUndo } from './scripts/rollUndo.js'
 import { registerSceneDistinctionActor } from './scripts/sceneDistinctionActor.js'
@@ -37,6 +38,7 @@ export default () => {
   // idempotent and self-heal on the next reload), but this ordering lets a single reload catch both.
   registerMigrateSectionPermissions()
   registerMyCharacter()
+  registerPromptMirror()
   registerRollToBeat()
   registerSceneDistinctionActor()
   registerSceneJournal()

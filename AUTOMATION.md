@@ -350,3 +350,25 @@ outcome to its own actor. The Hitches dialog announces its Paradox step count vi
 `cortexprimeHitchesResolved` hook when it's confirmed — and also when it's closed without
 confirming, with zero steps, so that dismissing it can't silently suppress a Paradox that the rules
 say happens regardless of hitches.
+
+## GM view of player prompts and pools
+
+`module/scripts/promptMirror.js` lets the GM watch, read-only, what a player is choosing.
+
+- **Pools** need no new syncing: a player's tray already lives on their own user flag
+  `flags.cortexprime-ext.dicePool`, which every client receives. The GM's tray lists each connected
+  player's pool (`buildPoolRows`, `promptMirrorLogic.js`) and re-renders on any player's
+  `updateUser` that touches `dicePool`. A `null` value counts as an empty pool there.
+- **Prompts** are recognised by window class (`dice-picker`, `consumable-dice`,
+  `plot-point-use-dialog`, `paradox-dialog`, `give-in-confirm`) from the global
+  `renderApplicationV2` / `closeApplicationV2` hooks, so no prompt's own code knows about mirroring.
+  The only change at a call site is the Give In confirm passing that class through `confirmAction`.
+  - The player's client snapshots the window's content, with live checkbox/select/input state
+    copied into attributes, onto its own user flag `promptMirror.<appId>`. It re-sends it
+    (debounced) whenever a `MutationObserver` or an input/change event fires, and unsets it on close.
+  - Writes per prompt are chained, so a late publish can't land after its own clear.
+  - On `ready` the whole flag is cleared, because a prompt can't survive a page load.
+- **Security**: the snapshot is player-written HTML. `PromptMirrorWindow` never renders it raw. It
+  parses it with `DOMParser` (inert), keeps only allowlisted tags and attributes
+  (`promptMirrorLogic.js`), drops scripts, frames and every `on*` handler, and renders the result
+  inside an `inert` container. Foundry's `cleanHTML` isn't usable here because it strips the dice SVGs.

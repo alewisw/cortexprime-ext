@@ -97,3 +97,17 @@ input[type="color"][data-edit][data-edit] {
   margin-left: 0;
   max-width: toRem(26px);
 }
+
+// GM's read-only copy of a player's prompt (PromptMirrorWindow). `inert` already blocks input;
+// this just makes it look like a view rather than a live control.
+.prompt-mirror {
+  pointer-events: none;
+  user-select: none;
+
+  button,
+  input,
+  select,
+  textarea {
+    opacity: 0.85;
+  }
+}

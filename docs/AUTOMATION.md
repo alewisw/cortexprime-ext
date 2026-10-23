@@ -57,6 +57,20 @@ across the 1/2+ boundary can turn a Botch into a normal roll or vice versa. The 
 what gets posted to chat and recorded, exactly as if it had really been rolled. Meant for testing
 specific scenarios (a Hitch, a Botch, an exact Total), not for regular play.
 
+### Watching what players are doing (GM only)
+
+So the GM can coach a player through their choices, the GM's Dice Pool tray shows two read-only
+lists, at any point (no challenge needs to be running, and nobody needs to have rolled yet):
+
+- **Player Dice Pools**: every connected player's current pool, trait by trait with its dice,
+  updating live as they add or remove dice.
+- **Player Prompts**: one row per pop-up a player currently has open, with a **View** button.
+  The prompts covered are **Select Your Dice**, **Spend Plot Point** (choosing a usage),
+  the **consumable dice** chooser, the **Give In** confirmation, and **Paradox**. **View** opens a
+  read-only copy titled "*Character*: *Prompt* (read-only)". It follows the player's clicks live
+  (dice chosen, boxes ticked, a GM Re-roll) and closes itself when the player's prompt closes.
+  Nothing in the copy can be clicked; the player still makes every choice themselves.
+
 ## Running a Test
 
 A Test is a single roll where the GM (or optionally a player) rolls first, and one or more other

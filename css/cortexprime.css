@@ -1110,6 +1110,19 @@
   margin-left: 0;
   max-width: 1.625rem;
 }
+.cortexprime .prompt-mirror {
+  pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.cortexprime .prompt-mirror button,
+.cortexprime .prompt-mirror input,
+.cortexprime .prompt-mirror select,
+.cortexprime .prompt-mirror textarea {
+  opacity: 0.85;
+}
 .cortexprime .btn {
   background-color: transparent;
   border: none;

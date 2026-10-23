@@ -7,6 +7,8 @@ import { getCrisisPool } from '../scripts/crisisPool.js'
 import { getDicePoolInvalidReason } from '../scripts/dicePoolValidation.js'
 import { applyTraitToPool } from '../scripts/dicePoolTraitLogic.js'
 import { getChallengeDisplayData, getEligibleRollerIds, getGroupDisplayData } from './userDicePoolLogic.js'
+import { buildPoolRows, buildPromptRows } from '../scripts/promptMirrorLogic.js'
+import { PromptMirrorWindow } from './PromptMirrorWindow.js'
 import {
   canCurrentUserRoll,
   canStartGroupInitiative,
@@ -124,7 +126,8 @@ export class UserDicePool extends CortexApplicationV2 {
       setChallengeType: UserDicePool.prototype._setChallengeType,
       setDifficulty: UserDicePool.prototype._setDifficulty,
       startGroupInitiative: UserDicePool.prototype._startGroupInitiative,
-      startInterference: UserDicePool.prototype._startInterference
+      startInterference: UserDicePool.prototype._startInterference,
+      viewPrompt: UserDicePool.prototype._viewPrompt
     }
   }
 
@@ -160,6 +163,19 @@ export class UserDicePool extends CortexApplicationV2 {
       .filter(target => target.id !== 'gm' && eligibleRollerIds.includes(target.id))
       .filter(target => !!game.actors.get(target.id)?.getFlag('cortexprime-ext', 'dicePickerOpen'))
       .map(({ id, name }) => ({ id, name }))
+    // GM-only read-only views of each player's open prompts and current pool (promptMirror.js),
+    // independent of the challenge stage - a pool shows the moment a die goes in.
+    const mirrorUsers = game.user.isGM
+      ? game.users.contents.map(user => ({
+          id: user.id,
+          name: user.name,
+          isGM: user.isGM,
+          active: user.active,
+          characterName: user.character?.name ?? null,
+          promptMirror: user.getFlag('cortexprime-ext', 'promptMirror'),
+          dicePool: user.getFlag('cortexprime-ext', 'dicePool')
+        }))
+      : []
 
     return {
       ...await super._prepareContext(options),
@@ -186,6 +202,8 @@ export class UserDicePool extends CortexApplicationV2 {
       isInterfering: !!myInterfererId,
       activeChallenge,
       selectingRollers,
+      playerPrompts: buildPromptRows(mirrorUsers),
+      playerPools: buildPoolRows(mirrorUsers),
       // Only offered once the Contest is actually underway and nobody's currently interfering —
       // starting a second interference before the first is resumed isn't supported.
       eligibleInterferers: contestStarted && !activeChallenge.interference ? getEligibleInterferers() : [],
@@ -240,6 +258,12 @@ export class UserDicePool extends CortexApplicationV2 {
       select.addEventListener('change', this._onDieChange.bind(this))
       select.addEventListener('mouseup', this._onDieRemove.bind(this))
     }
+  }
+
+  _viewPrompt (event, target) {
+    event.preventDefault()
+    const { userId, appId } = target.dataset
+    PromptMirrorWindow.open(userId, appId)
   }
 
   async _requestReroll (event, target) {
@@ -610,7 +634,9 @@ export class UserDicePool extends CortexApplicationV2 {
     const effectDice = opponentId ? (getTargetRecord(opponentId)?.effectDice ?? []) : []
 
     const confirmed = await confirmAction({
-      content: localizer('GiveInConfirm')
+      content: localizer('GiveInConfirm'),
+      // Lets promptMirror.js recognise this confirm and mirror it to the GM.
+      classes: ['cortexprime', 'give-in-confirm']
     })
 
     if (!confirmed) return
